@@ -24,16 +24,10 @@ class TestIO(unittest.TestCase):
     def setUpClass(cls):
         global specter_available
         cls.specter_available = specter_available
-        cls.data_dir = os.path.dirname( # top-level
-            os.path.dirname( # py/
-                os.path.dirname( # desimodel/
-                    os.path.dirname(__file__) # test/
-                    )
-                )
-            )
-        if 'DESIMODEL' in os.environ:
+        cls.data_dir = os.path.dirname(__file__)
+        try:
             cls.old_desimodel = os.environ['DESIMODEL']
-        else:
+        except KeyError:
             cls.old_desimodel = None
         os.environ['DESIMODEL'] = cls.data_dir
 

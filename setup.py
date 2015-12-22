@@ -59,6 +59,10 @@ setup_keywords['test_suite']='{name}.test.{name}_test_suite.{name}_test_suite'.f
 #
 setup_keywords['entry_points'] = {'console_scripts':['install_desimodel_data = desimodel.install:main']}
 #
+# Add internal data directories
+#
+setup_keywords['package_data'] = {'desimodel.test': ['data/*']}
+#
 # Run setup command.
 #
 setup(**setup_keywords)
