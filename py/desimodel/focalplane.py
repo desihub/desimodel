@@ -12,7 +12,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 # The line above will help with 2to3 support.
 import os
 import numpy as np
-import fitsio
+from astropy.io import fits
 #
 #
 #
@@ -33,7 +33,7 @@ class FocalPlane():
         self._check_radec(ra, dec)
         self.ra = ra
         self.dec = dec
-        self.fiberpos = fitsio.read(os.getenv('DESIMODEL')+'/data/focalplane/fiberpos.fits')
+        self.fiberpos = fits.getdata(os.getenv('DESIMODEL')+'/data/focalplane/fiberpos.fits')
 
     def _check_radec(self, ra, dec):
         """Raise ValueError if RA or dec are out of bounds"""

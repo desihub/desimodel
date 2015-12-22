@@ -1,7 +1,7 @@
 include LICENSE.rst
 include README.rst
 
-graft data
+graft bin
 graft doc
 graft etc
 

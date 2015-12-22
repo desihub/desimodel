@@ -24,7 +24,7 @@ setup_keywords['description'] = 'DESI hardware information'
 setup_keywords['author'] = 'DESI Collaboration'
 setup_keywords['author_email'] = 'desi-data@desi.lbl.gov'
 setup_keywords['license'] = 'BSD'
-setup_keywords['url'] = 'https://desi.lbl.gov/svn/code/desimodel'
+setup_keywords['url'] = 'https://github.com/desihub/desimodel'
 #
 # END OF SETTINGS THAT NEED TO BE CHANGED.
 #
