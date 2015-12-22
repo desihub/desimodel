@@ -43,13 +43,8 @@ then
   $PIP_INSTALL beautifulsoup4
 fi
 
-# REQUIRED BY DESI DEPENDENCIES
-$PIP_INSTALL fitsio
 # DESI DEPENDENCIES
 $PIP_INSTALL git+https://github.com/desihub/desiutil.git@${DESIUTIL_VERSION}#egg=desiutil
-$PIP_INSTALL git+https://github.com/desihub/specter.git@${SPECTER_VERSION}#egg=specter
-$PIP_INSTALL svn+https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_VERSION}#egg=desimodel
-$PIP_INSTALL git+https://github.com/desihub/desispec.git@${DESISPEC_VERSION}#egg=desispec
 
 # DOCUMENTATION DEPENDENCIES
 # build_sphinx needs sphinx and matplotlib (for plot_directive). Note that
