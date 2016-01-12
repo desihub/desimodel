@@ -50,7 +50,7 @@ then
   $PIP_INSTALL git+https://github.com/desihub/specter.git@${SPECTER_VERSION}#egg=specter
   export DESIMODEL=${HOME}/desimodel/${DESIMODEL_VERSION}
   mkdir -p ${DESIMODEL}
-  svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_VERSION}/data ${DESIMODEL}
+  (cd ${DESIMODEL} && svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_VERSION}/data)
 fi
 
 # DOCUMENTATION DEPENDENCIES
