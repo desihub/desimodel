@@ -64,6 +64,17 @@ In addition to these historical branches, there is a permanent 'testing' branch
 that contains smaller versions of the desimodel files.  This branch is
 intended for use in desimodel unit tests.
 
+Full Documentation
+------------------
+
+Please visit `desimodel on Read the Docs`_
+
+.. image:: https://readthedocs.org/projects/desimodel/badge/?version=latest
+    :target: http://desimodel.readthedocs.org/en/latest/
+    :alt: Documentation Status
+
+.. _`desimodel on Read the Docs`: http://desimodel.readthedocs.org/en/latest/
+
 Travis Build Status
 -------------------
 

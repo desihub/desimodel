@@ -5,7 +5,7 @@ PSF Spots
 Overview
 ========
 
-Spectrograph PSF files are in data/specpsf/desi-psf-*.fits .  These
+Spectrograph PSF files are in data/specpsf/desi-psf-\*.fits .  These
 are in the `Specter "SpotGrid" format`_.
 
 .. _`Specter "SpotGrid" format`: https://github.com/sbailey/specter/blob/dev/doc/datamodel/psf.md

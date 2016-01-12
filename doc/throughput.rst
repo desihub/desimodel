@@ -59,10 +59,11 @@ Includes both PSF/aperture losses and pointing/guiding mis-alignment.
 From:
 
 * DESI-0347v2
-  * row 16 "PSF and Aperture efficiency"
-  * row 27 "Lateral errors"
-  * row 52 "Fiber Defocus overall budget"
-  * Multiplied then interpolated with a cubic spline
+
+  - row 16 "PSF and Aperture efficiency"
+  - row 27 "Lateral errors"
+  - row 52 "Fiber Defocus overall budget"
+  - Multiplied then interpolated with a cubic spline
 
 All other telescope, fiber, and instrument throughputs
 ======================================================
@@ -72,20 +73,25 @@ Affects all object types.
 From:
 
 * DESI-0347v2
-  * row 6 "Telescope to fiber input"
-  * row 87 "Fiber System other"
-  * row 95 Fiber slit block
-  * row 100 VPHG: Substrate row 100
-  * but *not* the other Spectrograph entries in DESI-0347v2 that are
+
+  - row 6 "Telescope to fiber input"
+  - row 87 "Fiber System other"
+  - row 95 Fiber slit block
+  - row 100 VPHG: Substrate row 100
+  - but *not* the other Spectrograph entries in DESI-0347v2 that are
     represented at higher resolution in DESI-0334v1 and DESI-0336v3
+
 * Spectrograph: DESI-0334v1
-  * DESI-0334-blue-thru.txt "total" column
-  * DESI-0334-red-thru.txt "total" column
-  * DESI-0334-NIR-thru.txt "total" column
+
+  - DESI-0334-blue-thru.txt "total" column
+  - DESI-0334-red-thru.txt "total" column
+  - DESI-0334-NIR-thru.txt "total" column
+
 * CCD: DESI-0336v3
-  * Blue: e2vqe.txt
-  * Red: lbnl250qe.txt
-  * NIR: lbnl500qe.txt
+
+  - Blue: e2vqe.txt
+  - Red: lbnl250qe.txt
+  - NIR: lbnl500qe.txt
 
 Example
 =======
@@ -93,5 +99,3 @@ Example
 ::
 
     python $DESIMODEL/bin/combine_throughputs -o $DESIMODEL/data/throughput
-
-
