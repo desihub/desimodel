@@ -5,9 +5,16 @@ desimodel Release Notes
 1.0.0 (unreleased)
 ------------------
 
+* First post-separation tag.
+* No changes yet!
+
+0.4.1 (unreleased)
+------------------
+
+* Last tag prior to separating desimodel into code (GitHub) and data (svn)
+  repositories.
 * pip install support (BAW).
-* Removed all Python code *except* desimodel.io and a small script to
-  handle downloads of the data directory.
+* Replace fitsio dependency with astropy.io.fits.
 
 0.4 (2015-12-14)
 ----------------

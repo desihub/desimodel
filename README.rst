@@ -64,6 +64,21 @@ In addition to these historical branches, there is a permanent 'testing' branch
 that contains smaller versions of the desimodel files.  This branch is
 intended for use in desimodel unit tests.
 
+Travis Build Status
+-------------------
+
+.. image:: https://img.shields.io/travis/desihub/desimodel.svg
+    :target: https://travis-ci.org/desihub/desimodel
+    :alt: Travis Build Status
+
+
+Test Coverage Status
+--------------------
+
+.. image:: https://coveralls.io/repos/desihub/desimodel/badge.svg?service=github
+    :target: https://coveralls.io/github/desihub/desimodel
+    :alt: Test Coverage Status
+
 License
 -------
 
