@@ -3,4 +3,3 @@ pyyaml
 numpy
 astropy
 git+https://github.com/desihub/desiutil.git@1.3.0#egg=desiutil
-git+https://github.com/desihub/specter.git@0.3#egg=specter
