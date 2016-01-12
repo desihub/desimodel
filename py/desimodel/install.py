@@ -10,6 +10,14 @@ Install data files not handled by pip install.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 
+def default_install_dir():
+    """Return the default install directory.  Assumes this file lives in
+    a 'site-packages' directory.
+    """
+    from os.path import dirname
+    return dirname(dirname(dirname(dirname(dirname(__file__)))))
+
+
 def svn_export(desimodel_version=None):
     """Create a svn export command suitable for downloading a particular
     desimodel version.
@@ -35,16 +43,47 @@ def svn_export(desimodel_version=None):
     return ["svn", "export", "https://desi.lbl.gov/svn/code/desimodel/{0}/data".format(export_version)]
 
 
+def install(desimodel=None,version=None):
+    """Primary workhorse function.
+
+    Parameters
+    ----------
+    desimodel : str, optional
+        Allows the install directory to be explicitly set.
+    version : str, optional
+        Allows the desimodel version to be explicitly set.
+
+    Returns
+    -------
+    int
+        The return code of the svn export command.
+    """
+    from os import chdir, environ
+    from os.path import exists, join
+    from subprocess import Popen, PIPE
+    try:
+        install_dir = environ['DESIMODEL']
+    except KeyError:
+        if desimodel is not None:
+            install_dir = desimodel
+        else:
+            install_dir = default_install_dir()
+    if exists(join(install_dir, 'data')):
+        raise ValueError("{0} already exists!".format(join(install_dir, 'data')))
+    chdir(install_dir)
+    command = svn_export(version)
+    # print(' '.join(command))
+    proc = Popen(command, stdout=PIPE, stderr=PIPE)
+    out, err = proc.communicate()
+    status = proc.returncode
+    return status
+
+
 def main():
     """Entry point for the install_desimodel_data script.
     """
-    from . import __version__ as desimodel_version
     from sys import argv
-    from subprocess import Popen, PIPE
     from argparse import ArgumentParser
-    from os import chdir, environ
-    from os.path import basename, dirname, exists, join
-    default_install_dir = dirname(dirname(dirname(dirname(dirname(__file__)))))
     desc = """Install desimodel data.
 
 This script will attempt to download and install the desimodel data/ directory.
@@ -68,21 +107,8 @@ If the data directory already exists, this script will not do anything.
         help='Explicitly set the version to download.')
     options = parser.parse_args()
     try:
-        install_dir = environ['DESIMODEL']
-    except KeyError:
-        if options.desimodel is not None:
-            install_dir = options.desimodel
-        else:
-            install_dir = default_install_dir
-    if exists(join(install_dir, 'data')):
-        print("{0} already exists!".format(join(install_dir, 'data')))
+        status = install(options.desimodel,options.desimodel_version)
+    except ValueError as e:
+        print(e.message)
         return 1
-    chdir(install_dir)
-    command = svn_export(options.desimodel_version)
-    # print(' '.join(command))
-    proc = Popen(command, stdout=PIPE, stderr=PIPE)
-    out, err = proc.communicate()
-    # if basename(install_dir) == desimodel_version:
-    #     print(install_dir)
-    # print(options.datahome)
-    return 0
+    return status
