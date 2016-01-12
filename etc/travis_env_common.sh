@@ -45,7 +45,13 @@ fi
 
 # DESI DEPENDENCIES
 $PIP_INSTALL git+https://github.com/desihub/desiutil.git@${DESIUTIL_VERSION}#egg=desiutil
-$PIP_INSTALL git+https://github.com/desihub/specter.git@${SPECTER_VERSION}#egg=specter
+if [[ ${SETUP_CMD} == test* ]]
+then
+  $PIP_INSTALL git+https://github.com/desihub/specter.git@${SPECTER_VERSION}#egg=specter
+  export DESIMODEL=${HOME}/desimodel/${DESIMODEL_VERSION}
+  mkdir -p ${DESIMODEL}
+  svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_VERSION}/data ${DESIMODEL}
+fi
 
 # DOCUMENTATION DEPENDENCIES
 # build_sphinx needs sphinx and matplotlib (for plot_directive). Note that
