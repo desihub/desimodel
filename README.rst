@@ -75,8 +75,8 @@ Travis Build Status
 Test Coverage Status
 --------------------
 
-.. image:: https://coveralls.io/repos/desihub/desimodel/badge.svg?service=github
-    :target: https://coveralls.io/github/desihub/desimodel
+.. image:: https://coveralls.io/repos/desihub/desimodel/badge.svg?branch=master&service=github
+    :target: https://coveralls.io/github/desihub/desimodel?branch=master
     :alt: Test Coverage Status
 
 License
