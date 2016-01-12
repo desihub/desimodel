@@ -8,9 +8,33 @@ Install data files not handled by pip install.
 """
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
-#
-#
-#
+
+
+def svn_export(desimodel_version=None):
+    """Create a svn export command suitable for downloading a particular
+    desimodel version.
+
+    Parameters
+    ----------
+    desimodel_version : str, optional
+        The version to download.  If not provided, the version of the package
+        itself will be used.
+
+    Returns
+    -------
+    list
+        An svn command in list form, suitable for passing to subprocess.Popen.
+    """
+    from . import __version__ as this_version
+    if desimodel_version is None:
+        desimodel_version = this_version
+    if desimodel_version in ('trunk', 'master') or 'branches/' in desimodel_version:
+        export_version = desimodel_version
+    else:
+        export_version = 'tags/' + desimodel_version
+    return ["svn", "export", "https://desi.lbl.gov/svn/code/desimodel/{0}/data".format(export_version)]
+
+
 def main():
     """Entry point for the install_desimodel_data script.
     """
@@ -39,6 +63,9 @@ If the data directory already exists, this script will not do anything.
         metavar='DESIMODEL',
         help=('Place the data/ directory in this directory.  '+
         'In other words, the environment variable DESIMODEL should be set to this directory.'))
+    parser.add_argument('-D', '--desimodel-version', action='store',
+        dest='desimodel_version', metavar='VERSION',
+        help='Explicitly set the version to download.')
     options = parser.parse_args()
     try:
         install_dir = environ['DESIMODEL']
@@ -51,7 +78,7 @@ If the data directory already exists, this script will not do anything.
         print("{0} already exists!".format(join(install_dir, 'data')))
         return 1
     chdir(install_dir)
-    command = ["svn", "export", "https://desi.lbl.gov/svn/code/desimodel/tags/{0}/data".format(desimodel_version)]
+    command = svn_export(options.desimodel_version)
     # print(' '.join(command))
     proc = Popen(command, stdout=PIPE, stderr=PIPE)
     out, err = proc.communicate()

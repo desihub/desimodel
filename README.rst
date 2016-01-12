@@ -11,8 +11,18 @@ but non-authoritative.  If in question, the DocDB version of a design
 parameter is correct.  This is intended to reflect the same information
 while being more conveniently organized and formatted for simulations.
 
+Desimodel Data
+--------------
+
+Finding the Data
+~~~~~~~~~~~~~~~~
+
+The data that accompanies the desimodel code is not stored with the code.
+Due to its size, it is kept in the DESI svn repository.  What follows is
+a description of these data.
+
 Data Files
-----------
+~~~~~~~~~~
 
 Files in data/inputs/ are copied from DocDB and are not intended to be used
 directly.  These are parsed and reformatted to produce files in other data/
@@ -37,8 +47,22 @@ data/footprint/
 data/spectra/
     Example benchmark spectra
 
-| Stephen Bailey
-| Early 2014
+Branches
+~~~~~~~~
+
+There are a couple of permanent branches that were used for testing
+alternative designs.  These will never be merged into trunk but we
+will keep them around for the record:
+
+altccd
+    500 um vs. 250 um thick CCDs
+
+bb
+    recreating assumptions used during early BigBOSS projections
+
+In addition to these historical branches, there is a permanent 'testing' branch
+that contains smaller versions of the desimodel files.  This branch is
+intended for use in desimodel unit tests.
 
 License
 -------
