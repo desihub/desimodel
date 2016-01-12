@@ -10,6 +10,7 @@ from .. import io
 # Try to import specter.
 #
 specter_available = True
+specter_message = "The specter package was not detected."
 try:
     import specter
 except ImportError:
@@ -18,10 +19,13 @@ except ImportError:
 # Try to load the DESIMODEL environment variable
 #
 desimodel_available = True
+desimodel_message = "The desimodel data set was not detected."
 try:
     spam = os.environ['DESIMODEL']
 except KeyError:
     desimodel_available = False
+    specter_available = False
+    specter_message = desimodel_message
 #
 #
 class TestIO(unittest.TestCase):
@@ -47,28 +51,28 @@ class TestIO(unittest.TestCase):
         # else:
         #     os.environ['DESIMODEL'] = cls.old_desimodel
 
-    @unittest.skipUnless(specter_available,"The specter package was not detected.")
+    @unittest.skipUnless(specter_available, specter_message)
     def test_throughput(self):
         """Test loading of throughput files.
         """
         for channel in ('b', 'r', 'z'):
             t = io.load_throughput(channel)
 
-    @unittest.skipUnless(specter_available,"The specter package was not detected.")
+    @unittest.skipUnless(specter_available, specter_message)
     def test_psf(self):
         """Test loading of PSF files.
         """
         for channel in ('b', 'r', 'z'):
             t = io.load_psf(channel)
 
-    @unittest.skipUnless(desimodel_available,"The desimodel data set was not detected.")
+    @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_desiparams(self):
         """Test loading of basic DESI parameters.
         """
         p = io.load_desiparams()
         self.assertTrue(isinstance(p, dict))
 
-    @unittest.skipUnless(desimodel_available,"The desimodel data set was not detected.")
+    @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_fiberpos(self):
         """Test loading of fiber positioner data.
         """
@@ -79,7 +83,7 @@ class TestIO(unittest.TestCase):
             self.assertIn(key, fiberpos.dtype.names)
             x = fiberpos[key]
 
-    @unittest.skipUnless(desimodel_available,"The desimodel data set was not detected.")
+    @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_tiles(self):
         """Test loading of tile files.
         """
