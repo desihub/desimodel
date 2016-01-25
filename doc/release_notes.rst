@@ -8,7 +8,7 @@ desimodel Release Notes
 * First post-separation tag.
 * No changes yet!
 
-0.4.1 (unreleased)
+0.4.1 (2016-01-25)
 ------------------
 
 * Last tag prior to separating desimodel into code (GitHub) and data (svn)
