@@ -59,6 +59,11 @@ For "scripted" installs:
 * You can also call the function ``desimodel.install.install()`` from
   inside other Python code.
 
+Regardless of which method you choose, you should set the ``DESIMODEL``
+environment variable to point to the directory containing the data/
+directory.  The only real difference among all these methods is exactly
+*when* you define the ``DESIMODEL`` variable.
+
 Data Files
 ~~~~~~~~~~
 
