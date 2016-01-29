@@ -14,12 +14,50 @@ while being more conveniently organized and formatted for simulations.
 Desimodel Data
 --------------
 
-Finding the Data
+Getting the Data
 ~~~~~~~~~~~~~~~~
 
 The data that accompanies the desimodel code is not stored with the code.
-Due to its size, it is kept in the DESI svn repository.  What follows is
-a description of these data.
+Due to its size, it is kept in the DESI svn repository.  The public, read-only
+URL for svn access is https://desi.lbl.gov/svn/code/desimodel, with the usual
+trunk/, tags/ and branches/ directories.
+
+Once you have installed this package, using either pip or desiInstall, there
+are two ways to install the accompanying data.  **For most every case, you
+should install the tag in svn that corresponds to the same tag in git.**
+
+There are two methods to install the data, "by hand" and "scripted."
+
+For "by hand" installs:
+
+1. Define the environment variable ``DESIMODEL``::
+
+    export DESIMODEL=/Users/desicollaborator/Data/desimodel/0.4.2
+
+   Note how the tag name is included.
+
+2. Create the directory and switch to it::
+
+    mkdir -p $DESIMODEL
+    cd $DESIMODEL
+
+3. Export::
+
+    svn export https://desi.lbl.gov/svn/code/desimodel/tags/0.4.2/data
+
+   Note how the tag name is the *same* as in the ``DESIMODEL`` variable.
+
+4. You may now want to add ``DESIMODEL`` to your shell startup scripts.
+
+For "scripted" installs:
+
+* Installing this package will create the command-line script
+  ``install_desimodel_data``.  It should appear in your ``PATH`` assuming
+  a successful install.  ``install_desimodel_data --help`` will show you
+  how to use this script.  Basically it is just a wrapper on the "by hand"
+  method described above.
+* You can also call the function ``desimodel.install.install()`` from
+  inside other Python code.
 
 Data Files
 ~~~~~~~~~~
@@ -29,23 +67,25 @@ directly.  These are parsed and reformatted to produce files in other data/
 directories which are for use.
 
 data/desi.yaml
-    basic scalar parameters, organized in a nested tree
+    Basic scalar parameters, organized in a nested tree.
 
 data/focalplane/
-    informaton about positioner locations and platescale
+    Informaton about positioner locations and platescale.
 
 data/specpsf/
-    spectrograph point-spread-function (PSF) for specter
-    CCD pixel-level simulations
+    Spectrograph point-spread-function (PSF) for specter_
+    CCD pixel-level simulations.
 
 data/throughput/
-    throughput vs wavelength (also contained in specpsf)
+    Throughput *versus* wavelength (also contained in specpsf).
 
 data/footprint/
-    DESI footprint with RA, dec of tiles
+    DESI footprint with RA, Dec of tiles.
 
 data/spectra/
-    Example benchmark spectra
+    Example benchmark spectra.
+
+.. _specter: https://github.com/desihub/specter
 
 Branches
 ~~~~~~~~
@@ -55,10 +95,10 @@ alternative designs.  These will never be merged into trunk but we
 will keep them around for the record:
 
 altccd
-    500 um vs. 250 um thick CCDs
+    500 μm *versus* 250 μm thick CCDs.
 
 bb
-    recreating assumptions used during early BigBOSS projections
+    Recreating assumptions used during early BigBOSS projections.
 
 In addition to these historical branches, there is a permanent 'testing' branch
 that contains smaller versions of the desimodel files.  This branch is

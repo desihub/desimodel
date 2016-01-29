@@ -5,8 +5,14 @@ desimodel Release Notes
 1.0.0 (unreleased)
 ------------------
 
-* First post-separation tag.
+* "First" post-separation tag.
 * No changes yet!
+
+0.4.2 (unreleased)
+------------------
+
+* Improved svn download instructions in the README file.
+* Changes to data on svn side (SJB, fill in your changes here!).
 
 0.4.1 (2016-01-25)
 ------------------
