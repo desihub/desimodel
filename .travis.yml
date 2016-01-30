@@ -48,9 +48,9 @@ env:
         - DESIMODEL_VERSION=trunk
         - MAIN_CMD='python setup.py'
         # These packages will always be installed.
-        - CONDA_DEPENDENCIES='pyyaml'
+        - CONDA_DEPENDENCIES=''
         # These packages will only be installed if we really need them.
-        - CONDA_ALL_DEPENDENCIES='pyyaml'
+        - CONDA_ALL_DEPENDENCIES='pyyaml scipy'
         # These packages will always be installed.
         - PIP_DEPENDENCIES=''
         # These packages will only be installed if we really need them.
@@ -82,6 +82,7 @@ matrix:
         # Try all python versions with the latest numpy
         - os: linux
           env: PYTHON_VERSION=2.7 SETUP_CMD='test --coverage'
+               CONDA_DEPENDENCIES=$CONDA_ALL_DEPENDENCIES
                DESIHUB_PIP_DEPENDENCIES="desiutil=${DESIUTIL_VERSION} specter=${SPECTER_VERSION}"
 
         # - os: osx
