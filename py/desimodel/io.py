@@ -13,15 +13,20 @@ import os
 from astropy.io import fits
 import yaml
 import numpy as np
+import warnings
 #
 #- PSF and throughput, which require specter
 #
 try:
-    import specter.throughput
-    import specter.psf
-except ImportError:
-    import warnings
-    warnings.warn("Unable to import specter; load_throughput() and load_psf() won't work.")
+    from specter.throughput import load_throughput as specter_load_throughput
+except ImportError as e:
+    warnings.warn(str(e))
+    warnings.warn("Unable to import specter.throughput.load_throughput(); desimodel.io.load_throughput() won't work.")
+try:
+    from specter.psf import load_psf as specter_load_psf
+except ImportError as e:
+    warnings.warn(str(e))
+    warnings.warn("Unable to import specter.psf.load_psf(); desimodel.io.load_psf() won't work.")
 #
 #
 #
@@ -38,7 +43,7 @@ def load_throughput(channel):
     global _thru
     if channel not in _thru:
         thrufile = os.path.join(os.environ['DESIMODEL'],'data','throughput','thru-{0}.fits'.format(channel))
-        _thru[channel] = specter.throughput.load_throughput(thrufile)
+        _thru[channel] = specter_load_throughput(thrufile)
     return _thru[channel]
 #
 #
@@ -56,7 +61,7 @@ def load_psf(channel):
     global _psf
     if channel not in _psf:
         psffile = os.path.join(os.environ['DESIMODEL'],'data','specpsf','psf-{0}.fits'.format(channel))
-        _psf[channel] = specter.psf.load_psf(psffile)
+        _psf[channel] = specter_load_psf(psffile)
     return _psf[channel]
 #
 #
