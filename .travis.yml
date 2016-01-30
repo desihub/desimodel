@@ -74,7 +74,6 @@ matrix:
         # runs for a long time
         - os: linux
           env: PYTHON_VERSION=2.7 SETUP_CMD='build_sphinx'
-          # OPTIONAL_DEPS needed because the plot_directive in sphinx needs them
           # -w is an astropy extension
 
         # Try all python versions with the latest numpy
@@ -112,6 +111,9 @@ install:
     - git clone git://github.com/astropy/ci-helpers.git
     - source ci-helpers/travis/setup_conda_$TRAVIS_OS_NAME.sh
     - if [[ $SETUP_CMD == test* ]]; then source etc/travis_desimodel_data.sh; fi
+    # egg_info causes the astropy/ci-helpers script to exit before the pip
+    # packages are installed, thus desiutil is not installed in that script.
+    - if [[ $SETUP_CMD == egg_info ]]; then pip install $PIP_DEPENDENCIES; fi
 
 script:
     - $MAIN_CMD $SETUP_CMD
