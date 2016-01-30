@@ -52,9 +52,12 @@ env:
         # These packages will only be installed if we really need them.
         - CONDA_ALL_DEPENDENCIES='pyyaml'
         # These packages will always be installed.
-        - PIP_DEPENDENCIES="git+https://github.com/desihub/desiutil.git@${DESIUTIL_VERSION}#egg=desiutil"
+        - PIP_DEPENDENCIES=''
         # These packages will only be installed if we really need them.
-        - PIP_ALL_DEPENDENCIES="git+https://github.com/desihub/desiutil.git@${DESIUTIL_VERSION}#egg=desiutil git+https://github.com/desihub/specter.git@${SPECTER_VERSION}#egg=specter"
+        - PIP_ALL_DEPENDENCIES=''
+        # These pip packages need to be installed in a certain order, so we
+        # do that separately from the astropy/ci-helpers scripts.
+        - DESIHUB_PIP_DEPENDENCIES="desiutil=${DESIUTIL_VERSION}"
         # Debug the Travis install process.
         - DEBUG=True
     matrix:
@@ -79,7 +82,7 @@ matrix:
         # Try all python versions with the latest numpy
         - os: linux
           env: PYTHON_VERSION=2.7 SETUP_CMD='test --coverage'
-               PIP_DEPENDENCIES=$PIP_ALL_DEPENDENCIES
+               DESIHUB_PIP_DEPENDENCIES="desiutil=${DESIUTIL_VERSION} specter=${SPECTER_VERSION}"
 
         # - os: osx
         #   env: PYTHON_VERSION=2.7 SETUP_CMD='test'
@@ -110,10 +113,10 @@ matrix:
 install:
     - git clone git://github.com/astropy/ci-helpers.git
     - source ci-helpers/travis/setup_conda_$TRAVIS_OS_NAME.sh
-    - if [[ $SETUP_CMD == test* ]]; then source etc/travis_desimodel_data.sh; fi
     # egg_info causes the astropy/ci-helpers script to exit before the pip
     # packages are installed, thus desiutil is not installed in that script.
-    - if [[ $SETUP_CMD == egg_info ]]; then pip install $PIP_DEPENDENCIES; fi
+    - for p in $DESIHUB_PIP_DEPENDENCIES; do r=$(echo $p | cut -d= -f1); v=$(echo $p | cut -d= -f2); pip install git+https://github.com/desihub/${r}.git@${v}#egg=${r}; done
+    - if [[ $SETUP_CMD == test* ]]; then source etc/travis_desimodel_data.sh; fi
 
 script:
     - $MAIN_CMD $SETUP_CMD
