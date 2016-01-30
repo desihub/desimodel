@@ -111,7 +111,7 @@ matrix:
 install:
     - git clone git://github.com/astropy/ci-helpers.git
     - source ci-helpers/travis/setup_conda_$TRAVIS_OS_NAME.sh
-    - source etc/travis_desimodel_data.sh
+    - if [[ $SETUP_CMD == test* ]]; then source etc/travis_desimodel_data.sh; fi
 
 script:
     - $MAIN_CMD $SETUP_CMD
