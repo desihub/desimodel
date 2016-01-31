@@ -13,6 +13,11 @@ desimodel Release Notes
 
 * Improved svn download instructions in the README file.
 * Changes to data on svn side (SJB, fill in your changes here!).
+* Use `ci-helpers`_ to handle most of the dirty work of Travis build scripts.
+* Make `specter`_ import errors more verbose.
+
+.. _`ci-helpers`: https://github.com/astropy/ci-helpers
+.. _`specter`: https://github.com/desihub/specter
 
 0.4.1 (2016-01-25)
 ------------------
