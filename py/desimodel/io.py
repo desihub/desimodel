@@ -75,6 +75,11 @@ def load_desiparams():
         desiparamsfile = os.path.join(os.environ['DESIMODEL'],'data','desi.yaml')
         with open(desiparamsfile) as par:
             _params = yaml.load(par)
+
+    #- for temporary backwards compability after 'exptime' -> 'exptime_dark'
+    if ('exptime' not in _params) and ('exptime_dark' in _params):
+        _params['exptime'] = _params['exptime_dark']
+
     return _params
 #
 #
