@@ -7,6 +7,7 @@ desimodel Release Notes
 
 * "First" post-separation tag.
 * Add code to create trimmed versions of the data.
+* No significant changes to *data* from 0.4.2.
 
 0.4.2 (2016-02-04)
 ------------------
