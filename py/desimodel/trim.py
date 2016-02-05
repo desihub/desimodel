@@ -1,5 +1,11 @@
-#- Code for trimming desimodel/data into smaller files
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
+"""
+desimodel.trim
+==============
 
+Code for trimming desimodel/data into smaller files.
+"""
 from __future__ import absolute_import, division, print_function
 from astropy.io.fits import HDUList, PrimaryHDU, ImageHDU, BinTableHDU
 from astropy.io import fits
@@ -10,23 +16,23 @@ import shutil
 def trim_data(indir, outdir, clobber=False):
     '''
     Trim a $DESIMODEL/data directory into a lightweight version for testing
-    
+
     Args:
         indir : a $DESIMODEL/data directory from svn
         outdir : output data directory location
-        
+
     Optional:
         clobber : if True, remove outdir if it already exists
     '''
     assert os.path.abspath(indir) != os.path.abspath(outdir)
     if os.path.exists(outdir) and clobber:
         shutil.rmtree(outdir)
-        
+
     os.makedirs(outdir)
 
     #- python note:
     #- *inout(indir, outdir, filename) -> indir/filename, outdir/filename
-    
+
     shutil.copy(*inout(indir, outdir, 'desi.yaml'))
     trim_focalplane(*inout(indir, outdir, 'focalplane'))
     trim_footprint(*inout(indir, outdir, 'footprint'))
@@ -36,7 +42,7 @@ def trim_data(indir, outdir, clobber=False):
     trim_spectra(*inout(indir, outdir, 'spectra'))
     trim_targets(*inout(indir, outdir, 'targets'))
     trim_throughput(*inout(indir, outdir, 'throughput'))
-    
+
 def inout(indir, outdir, filename):
     '''returns os.path.join(indir, filename) and .join(outdir, filename)'''
     infile = os.path.join(indir, filename)
@@ -138,10 +144,10 @@ def trim_psf(indir, outdir, filename):
     assert os.path.abspath(indir) != os.path.abspath(outdir)
     infile = os.path.join(indir, filename)
     outfile = os.path.join(outdir, filename)
-    
+
     fx = fits.open(infile)
     hdus = HDUList()
-    
+
     #- HDU 0 XCOEFF - data unchanged but update keywords for less samples
     xcoeff = fx[0].data
     hdr = fx[0].header
@@ -151,7 +157,7 @@ def trim_psf(indir, outdir, filename):
     hdr['CDELT1'] = 0.005   #- 5mm instead of 1mm
     hdr['CDELT2'] = 0.005   #- 5mm instead of 1mm
     hdr['PIXSIZE'] = 0.005   #- 5mm instead of 1mm
-    
+
     hdus.append(PrimaryHDU(xcoeff, header=hdr))
     hdus.append(fx['YCOEFF'])
 
@@ -168,25 +174,25 @@ def trim_psf(indir, outdir, filename):
     spots[1,2] = rebin_image(inspots[5,10], 5)
     spots[2,2] = rebin_image(inspots[10,10], 5)
     hdus.append(ImageHDU(spots, header=fx['SPOTS'].header))
-    
+
     #- subsample spots x,y locations
     dx = fx['SPOTX'].data
     hdus.append(ImageHDU(dx[::5, ::5], header=fx['SPOTX'].header))
     dy = fx['SPOTY'].data
     hdus.append(ImageHDU(dy[::5, ::5], header=fx['SPOTY'].header))
-    
+
     #- Fiberpos unchanged
     hdus.append(fx['FIBERPOS'])
-    
+
     #- Subsample SPOTPOS and SPOTWAVE
     d = fx['SPOTPOS'].data
     hdus.append(ImageHDU(d[::5], header=fx['SPOTPOS'].header))
     d = fx['SPOTWAVE'].data
     hdus.append(ImageHDU(d[::5], header=fx['SPOTWAVE'].header))
-    
+
     hdus.writeto(outfile, clobber=True)
     fx.close()
-    
+
 def trim_quickpsf(indir, outdir, filename):
     assert os.path.abspath(indir) != os.path.abspath(outdir)
     infile = os.path.join(indir, filename)
@@ -199,4 +205,3 @@ def trim_quickpsf(indir, outdir, filename):
         hdus.append(BinTableHDU(d[::10], header=fx[i].header))
     hdus.writeto(outfile, clobber=True)
     fx.close()
-
