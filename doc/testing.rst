@@ -51,3 +51,5 @@ How to Create a Test Branch
 
     svn move datalite data
     svn commit -m "Rename datalite"
+
+If you find any problems, just wipe out the branch and start again.
