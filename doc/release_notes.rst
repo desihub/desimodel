@@ -8,11 +8,18 @@ desimodel Release Notes
 * "First" post-separation tag.
 * No changes yet!
 
-0.4.2 (unreleased)
-------------------
+0.4.2
+-----
 
 * Improved svn download instructions in the README file.
-* Changes to data on svn side (SJB, fill in your changes here!).
+* Changes to data on svn side
+
+  * updated desi.yaml with dark vs. bright exptime
+  * updated targets.dat to include MWS placeholders
+
+* io.load_params() adds 'exptime' -> 'exptime_dark' key for temporary
+  backwards compatibility
+* Removed deprecated fibers module
 * Use `ci-helpers`_ to handle most of the dirty work of Travis build scripts.
 * Make `specter`_ import errors more verbose.
 
