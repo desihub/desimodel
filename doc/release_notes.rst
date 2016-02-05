@@ -8,8 +8,8 @@ desimodel Release Notes
 * "First" post-separation tag.
 * No changes yet!
 
-0.4.2
------
+0.4.2 (2016-02-04)
+------------------
 
 * Improved svn download instructions in the README file.
 * Changes to data on svn side
