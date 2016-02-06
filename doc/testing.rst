@@ -61,6 +61,6 @@ How to Create a Test Branch
 
 7. Now tests can get this lightweight branch on-the-fly with
 
-    svn export $base/test-1.0
+    svn export $base/branches/test-1.0
 
 If you find any problems, just wipe out the branch and start again.
