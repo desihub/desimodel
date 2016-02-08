@@ -2,11 +2,12 @@
 desimodel Release Notes
 =======================
 
-1.0.0 (unreleased)
+0.5.0 (unreleased)
 ------------------
 
 * "First" post-separation tag.
-* No changes yet!
+* Add code to create trimmed versions of the data.
+* No significant changes to *data* from 0.4.2.
 
 0.4.2 (2016-02-04)
 ------------------

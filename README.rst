@@ -11,6 +11,14 @@ but non-authoritative.  If in question, the DocDB version of a design
 parameter is correct.  This is intended to reflect the same information
 while being more conveniently organized and formatted for simulations.
 
+**PLEASE KEEP THIS FILE IN SYNC WITH THE EQUIVALENT FILE IN SVN.**
+
+Desimodel Code
+--------------
+
+The svn product described below contains only the *data* associated with
+desimodel. The code is in Github: https://github.com/desihub/desimodel.
+
 Desimodel Data
 --------------
 
@@ -108,6 +116,12 @@ bb
 In addition to these historical branches, there is a permanent 'testing' branch
 that contains smaller versions of the desimodel files.  This branch is
 intended for use in desimodel unit tests.
+
+Tagging
+-------
+
+If *either* the data *or* the code changes, a new tag should be created in
+both git and svn.
 
 Full Documentation
 ------------------
