@@ -2,7 +2,7 @@
 desimodel Release Notes
 =======================
 
-1.0.0 (unreleased)
+0.5.0 (unreleased)
 ------------------
 
 * "First" post-separation tag.
