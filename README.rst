@@ -11,6 +11,8 @@ but non-authoritative.  If in question, the DocDB version of a design
 parameter is correct.  This is intended to reflect the same information
 while being more conveniently organized and formatted for simulations.
 
+**PLEASE KEEP THIS FILE IN SYNC WITH THE EQUIVALENT FILE IN SVN.**
+
 Desimodel Code
 --------------
 
