@@ -5,9 +5,15 @@ desimodel Release Notes
 0.5.0 (unreleased)
 ------------------
 
+0.4.3 (2016-03-10)
+------------------
+
 * "First" post-separation tag.
 * Add code to create trimmed versions of the data.
-* No significant changes to *data* from 0.4.2.
+* Added desimodel.trim.trim_data for trimming a data directory into a
+  lightweight version for testing
+* svn data includes targets.dat preliminary numbers for MWS and BGS densities
+  (Still waiting upon supporting technote)
 
 0.4.2 (2016-02-04)
 ------------------
