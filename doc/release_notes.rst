@@ -2,18 +2,20 @@
 desimodel Release Notes
 =======================
 
-0.5.0 (unreleased)
+0.4.4 (2016-03-15)
 ------------------
+
+* Allow desiInstall to download and install the data from svn.
+* No changes to data in svn.
 
 0.4.3 (2016-03-10)
 ------------------
 
 * "First" post-separation tag.
-* Add code to create trimmed versions of the data.
 * Added desimodel.trim.trim_data for trimming a data directory into a
-  lightweight version for testing
+  lightweight version for testing.
 * svn data includes targets.dat preliminary numbers for MWS and BGS densities
-  (Still waiting upon supporting technote)
+  (Still waiting upon supporting technote).
 
 0.4.2 (2016-02-04)
 ------------------
