@@ -2,10 +2,11 @@
 desimodel Release Notes
 =======================
 
-0.5.0 (unreleased)
+0.4.4 (2016-03-15)
 ------------------
 
 * Allow desiInstall to download and install the data from svn.
+* No changes to data in svn.
 
 0.4.3 (2016-03-10)
 ------------------
