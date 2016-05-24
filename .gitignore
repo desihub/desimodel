@@ -52,3 +52,6 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# data directory may be installed, but it is not part of git.
+data/
