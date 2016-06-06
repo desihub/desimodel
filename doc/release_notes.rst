@@ -5,21 +5,22 @@ desimodel Release Notes
 0.4.5 (unreleased)
 ------------------
 
-* No changes yet.
+* Fixed a minor bug that made the help message for :command:`install_desimodel_data`
+  garbled.
 
 0.4.4 (2016-03-15)
 ------------------
 
-* Allow desiInstall to download and install the data from svn.
+* Allow :command:`desiInstall` to download and install the data from svn.
 * No changes to data in svn.
 
 0.4.3 (2016-03-10)
 ------------------
 
 * "First" post-separation tag.
-* Added desimodel.trim.trim_data for trimming a data directory into a
+* Added :func:`desimodel.trim.trim_data` for trimming a data directory into a
   lightweight version for testing.
-* svn data includes targets.dat preliminary numbers for MWS and BGS densities
+* svn data includes targets.dat: preliminary numbers for MWS and BGS densities
   (Still waiting upon supporting technote).
 
 0.4.2 (2016-02-04)
@@ -31,7 +32,7 @@ desimodel Release Notes
   * updated desi.yaml with dark vs. bright exptime
   * updated targets.dat to include MWS placeholders
 
-* io.load_params() adds 'exptime' -> 'exptime_dark' key for temporary
+* :func:`desimodel.io.load_params` adds 'exptime' -> 'exptime_dark' key for temporary
   backwards compatibility
 * Removed deprecated fibers module
 * Use `ci-helpers`_ to handle most of the dirty work of Travis build scripts.
@@ -66,7 +67,7 @@ desimodel Release Notes
 0.3.6 (2015-01-30)
 ------------------
 
-* Adds ``focalplane/FocalPlane.xy2radec()`` from Jaime (SJB).
+* Adds :meth:`desimodel.focalplane.FocalPlane.xy2radec` from Jaime (SJB).
 
 0.3.5 (2014-12-28)
 ------------------
