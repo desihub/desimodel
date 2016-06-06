@@ -96,7 +96,7 @@ locations, in order of preference:
    is currently {0}.
 
 If the data directory already exists, this script will not do anything.
-""".format(default_install_dir)
+""".format(default_install_dir())
     parser = ArgumentParser(description=desc, prog=argv[0])
     parser.add_argument('-d', '--desimodel', action='store', dest='desimodel',
         metavar='DESIMODEL',
