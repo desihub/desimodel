@@ -32,7 +32,7 @@ desimodel Release Notes
   * updated desi.yaml with dark vs. bright exptime
   * updated targets.dat to include MWS placeholders
 
-* :func:`desimodel.io.load_params` adds 'exptime' -> 'exptime_dark' key for temporary
+* :func:`desimodel.io.load_desiparams` adds 'exptime' -> 'exptime_dark' key for temporary
   backwards compatibility
 * Removed deprecated fibers module
 * Use `ci-helpers`_ to handle most of the dirty work of Travis build scripts.
