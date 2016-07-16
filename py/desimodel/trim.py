@@ -69,8 +69,13 @@ def trim_inputs(indir, outdir):
     pass
 
 def trim_sky(indir, outdir):
-    '''don't copy any sky files; maybe they shouldn't be in desimodel anyway'''
-    pass
+    '''copy solarspec file as-is'''
+    assert os.path.basename(indir) == 'sky'
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+    infile = os.path.join(indir, 'solarspec.txt')
+    outfile = os.path.join(outdir, 'solarspec.txt')
+    shutil.copy(infile, outfile)
 
 def trim_specpsf(indir, outdir):
     '''trim specpsf files to be much smaller'''
@@ -95,6 +100,7 @@ def trim_spectra(indir, outdir):
         'spec-sky.dat',
         'spec-sky-grey.dat',
         'spec-sky-bright.dat',
+        'ZenithExtinction-KPNO.dat',
         ):
         i = 0
         fx = open(os.path.join(outdir, filename), 'w')
@@ -116,6 +122,11 @@ def trim_throughput(indir, outdir):
     assert os.path.basename(indir) == 'throughput'
     if not os.path.exists(outdir):
         os.makedirs(outdir)
+    
+    for targettype in ('elg', 'lrg', 'perfect', 'qso', 'sky', 'star'):
+        filename = 'fiberloss-{}.dat'.format(targettype)
+        shutil.copy(os.path.join(indir, filename), os.path.join(outdir, filename))
+    
     for filename in ['thru-b.fits', 'thru-r.fits', 'thru-z.fits']:
         fx = fits.open(indir+'/'+filename)
         hdus = HDUList()
