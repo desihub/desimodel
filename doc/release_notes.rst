@@ -5,8 +5,14 @@ desimodel Release Notes
 0.4.5 (unreleased)
 ------------------
 
+* no changes yet
+
+0.4.5 (2016-07-15)
+------------------
+
 * Fixed a minor bug that made the help message for :command:`install_desimodel_data`
   garbled.
+* Add additional files to lightweight test data to work with quickgen
 
 0.4.4 (2016-03-15)
 ------------------
