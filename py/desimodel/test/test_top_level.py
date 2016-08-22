@@ -25,8 +25,10 @@ class TestTopLevel(unittest.TestCase):
     def test_version(self):
         """Ensure the version conforms to PEP386/PEP440.
         """
-        self.assertRegex(theVersion, self.versionre)
-
+        try:
+            self.assertRegex(theVersion, self.versionre)
+        except AttributeError:
+            self.assertRegexpMatches(theVersion, self.versionre)
 
 if __name__ == '__main__':
     unittest.main()

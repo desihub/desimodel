@@ -42,7 +42,7 @@ env:
         - DESIMODEL_VERSION=branches/test-0.4.5
         - MAIN_CMD='python setup.py'
         # These packages will always be installed.
-        - CONDA_DEPENDENCIES='pyyaml scipy'
+        - CONDA_DEPENDENCIES='pyyaml scipy astropy'
         # These packages will only be installed if we really need them.
         - CONDA_ALL_DEPENDENCIES=''
         # These packages will always be installed.
@@ -71,12 +71,14 @@ matrix:
         # Check for sphinx doc build warnings - we do this first because it
         # runs for a long time
         - os: linux
-          env: PYTHON_VERSION=3.5 SETUP_CMD='build_sphinx'
+          python: 3.5
+          env: SETUP_CMD='build_sphinx'
           # -w is an astropy extension
 
         # Try all python versions with the latest numpy
         - os: linux
-          env: PYTHON_VERSION=3.5 SETUP_CMD='test --coverage'
+          python: 3.5
+          env: SETUP_CMD='test --coverage'
                DESIHUB_PIP_DEPENDENCIES="desiutil=${DESIUTIL_VERSION} specter=${SPECTER_VERSION}"
 
         # - os: osx
