@@ -20,7 +20,7 @@ def load_throughput(filename):
     """
     tmp = np.loadtxt(filename).T
     wavelength = tmp[0]*10  #- nm -> Angstroms
-    
+
     #- Throughput, removing spectrograph*CCD contribution
     throughput = tmp[1] / tmp[2]
 
@@ -37,7 +37,7 @@ def load_fiberinput(filename):
     tmp = np.loadtxt(filename).T
     wavelength = tmp[0]  #- nm -> Angstroms
     throughput = tmp[1]
-    
+
     return InterpolatedUnivariateSpline(wavelength, throughput, k=3)
 #
 #
@@ -57,7 +57,7 @@ def load_spec_throughput(filename):
     return InterpolatedUnivariateSpline(wavelength, throughput, k=3)
 #
 #
-#   
+#
 def get_waveminmax(psffile):
     """
     return wmin, wmax as taken from the header of a PSF file
@@ -68,34 +68,36 @@ def get_waveminmax(psffile):
 #-------------------------------------------------------------------------
 #
 def main():
-    """
-    Combine the various throughput parameters and generate a Specter
+    """Combine the various throughput parameters and generate a Specter
     compatible throughput fits file.
     """
-    import optparse
+    from argparse import ArgumentParser
     import yaml
     import os
-    
-    parser = optparse.OptionParser(usage = "%prog [options]")
-    parser.add_option("-m", "--modeldir", type="string",  help="model directory")
-    parser.add_option("-o", "--outdir", type="string",  help="output directory")
-    # parser.add_option("-x", "--xxx",   help="some flag", action="store_true")
-    opts, args = parser.parse_args()
+
+    parser = ArgumentParser(description="Create a specter-compatible throughput FITS file.",
+                            prog=sys.argv[0])
+    parser.add_argument("-m", "--modeldir", action='store', metavar='DIR',
+                        help="model directory")
+    parser.add_argument("-o", "--outdir", action='store', metavar='DIR',
+                        help="output directory")
+    opts = parser.parse_args()
 
     if opts.modeldir is None:
         if 'DESIMODEL' in os.environ:
-            datadir = os.environ['DESIMODEL'] + '/data/'
+            datadir = os.path.join(os.environ['DESIMODEL'], 'data')
         else:
-            print >> sys.stderr, 'ERROR: you must give --modeldir or set DESIMODEL'
-            exit(1)
+            print('ERROR: you must give --modeldir or set DESIMODEL',
+                  file=sys.stderr)
+            return 1
     else:
-        datadir = opts.modeldir + '/data/'
+        datadir = os.path.join(opts.modeldir, 'data')
 
     if opts.outdir is None:
         opts.outdir = '.'
 
     #- Load telescope parameters
-    fx = open(datadir + "/desi.yaml")
+    fx = open(os.path.join(datadir, "desi.yaml"))
     params = yaml.load(fx)
     fx.close()
 
@@ -103,14 +105,18 @@ def main():
     params['area']['geometric_area'] *= 100**2
 
     #- Load atmospheric extinction
-    d = fitsio.read(datadir+'/inputs/throughput/ZenithExtinction-KPNO.fits', 'EXTINCTION')
+    d = fitsio.read(os.path.join(datadir, 'inputs', 'throughput',
+                                 'ZenithExtinction-KPNO.fits'), 'EXTINCTION')
     extinction = InterpolatedUnivariateSpline(d['WAVELENGTH'], d['EXTINCTION'])
 
     #- Load pre-spectrograph throughputs
-    thru = load_throughput(datadir + '/inputs/throughput/DESI-0347-throughput.txt')
+    thru = load_throughput(os.path.join(datadir, 'inputs', 'throughput',
+                                        'DESI-0347-throughput.txt'))
     fiberinput = dict()
     for objtype in ['elg', 'lrg', 'sky', 'star']:
-        fiberinput[objtype] = load_fiberinput(datadir + '/throughput/fiberloss-{}.dat'.format(objtype))
+        fiberinput[objtype] = load_fiberinput(os.path.join(datadir,
+                                                           'throughput',
+                                                           'fiberloss-{}.dat'.format(objtype)))
 
     #- Spectrograph throughputs
     spec = dict()
@@ -142,15 +148,16 @@ def main():
 
         outfile = opts.outdir + '/thru-{0}.fits'.format(channel)
         fitsio.write(outfile, data, header=hdr, clobber=True, extname='THROUGHPUT')
-        
+
         #- Write another header with fiberinput for multiple object types
         data = np.rec.fromarrays([ww, fiberinput['elg'](ww), fiberinput['lrg'](ww),
                                       fiberinput['star'](ww), fiberinput['sky'](ww)],
                                 names='wavelength,elg,lrg,star,sky')
         fitsio.write(outfile, data, extname='FIBERINPUT')
-        
+
     return 0
 #
 #
 #
-sys.exit(main())
+if __name__ == '__main__':
+    sys.exit(main())

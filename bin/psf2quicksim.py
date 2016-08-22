@@ -29,7 +29,7 @@ def img_fwhm(img):
     y = N.arange(img.shape[0])
     fwhm_x = calc_fwhm(x, img.sum(axis=0))
     fwhm_y = calc_fwhm(y, img.sum(axis=1))
-    
+
     return fwhm_x, fwhm_y
 
 def calc_neff(img, pixsize):
@@ -69,9 +69,9 @@ def quicksim_input_data(psffile, ww, ifiber=100):
             spot_neff[i,j] = calc_neff(spots[i,j], pixsize)
 
     #- For each spot wavelength, interpolate to the location of ifiber
-    fiber_fwhm_x = N.zeros(nwave) 
-    fiber_fwhm_y = N.zeros(nwave) 
-    fiber_neff = N.zeros(nwave) 
+    fiber_fwhm_x = N.zeros(nwave)
+    fiber_fwhm_y = N.zeros(nwave)
+    fiber_neff = N.zeros(nwave)
 
     for j in range(nwave):
         spx = InterpolatedUnivariateSpline(spotpos, spot_fwhm_x[:, j])
@@ -81,7 +81,7 @@ def quicksim_input_data(psffile, ww, ifiber=100):
 
         spn = InterpolatedUnivariateSpline(spotpos, spot_neff[:, j])
         fiber_neff[j] = spn(fiberpos[ifiber])
-    
+
 
     #- Interpolate onto ww wavelength grid
     spx = InterpolatedUnivariateSpline(spotwave, fiber_fwhm_x)
@@ -104,42 +104,42 @@ def quicksim_input_data(psffile, ww, ifiber=100):
     domain = (yhdr['WAVEMIN'], yhdr['WAVEMAX'])
     y = Legendre(ycoeff[ifiber], domain=domain)(ww)
     ang_per_row = N.gradient(ww) / N.gradient(y)
-    
+
     #- Convert fwhm_y from pixels to Angstroms
     fwhm_y *= ang_per_row
 
     data = N.rec.fromarrays([ww, fwhm_y, fwhm_x, neff, ang_per_row],
         names="wavelength,fwhm_wave,fwhm_spatial,neff_spatial,angstroms_per_row")
-        
+
     return data
-    
+
 #-------------------------------------------------------------------------
 desi = yaml.load(open(os.getenv('DESIMODEL')+'/data/desi.yaml'))
 
-import optparse
+import argparse
 
-parser = optparse.OptionParser(usage = "%prog [options]")
-parser.add_option("-o", "--output", type="string",  help="output fits file")
-opts, args = parser.parse_args()
+parser = argparse.ArgumentParser(usage = "%prog [options]")
+parser.add_option("-o", "--output", action='store',  help="output fits file")
+opts = parser.parse_args()
 
 if opts.output is None:
     opts.output = os.path.join(os.getenv('DESIMODEL'), 'data', 'specpsf', 'psf-quicksim.fits')
-    
+
 clobber = True
-for camera in ('b', 'r', 'z'):    
+for camera in ('b', 'r', 'z'):
     psffile = '{}/data/specpsf/psf-{}.fits'.format(os.getenv('DESIMODEL'), camera)
     psfsha1 = hashlib.sha1(open(psffile).read()).hexdigest()
     psfhdr = fitsio.read_header(psffile)
-    
+
     wavemin = psfhdr['WMIN_ALL']
     wavemax = psfhdr['WMAX_ALL']
 
     #- The final FWHM grid is interpolated on 0.5 Angstrom grid
     dw = 0.5
     ww = N.arange(wavemin, wavemax+dw/2, dw)
-        
+
     data = quicksim_input_data(psffile, ww)
-    
+
     #- output header
     hdr = list()
     ### hdr.append(dict(name='EXTNAME', value='QUICKSIM-'+camera.upper(), comment='QuickSim params for camera '+camera))
@@ -148,7 +148,7 @@ for camera in ('b', 'r', 'z'):
     hdr.append(dict(name='WMIN_ALL', value=wavemin, comment='Starting wavelength [Angstroms]'))
     hdr.append(dict(name='WMAX_ALL', value=wavemax, comment='Last wavelength [Angstroms]'))
     hdr.append(dict(name='WAVEUNIT', value='Angstrom', comment='Wavelengths in Angstroms'))
-    
+
     hdr.append(dict(name='TUNIT1', value='Angstrom', comment='Wavelength'))
     hdr.append(dict(name='TUNIT2', value='Angstrom', comment='Wavelength dispersion FWHM [Angstrom]'))
     hdr.append(dict(name='TUNIT3', value='pixel', comment='Cross dispersion FWHM [pixel]'))
@@ -163,10 +163,3 @@ for camera in ('b', 'r', 'z'):
 # import IPython
 # IPython.embed()
 #--- DEBUG ---
-
-
-
-    
-    
-
-

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Compute the Lyman-alpha S/N for the mean QSO at different g-mag, z, 
-as a function of wavelength. 
+Compute the Lyman-alpha S/N for the mean QSO at different g-mag, z,
+as a function of wavelength.
 It is the python version of the IDL code desi_quicklya.pro by D. Schlegel (LBL),
 and it is heavily based on quicksim.py by D. Kirkby (UC Irvine)
 
@@ -16,9 +16,6 @@ export PYTHONPATH=$DESIMODEL/py/:$PYTHONPATH
 
 Created 06-May-2015 by Andreu Font-Ribera (afont@lbl.gov)
 """
-
-from __future__ import absolute_import, division, print_function, unicode_literals
-# The line above will help with 2to3 support.
 
 import argparse
 import os
@@ -94,7 +91,7 @@ def main():
             srcSpectrum = sim.SpectralFluxDensity.loadFromTextFile(infile,
                             wavelengthColumn=wave_col,valuesColumn=flux_col,
                             extrapolatedValue=(0.))
-            # Rescale the spectrum to the requested magnitude 
+            # Rescale the spectrum to the requested magnitude
             if args.verbose:
                 print('Rescaling %s-band magnitude to %f' % (band,mag) )
             srcSpectrum = srcSpectrum.createRescaled(band,mag)
@@ -141,11 +138,11 @@ def main():
             totalSNR2 = np.sum(results.snrtot**2)
             # Print a summary of SNR statistics.
             if args.verbose:
-                snrSummary = 'Median S/N = %.3f, ' % medianSNR 
+                snrSummary = 'Median S/N = %.3f, ' % medianSNR
                 snrSummary += ' Total (S/N)^2 = %.1f' % totalSNR2
                 print(snrSummary)
 
-        # Save the results to file 
+        # Save the results to file
         fname = os.environ['DESIMODEL']+'/data/spectra/LyaSNR/sn-spec-lya-'
         fname += band+str(mag)+'-t'+str(int(args.exptime))+'.dat'
         if args.verbose: print('Saving results to %s' % fname)
@@ -161,7 +158,7 @@ def main():
             z_header = '# Wave'
             for zq in zqs: z_header += ' SN(z='+str(zq)+')'
             print(z_header,file=out)
-               
+
             for row in collect_results:
                 toprint = str('%9.2f' % row['wave'])
                 for zq in zqs:

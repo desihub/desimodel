@@ -103,7 +103,8 @@ This script will attempt to download and install the desimodel data/ directory.
 The script will attempt to attempt to install the data in the following
 locations, in order of preference:
 
-1. $DESIMODEL, that is, the directory specified by the environment variable.
+1. :envvar:`DESIMODEL`, that is, the directory specified by the
+   environment variable.
 2. The value set with the -d option on the command line.
 3. A directory relative to the file containing this script.  This directory
    is currently {0}.
