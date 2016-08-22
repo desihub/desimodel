@@ -55,7 +55,8 @@ class FocalPlane():
 
         Parameters
         ----------
-        ra, dec : :class:`float`
+        ra
+        dec : :class:`float`
             Telescope pointing in degrees.
         """
         self._check_radec(ra, dec)
@@ -230,7 +231,7 @@ class FocalPlane():
         return (object_ra, object_dec)
 
     def radec2pos(self, ra, dec):
-        """Identify which positioners cover (RA, Dec).
+        """Identify which positioners cover (`ra`, `dec`).
 
         If `ra`, `dec` are floats, return an array of positioner IDs that
         cover it. The array could be empty if no positioner covers that
@@ -239,6 +240,8 @@ class FocalPlane():
         If `ra`, `dec` are numpy arrays, return a list of arrays.
         The ith element is an array of positioner IDs that cover
         (ra[i], dec[i]).
+
+        .. warning:: This method is not implemented!
         """
         raise NotImplementedError
 
