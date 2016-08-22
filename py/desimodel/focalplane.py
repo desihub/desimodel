@@ -14,7 +14,7 @@ import numpy as np
 from astropy.io import fits
 
 
-class FocalPlane():
+class FocalPlane(object):
     """A class for modeling the DESI focal plane and converting between
     focal plane coordinates (in mm) and RA, Dec on the sky (in degrees).
     Provides utility functions for mapping which positioners cover
