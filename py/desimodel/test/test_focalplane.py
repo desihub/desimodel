@@ -11,6 +11,25 @@ class TestFocalplane(unittest.TestCase):
     """Test desimodel.focalplane.
     """
 
+    def test_check_radec(self):
+        """Test the RA, Dec bounds checking.
+        """
+        F = FocalPlane()
+        with self.assertRaises(ValueError):
+            F._check_radec(365.0, 0.0)
+        with self.assertRaises(ValueError):
+            F._check_radec(0.0, 100.0)
+
+    def test_set_tele_pointing(self):
+        """Test setting the RA, Dec by hand.
+        """
+        F = FocalPlane()
+        self.assertEqual(F.ra, 0.0)
+        self.assertEqual(F.dec, 0.0)
+        F.set_tele_pointing(180.0, 45.0)
+        self.assertEqual(F.ra, 180.0)
+        self.assertEqual(F.dec, 45.0)
+
     def test_xy2radec(self):
         """Test the consistency between the conversion functions
         radec2xy and xy2radec.

@@ -28,11 +28,11 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 import yaml
 
 #- Check options before doing anything
-import optparse
-parser = optparse.OptionParser(usage = "%prog [options]")
-parser.add_option("-o", "--outdir", type="string",  help="write fiberloss-*.dat files to outdir")
-parser.add_option("-t", "--test",   help="test convolution code", action="store_true")
-opts, args = parser.parse_args()
+import argparse
+parser = argparse.ArgumentParser(prog=sys.argv[0])
+parser.add_argument("-o", "--outdir", action='store', metavar='DIR', help="write fiberloss-*.dat files to DIR.")
+parser.add_argument("-t", "--test", action="store_true", help="test convolution code")
+opts = parser.parse_args()
 
 
 #- Read desi.yaml to get typical fiber size and plate scale
