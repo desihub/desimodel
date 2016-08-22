@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """Test desimodel.io.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 import os
 import unittest
 from .. import io
@@ -26,8 +25,8 @@ except KeyError:
     desimodel_available = False
     specter_available = False
     specter_message = desimodel_message
-#
-#
+
+
 class TestIO(unittest.TestCase):
     """Test desimodel.io.
     """
@@ -78,7 +77,7 @@ class TestIO(unittest.TestCase):
         """
         fiberpos = io.load_fiberpos()
         self.assertEqual(len(fiberpos), 5000)
-        #- Check workaround for astropy 1.0.x bug for lower -> upper col names
+        # Check workaround for astropy 1.0.x bug for lower -> upper col names.
         for key in ('FIBER', 'POSITIONER', 'SPECTROGRAPH', 'X', 'Y', 'Z'):
             self.assertIn(key, fiberpos.dtype.names)
             x = fiberpos[key]
@@ -92,6 +91,6 @@ class TestIO(unittest.TestCase):
         self.assertLess(len(t2), len(t1))
         self.assertEqual(len(set(t2.TILEID) - set(t1.TILEID)), 0)
 
-#- This runs all test* functions in any TestCase class in this file
+
 if __name__ == '__main__':
     unittest.main()
