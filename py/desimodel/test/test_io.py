@@ -3,6 +3,7 @@
 """Test desimodel.io.
 """
 import os
+import numpy as np
 import unittest
 from .. import io
 #
@@ -90,6 +91,25 @@ class TestIO(unittest.TestCase):
         t2 = io.load_tiles(onlydesi=True)
         self.assertLess(len(t2), len(t1))
         self.assertEqual(len(set(t2.TILEID) - set(t1.TILEID)), 0)
+
+    def test_get_tile_radec(self):
+        """Test grabbing tile information by tileID.
+        """
+        io_tile_cache = io._tiles
+        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
+                                      ('RA', 'f8'),
+                                      ('DEC', 'f8'),
+                                      ('IN_DESI', 'i2')])
+        tiles['TILEID'] = np.arange(4) + 1
+        tiles['RA'] = [0.0, 1.0, 2.0, 3.0]
+        tiles['DEC'] = [-2.0, -1.0, 1.0, 2.0]
+        tiles['IN_DESI'] = [0, 1, 1, 0]
+        io._tiles = tiles
+        ra, dec = io.get_tile_radec(0)
+        self.assertEqual((ra, dec), (0.0, 0.0))
+        ra, dec, = io.get_tile_radec(1)
+        self.assertEqual((ra, dec), (1.0, -1.0))
+        io._tiles = io_tile_cache
 
 
 if __name__ == '__main__':
