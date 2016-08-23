@@ -5,7 +5,8 @@ desimodel Release Notes
 0.4.6 (unreleased)
 ------------------
 
-* no changes yet
+* Moved test of focalplane code into the actual test suite.
+* Preparing for Python 3.
 
 0.4.5 (2016-07-15)
 ------------------

@@ -28,11 +28,11 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 import yaml
 
 #- Check options before doing anything
-import optparse
-parser = optparse.OptionParser(usage = "%prog [options]")
-parser.add_option("-o", "--outdir", type="string",  help="write fiberloss-*.dat files to outdir")
-parser.add_option("-t", "--test",   help="test convolution code", action="store_true")
-opts, args = parser.parse_args()
+import argparse
+parser = argparse.ArgumentParser(prog=sys.argv[0])
+parser.add_argument("-o", "--outdir", action='store', metavar='DIR', help="write fiberloss-*.dat files to DIR.")
+parser.add_argument("-t", "--test", action="store_true", help="test convolution code")
+opts = parser.parse_args()
 
 
 #- Read desi.yaml to get typical fiber size and plate scale
@@ -88,11 +88,11 @@ if opts.test :
     img_seeing2  = fftconvolve(img_seeing, img_seeing, mode='same')*pixscale**2
     img_seeing3  = 1./(2*pi*2*sigma**2)*numpy.exp(-(radius**2/2/(2*sigma**2)))
     if abs(numpy.sum(img_seeing2)/numpy.sum(img_seeing3)-1)>0.01 or abs(numpy.sum(img_seeing2*fiber_mask)/numpy.sum(img_seeing3*fiber_mask)-1)>0.01:
-        print "error in the convolution using numpy.fft.rfft2"
-        print numpy.sum(img_seeing)*pixscale**2,numpy.sum(img_seeing2)*pixscale**2,numpy.sum(img_seeing3)*pixscale**2
+        print("error in the convolution using numpy.fft.rfft2")
+        print(numpy.sum(img_seeing)*pixscale**2,numpy.sum(img_seeing2)*pixscale**2,numpy.sum(img_seeing3)*pixscale**2)
         sys.exit(12)
     else:
-        print "Convolution test passed; your scipy is OK"
+        print("Convolution test passed; your scipy is OK")
         sys.exit(0)
 
 waves      = numpy.arange(3500.,10001.,250.)
@@ -101,16 +101,16 @@ input_star = numpy.zeros(len(waves))
 input_elg  = numpy.zeros(len(waves))
 input_lrg  = numpy.zeros(len(waves))
 
-print "# Fiber input geometric acceptance"
-print "# {} arcsec seeing at {} Angstroms, Moffat beta={}".format(seeing, wave_ref, beta)
-print "# seeing wavelength dependence scales as ({}/lambda)^{}".format(wave_ref, seeing_scale)
-print "# removes {} arcsec existing Mayall blur then adds DESI blur".format(mayall_blur)
-print "# lateral positioner offset {} arcsec".format(offset)
-print "# point = point source, e.g. a star"
-print "# elg   = Exponential half-light radius {}".format(r_elg)
-print "# lrg   = de Vaucouleurs half-light radius {}".format(r_lrg)
-print "# "
-print "# wave   star     elg      lrg"
+print("# Fiber input geometric acceptance")
+print("# {} arcsec seeing at {} Angstroms, Moffat beta={}".format(seeing, wave_ref, beta))
+print("# seeing wavelength dependence scales as ({}/lambda)^{}".format(wave_ref, seeing_scale))
+print("# removes {} arcsec existing Mayall blur then adds DESI blur".format(mayall_blur))
+print("# lateral positioner offset {} arcsec".format(offset))
+print("# point = point source, e.g. a star")
+print("# elg   = Exponential half-light radius {}".format(r_elg))
+print("# lrg   = de Vaucouleurs half-light radius {}".format(r_lrg))
+print("# ")
+print("# wave   star     elg      lrg")
 
 #- Reference ELG and LRG images
 img_elg    = numpy.exp(-1.678*radius/r_elg)
@@ -121,37 +121,36 @@ for i, wave in enumerate(waves):
     fwhm       = site_seeing * (wave_ref/wave)**seeing_scale
     alpha      = 0.5 * fwhm / sqrt(2.**(1./beta) -1)
     img_seeing = (beta - 1) * (pi * alpha**2)**(-1) * (1 + radius**2/alpha**2)**(-beta)
-    
+
     #- convolve with telescope blur
     img_blur   = numpy.exp(-radius**2 / (2*blur(wave)**2))
     img_blur  /= numpy.sum(img_blur)
     img_seeing = fftconvolve(img_seeing, img_blur, mode='same')
-    
+
     #- Point source (star) input acceptance
     input_star[i] = numpy.sum(img_seeing*fiber_mask)/numpy.sum(img_seeing)
 
     # for comparison with fiberloss.pro, trim img_seeing
     # img_seeing *= ((abs(x)<0.2*npix*pixscale)&(abs(y)<0.2*npix*pixscale))
-    
+
     #- Convolve ELG image with seeing+blur
     #img_elg2   = numpy.fft.irfft2(numpy.fft.rfft2(img_elg) * numpy.fft.rfft2(img_seeing), img_elg.shape)
     #img_elg2   = numpy.roll(numpy.roll(img_elg2,npix/2+1,axis=0),npix/2+1,axis=1)*pixscale**2 # re-center and normalize
     img_elg2 = fftconvolve(img_elg, img_seeing, mode='same') * pixscale**2
-    
+
     #- ELG input acceptance
     input_elg[i] = numpy.sum(img_elg2*fiber_mask)/numpy.sum(img_elg2)
-    
+
     #- Convolve LRG image with seeing+blur
     #img_lrg2   = numpy.fft.irfft2(numpy.fft.rfft2(img_lrg) * numpy.fft.rfft2(img_seeing), img_lrg.shape)
     #img_lrg2   = numpy.roll(numpy.roll(img_lrg2,npix/2+1,axis=0),npix/2+1,axis=1)*pixscale**2 # re-center and normalize
     img_lrg2 = fftconvolve(img_lrg, img_seeing, mode='same') * pixscale**2
-        
+
     #- LRG input acceptance
     input_lrg[i] = numpy.sum(img_lrg2*fiber_mask)/numpy.sum(img_lrg2)
-    
-    print "{:7.1f} {:8.5f} {:8.5f} {:8.5f}".format(\
-        wave, input_star[i], input_elg[i], input_lrg[i])
-    
+
+    print("{:7.1f} {:8.5f} {:8.5f} {:8.5f}".format(wave, input_star[i], input_elg[i], input_lrg[i]))
+
 #- Write output files if --outdir is given
 if opts.outdir is not None:
     header = """\
@@ -164,50 +163,50 @@ if opts.outdir is not None:
 
     #- Point source / star
     fx = open(opts.outdir+'/fiberloss-star.dat', 'w')
-    print >> fx, header
-    print >> fx, "#"
-    print >> fx, "# Star / point-source"
-    print >> fx, "#"
-    print >> fx, "# Wavelength FiberAcceptance"
+    print(header, file=fx)
+    print("#", file=fx)
+    print("# Star / point-source", file=fx)
+    print("#", file=fx)
+    print("# Wavelength FiberAcceptance", file=fx)
     for w, t in zip(waves, input_star):
-        print >> fx, "{:7.1f} {:8.5f}".format(w, t)
+        print("{:7.1f} {:8.5f}".format(w, t), file=fx)
     fx.close()
 
     #- Also write out QSOs as if they are point sources
     fx = open(opts.outdir+'/fiberloss-qso.dat', 'w')
-    print >> fx, header
-    print >> fx, "#"
-    print >> fx, "# QSO, treating as a point-source"
-    print >> fx, "#"
-    print >> fx, "# Wavelength FiberAcceptance"
+    print(header, file=fx)
+    print("#", file=fx)
+    print("# QSO, treating as a point-source", file=fx)
+    print("#", file=fx)
+    print("# Wavelength FiberAcceptance", file=fx)
     for w, t in zip(waves, input_star):
-        print >> fx, "{:7.1f} {:8.5f}".format(w, t)
+        print("{:7.1f} {:8.5f}".format(w, t), file=fx)
     fx.close()
 
     fx = open(opts.outdir+'/fiberloss-elg.dat', 'w')
-    print >> fx, header
-    print >> fx, "#"
-    print >> fx, "# ELG with exponential half-light radius={} arcsec".format(r_elg)
-    print >> fx, "#"
-    print >> fx, "# Wavelength FiberAcceptance"
+    print(header, file=fx)
+    print("#", file=fx)
+    print("# ELG with exponential half-light radius={} arcsec".format(r_elg), file=fx)
+    print("#", file=fx)
+    print("# Wavelength FiberAcceptance", file=fx)
     for w, t in zip(waves, input_elg):
-        print >> fx, "{:7.1f} {:8.5f}".format(w, t)
+        print("{:7.1f} {:8.5f}".format(w, t), file=fx)
     fx.close()
 
     fx = open(opts.outdir+'/fiberloss-lrg.dat', 'w')
-    print >> fx, header
-    print >> fx, "#"
-    print >> fx, "# LRG with de Vaucouleurs half-light radius={} arcsec".format(r_lrg)
-    print >> fx, "#"
-    print >> fx, "# Wavelength FiberAcceptance"
+    print(header, file=fx)
+    print("#", file=fx)
+    print("# LRG with de Vaucouleurs half-light radius={} arcsec".format(r_lrg), file=fx)
+    print("#", file=fx)
+    print("# Wavelength FiberAcceptance", file=fx)
     for w, t in zip(waves, input_lrg):
-        print >> fx, "{:7.1f} {:8.5f}".format(w, t)
+        print("{:7.1f} {:8.5f}".format(w, t), file=fx)
     fx.close()
 
     fx = open(opts.outdir+'/fiberloss-sky.dat', 'w')
-    print >> fx, "# Sky and calibration lamp spectra do not have fiber input losses"
-    print >> fx, "#"
-    print >> fx, "# Wavelength FiberAcceptance"
+    print("# Sky and calibration lamp spectra do not have fiber input losses", file=fx)
+    print("#", file=fx)
+    print("# Wavelength FiberAcceptance", file=fx)
     for w, t in zip(waves, input_sky):
-        print >> fx, "{:7.1f} {:8.5f}".format(w, t)
+        print("{:7.1f} {:8.5f}".format(w, t), file=fx)
     fx.close()

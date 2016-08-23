@@ -6,7 +6,6 @@ desimodel.trim
 
 Code for trimming desimodel/data into smaller files.
 """
-from __future__ import absolute_import, division, print_function
 from astropy.io.fits import HDUList, PrimaryHDU, ImageHDU, BinTableHDU
 from astropy.io import fits
 import numpy as np
@@ -122,11 +121,11 @@ def trim_throughput(indir, outdir):
     assert os.path.basename(indir) == 'throughput'
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-    
+
     for targettype in ('elg', 'lrg', 'perfect', 'qso', 'sky', 'star'):
         filename = 'fiberloss-{}.dat'.format(targettype)
         shutil.copy(os.path.join(indir, filename), os.path.join(outdir, filename))
-    
+
     for filename in ['thru-b.fits', 'thru-r.fits', 'thru-z.fits']:
         fx = fits.open(indir+'/'+filename)
         hdus = HDUList()

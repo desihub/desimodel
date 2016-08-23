@@ -6,9 +6,6 @@ desimodel.io
 
 I/O utility functions for files in desimodel.
 """
-#
-from __future__ import absolute_import, division, print_function
-# The line above will help with 2to3 support.
 import os
 from astropy.io import fits
 import yaml
@@ -36,7 +33,7 @@ def load_throughput(channel):
 
     Parameters
     ----------
-    channel : str
+    channel : {'b', 'r', 'z'}
         Spectrograph channel.
     """
     channel = channel.lower()
@@ -54,7 +51,7 @@ def load_psf(channel):
 
     Parameters
     ----------
-    channel : str
+    channel : {'b', 'r', 'z'}
         Spectrograph channel.
     """
     channel = channel.lower()
@@ -102,7 +99,7 @@ def load_tiles(onlydesi=True):
 
     Parameters
     ----------
-    onlydesi : bool, optional
+    onlydesi : :class:`bool`, optional
         If `onlydesi` is ``True``, trim to just the tiles in the DESI footprint.
     """
     global _tiles

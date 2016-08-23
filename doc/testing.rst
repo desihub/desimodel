@@ -31,16 +31,16 @@ are any additional changes to the trunkk.
 How to Create a Test Branch
 ---------------------------
 
-1. Create a branch in the standard way:
+1. Create a branch in the standard way::
 
     base=https://desi.lbl.gov/svn/code/desimodel
     svn copy $base/trunk $base/branches/test-1.0
 
-2. Check out the branch, if you did not create it in your own checkout.
+2. Check out the branch, if you did not create it in your own checkout::
 
     svn checkout $base/branches/test-1.0
 
-3. Change to the branch directory.
+3. Change to the branch directory::
 
     cd test-1.0
 
@@ -59,7 +59,7 @@ How to Create a Test Branch
     svn move datalite data
     svn commit -m "Rename datalite/ back to data/"
 
-7. Now tests can get this lightweight branch on-the-fly with
+7. Now tests can get this lightweight branch on-the-fly with::
 
     svn export $base/branches/test-1.0
 

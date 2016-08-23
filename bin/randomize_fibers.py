@@ -20,16 +20,17 @@ def main():
     import numpy as np
     import fitsio
     #- input parameters
-    import optparse
+    import argparse
+    from sys import argv
 
-    parser = optparse.OptionParser(usage = "%prog [options]")
-    parser.add_option("-i", "--input", type="string",
+    parser = argparse.ArgumentParser(prog=argv[0])
+    parser.add_argument("-i", "--input", action='store', metavar='FILE',
         default='pos_on_z1.txt', help="positioner location filename")
-    parser.add_option("-o", "--output", type="string",
+    parser.add_argument("-o", "--output", action='store', metavar='FILE',
         default='fiberpos.txt', help="fiber position filename")
-    parser.add_option("--debug",   help="debug with ipython prompt at end", action="store_true")
+    parser.add_argument("--debug",   help="debug with ipython prompt at end", action="store_true")
 
-    opts, args = parser.parse_args()
+    opts = parser.parse_args()
 
     #- Random but reproducible
     seed = 2
@@ -102,7 +103,7 @@ def main():
         pos = pos[ii]
 
         #- Fill fiberpos array
-        ii = range(i*nfib_per_spectro, (i+1)*nfib_per_spectro)
+        ii = list(range(i*nfib_per_spectro, (i+1)*nfib_per_spectro))
         fiberpos['fiber'][ii] = ifiber + i*nfib_per_spectro
         fiberpos['positioner'][ii] = pos['n']
         fiberpos['spectrograph'][ii] = i
@@ -168,4 +169,3 @@ def main():
 #
 #
 exit(main())
-

@@ -6,57 +6,64 @@ desimodel.install
 
 Install data files not handled by pip install.
 """
-#
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 
 def default_install_dir():
     """Return the default install directory.  Assumes this file lives in
     a 'site-packages' directory.
+
+    Returns
+    -------
+    :class:`str`
+        The path to the install directory.
     """
     from os.path import dirname
     return dirname(dirname(dirname(dirname(dirname(__file__)))))
 
 
 def svn_export(desimodel_version=None):
-    """Create a svn export command suitable for downloading a particular
-    desimodel version.
+    """Create a :command:`svn export` command suitable for downloading a
+    particular desimodel version.
 
     Parameters
     ----------
-    desimodel_version : str, optional
+    desimodel_version : :class:`str`, optional
         The version to download.  If not provided, the version of the package
         itself will be used.
 
     Returns
     -------
-    list
-        An svn command in list form, suitable for passing to subprocess.Popen.
+    :class:`list`
+        A :command:`svn` command in list form, suitable for passing to
+        :class:`subprocess.Popen`.
     """
     from . import __version__ as this_version
     if desimodel_version is None:
         desimodel_version = this_version
-    if desimodel_version in ('trunk', 'master') or 'branches/' in desimodel_version:
+    if (desimodel_version in ('trunk', 'master') or
+        'branches/' in desimodel_version):
         export_version = desimodel_version
     else:
         export_version = 'tags/' + desimodel_version
-    return ["svn", "export", "https://desi.lbl.gov/svn/code/desimodel/{0}/data".format(export_version)]
+    return ["svn", "export",
+            ("https://desi.lbl.gov/svn/code/desimodel/" +
+             "{0}/data").format(export_version)]
 
 
-def install(desimodel=None,version=None):
+def install(desimodel=None, version=None):
     """Primary workhorse function.
 
     Parameters
     ----------
-    desimodel : str, optional
+    desimodel : :class:`str`, optional
         Allows the install directory to be explicitly set.
-    version : str, optional
+    version : :class:`str`, optional
         Allows the desimodel version to be explicitly set.
 
     Returns
     -------
-    int
-        The return code of the svn export command.
+    :class:`int`
+        The return code of the :command:`svn export` command.
     """
     from os import chdir, environ
     from os.path import exists, join
@@ -69,7 +76,8 @@ def install(desimodel=None,version=None):
         else:
             install_dir = default_install_dir()
     if exists(join(install_dir, 'data')):
-        raise ValueError("{0} already exists!".format(join(install_dir, 'data')))
+        raise ValueError("{0} already exists!".format(join(install_dir,
+                                                           'data')))
     chdir(install_dir)
     command = svn_export(version)
     # print(' '.join(command))
@@ -80,7 +88,12 @@ def install(desimodel=None,version=None):
 
 
 def main():
-    """Entry point for the install_desimodel_data script.
+    """Entry point for the :command:`install_desimodel_data` script.
+
+    Returns
+    -------
+    :class:`int`
+        An integer suitable for passing to :func:`sys.exit`.
     """
     from sys import argv
     from argparse import ArgumentParser
@@ -90,7 +103,8 @@ This script will attempt to download and install the desimodel data/ directory.
 The script will attempt to attempt to install the data in the following
 locations, in order of preference:
 
-1. $DESIMODEL, that is, the directory specified by the environment variable.
+1. :envvar:`DESIMODEL`, that is, the directory specified by the
+   environment variable.
 2. The value set with the -d option on the command line.
 3. A directory relative to the file containing this script.  This directory
    is currently {0}.
@@ -99,15 +113,16 @@ If the data directory already exists, this script will not do anything.
 """.format(default_install_dir())
     parser = ArgumentParser(description=desc, prog=argv[0])
     parser.add_argument('-d', '--desimodel', action='store', dest='desimodel',
-        metavar='DESIMODEL',
-        help=('Place the data/ directory in this directory.  '+
-        'In other words, the environment variable DESIMODEL should be set to this directory.'))
+                        metavar='DESIMODEL',
+                        help=('Place the data/ directory in this directory. ' +
+                              'In other words, the environment variable ' +
+                              'DESIMODEL should be set to this directory.'))
     parser.add_argument('-D', '--desimodel-version', action='store',
-        dest='desimodel_version', metavar='VERSION',
-        help='Explicitly set the version to download.')
+                        dest='desimodel_version', metavar='VERSION',
+                        help='Explicitly set the version to download.')
     options = parser.parse_args()
     try:
-        status = install(options.desimodel,options.desimodel_version)
+        status = install(options.desimodel, options.desimodel_version)
     except ValueError as e:
         print(e.message)
         return 1

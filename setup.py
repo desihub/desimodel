@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
-from __future__ import absolute_import, division, print_function
 #
 # Standard imports
 #
 import glob
 import os
 import sys
+#
+# setuptools' sdist command ignores MANIFEST.in
+#
 from setuptools import setup, find_packages
+from distutils.command.sdist import sdist as DistutilsSdist
 #
 # DESI support code.
 #
@@ -52,16 +55,16 @@ setup_keywords['zip_safe'] = False
 setup_keywords['use_2to3'] = False
 setup_keywords['packages'] = find_packages('py')
 setup_keywords['package_dir'] = {'':'py'}
-setup_keywords['cmdclass'] = {'version': DesiVersion,'test': DesiTest}
+setup_keywords['cmdclass'] = {'version': DesiVersion, 'test': DesiTest, 'sdist': DistutilsSdist}
 setup_keywords['test_suite']='{name}.test.{name}_test_suite.{name}_test_suite'.format(**setup_keywords)
 #
 # Autogenerate command-line scripts.
 #
 setup_keywords['entry_points'] = {'console_scripts':['install_desimodel_data = desimodel.install:main']}
 #
-# Add internal data directories
+# Add internal data directories.
 #
-setup_keywords['package_data'] = {'desimodel.test': ['data/*']}
+# setup_keywords['package_data'] = {'desimodel.test': ['t/*']}
 #
 # Run setup command.
 #

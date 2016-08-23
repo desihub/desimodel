@@ -29,23 +29,21 @@ def main():
     import yaml
 
     #- Load options
-    import optparse
-    parser = optparse.OptionParser(usage = "%prog [options] spotfiles*.fits")
-    # parser.add_option("-p", "--prefix", type="string",  help="input psf files prefix, including path")
-    parser.add_option("-o", "--outpsf", type="string",  help="output PSF file")
-    # parser.add_option("-t", "--throughput", type="string",  help="input throughput file to embed with PSF")
-    parser.add_option("-d", "--debug",  help="start ipython prompt when done", action="store_true")
-    parser.add_option("-c", "--camera", type="string",  help="camera: b, r, or z")
+    import argparse
+    parser = argparse.ArgumentParser(prog=sys.argv[0])
+    # parser.add_argument("-p", "--prefix", action='store',  help="input psf files prefix, including path")
+    parser.add_argument("-o", "--outpsf", action='store',  help="output PSF file",
+                        default='psf-blat.fits')
+    # parser.add_argument("-t", "--throughput", action='store',  help="input throughput file to embed with PSF")
+    parser.add_argument("-d", "--debug", action="store_true",  help="start ipython prompt when done")
+    parser.add_argument("-c", "--camera", action='store',  help="camera: b, r, or z")
+    parser.add_argument('spotfiles', action='store', help='Input spot files', narg='+')
 
-    opts, spotfiles = parser.parse_args()
+    opts = parser.parse_args()
 
-    if len(spotfiles) == 0:
-        print >> sys.stderr, "ERROR: no input spot files given"
-        sys.exit(1)
-
-    #- for debugging convenience
-    if opts.outpsf is None:
-        opts.outpsf = "psf-blat.fits"
+    if len(opts.spotfiles) == 0:
+        print("ERROR: no input spot files given", file=sys.stderr)
+        return 1
 
     #- Read DESI parameters
     params = yaml.load(open(os.getenv('DESIMODEL')+'/data/desi.yaml'))
@@ -84,7 +82,7 @@ def main():
     #- Determine grid of wavelengths and fiber positions for the spots
     #- Use set() to get unique values, then convert to sorted array
     #- spotgrid maps (fiberpos, wavelength) -> filename
-    print "Determining wavelength and slit position grid"
+    print("Determining wavelength and slit position grid")
     wavelength = set()
     spotpos = set()
     spotgrid = dict()
@@ -102,7 +100,7 @@ def main():
     spotpos = N.array( sorted(spotpos) )
 
     #- Load grid of spots, and the x,y CCD pixel location of those spots
-    print "Reading spots"
+    print("Reading spots")
     nx = hdr['NAXIS1']
     ny = hdr['NAXIS2']
     np = len(spotpos)
@@ -124,7 +122,7 @@ def main():
             dx = xmid - xc
             dy = ymid - yc
             spots[i,j] = ndimage.shift(pix, (dy,dx))
-            
+
             #- Reference pixel in FITS file
             xref = hdr['CRPIX1']-1
             yref = hdr['CRPIX2']-1
@@ -152,7 +150,7 @@ def main():
         poly = Legendre.fit(spoty[i], wavelength, deg=5, domain=(0, NumPixY))
         wmin = min(wmin, poly(0))
         wmax = max(wmax, poly(NumPixY-1))
-        print i, wmin, wmax, poly(0), poly(NumPixY-1)
+        print(i, wmin, wmax, poly(0), poly(NumPixY-1))
 
     #- Round down/up to nearest Angstrom
     wmin = int(wmin)
@@ -178,15 +176,15 @@ def main():
     wmin_all = 0
     wmax_all = 1e8
     ww = N.arange(wmin, wmax)
-    
+
     ycoeff = N.zeros( (nspec, ydeg+1) )
     for i in range(nspec):
         poly = Legendre.fit(wavelength, y_vs_w[i], deg=ydeg, domain=(wmin,wmax))
         ycoeff[i] = poly.coef
-        
+
         wmin_all = max(wmin_all, N.interp(0, poly(ww), ww))
         wmax_all = min(wmax_all, N.interp(NumPixY-1, poly(ww), ww))
-        
+
     #- Round up/down to integer wavelengths
     wmin_all = int(wmin_all)
     wmax_all = int(wmax_all+1)
@@ -208,7 +206,7 @@ def main():
 
     #-------------------------------------------------------------------------
     #- Write to fits file
-    print "Writing", opts.outpsf
+    print("Writing", opts.outpsf)
 
     #- Use first spot file for representative header to pass keywords through
     hdr = fitsio.read_header(spotfiles[0])
