@@ -129,10 +129,10 @@ Full Documentation
 Please visit `desimodel on Read the Docs`_
 
 .. image:: https://readthedocs.org/projects/desimodel/badge/?version=latest
-    :target: http://desimodel.readthedocs.org/en/latest/
+    :target: http://desimodel.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
-.. _`desimodel on Read the Docs`: http://desimodel.readthedocs.org/en/latest/
+.. _`desimodel on Read the Docs`: http://desimodel.readthedocs.io/en/latest/
 
 Travis Build Status
 -------------------
