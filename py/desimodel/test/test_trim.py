@@ -3,8 +3,8 @@
 """Test desimodel.trim.
 """
 from os.path import abspath, dirname
+import numpy as np
 import unittest
-from .. import __version__ as desimodel_version
 from ..trim import inout, rebin_image
 
 
