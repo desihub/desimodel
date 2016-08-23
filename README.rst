@@ -128,7 +128,7 @@ Full Documentation
 
 Please visit `desimodel on Read the Docs`_
 
-.. image:: https://readthedocs.org/projects/desimodel/badge/?version=latest
+.. image:: http://readthedocs.org/projects/desimodel/badge/?version=latest
     :target: http://desimodel.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
