@@ -96,10 +96,10 @@ class TestIO(unittest.TestCase):
         """Test grabbing tile information by tileID.
         """
         io_tile_cache = io._tiles
-        tiles = np.recarray(np.zeros((4,), dtype=[('TILEID', 'i2'),
-                                                  ('RA', 'f8'),
-                                                  ('DEC', 'f8'),
-                                                  ('IN_DESI', 'i2')]))
+        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
+                                      ('RA', 'f8'),
+                                      ('DEC', 'f8'),
+                                      ('IN_DESI', 'i2')])
         t = tiles.view(np.recarray)
         t.TILEID = np.arange(4) + 1
         t.RA = [0.0, 1.0, 2.0, 3.0]
