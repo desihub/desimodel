@@ -28,7 +28,7 @@ def svn_export(desimodel_version=None):
     Parameters
     ----------
     desimodel_version : :class:`str`, optional
-        The version to download or one of: trunk, master, or something of the
+        The version X.Y.Z to download, trunk, or something of the
         form branches/... Defaults to trunk.
 
     Returns
@@ -39,9 +39,8 @@ def svn_export(desimodel_version=None):
     """
     from . import __version__ as this_version
     if desimodel_version is None:
-        desimodel_version = 'trunk'
-    if (desimodel_version in ('trunk', 'master') or
-        'branches/' in desimodel_version):
+        export_version = 'trunk'
+    elif 'branches/' in desimodel_version:
         export_version = desimodel_version
     else:
         export_version = 'tags/' + desimodel_version
