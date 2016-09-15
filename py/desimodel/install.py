@@ -40,7 +40,7 @@ def svn_export(desimodel_version=None):
     from . import __version__ as this_version
     if desimodel_version is None:
         export_version = 'trunk'
-    elif 'branches/' in desimodel_version:
+    elif desimodel_version is 'truck' or 'branches/' in desimodel_version:
         export_version = desimodel_version
     else:
         export_version = 'tags/' + desimodel_version
