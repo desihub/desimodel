@@ -28,10 +28,8 @@ def svn_export(desimodel_version=None):
     Parameters
     ----------
     desimodel_version : :class:`str`, optional
-        The version to download.  If not provided, a best guess at the latest
-        tag of the package itself will be used, which is based on the current
-        package version with any .devNN suffix removed. Instead of a tag,
-        you can specify trunk, master, or something of the form branches/...
+        The version to download or one of: trunk, master, or something of the
+        form branches/... Defaults to trunk.
 
     Returns
     -------
@@ -41,14 +39,7 @@ def svn_export(desimodel_version=None):
     """
     from . import __version__ as this_version
     if desimodel_version is None:
-        desimodel_version = this_version
-        version_path = this_version.split('.')
-        if len(version_path) < 3:
-            # We expect at least A.B.C and possibly A.B.C.D.
-            raise RuntimeError('Unable to interpret version string {0}.'
-                               .format(this_version))
-        # Ignore any devNN suffix.
-        desimodel_version = '.'.join(version_path[:3])
+        desimodel_version = 'trunk'
     if (desimodel_version in ('trunk', 'master') or
         'branches/' in desimodel_version):
         export_version = desimodel_version
@@ -132,7 +123,7 @@ If the data directory already exists, this script will not do anything.
                         help='Explicitly set the version to download.')
     options = parser.parse_args()
     try:
-        status = install(options.desimodel, options.desimodel_version)
+        install(options.desimodel, options.desimodel_version)
     except (ValueError, RuntimeError) as e:
         print(e.message)
         return 1
