@@ -24,7 +24,8 @@ class TestInstall(unittest.TestCase):
         """
         base_url = "https://desi.lbl.gov/svn/code/desimodel/{0}/data"
         cmd = svn_export()
-        self.assertEqual(cmd[2], base_url.format('tags/'+desimodel_version))
+        default_tag = '.'.join(desimodel_version.split('.')[:3])
+        self.assertEqual(cmd[2], base_url.format('tags/'+default_tag))
         cmd = svn_export('trunk')
         self.assertEqual(cmd[2], base_url.format('trunk'))
         cmd = svn_export('branches/v3')
