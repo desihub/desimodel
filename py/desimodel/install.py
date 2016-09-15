@@ -44,9 +44,10 @@ def svn_export(desimodel_version=None):
         desimodel_version = this_version
         version_path = this_version.split('.')
         if len(version_path) < 3:
-            # Ignore any devNN suffix.
+            # We expect at least A.B.C and possibly A.B.C.D.
             raise RuntimeError('Unable to interpret version string {0}.'
                                .format(this_version))
+        # Ignore any devNN suffix.
         desimodel_version = '.'.join(version_path[:3])
     if (desimodel_version in ('trunk', 'master') or
         'branches/' in desimodel_version):
