@@ -28,8 +28,8 @@ def svn_export(desimodel_version=None):
     Parameters
     ----------
     desimodel_version : :class:`str`, optional
-        The version to download.  If not provided, the version of the package
-        itself will be used.
+        The version X.Y.Z to download, trunk, or something of the
+        form branches/... Defaults to trunk.
 
     Returns
     -------
@@ -39,9 +39,8 @@ def svn_export(desimodel_version=None):
     """
     from . import __version__ as this_version
     if desimodel_version is None:
-        desimodel_version = this_version
-    if (desimodel_version in ('trunk', 'master') or
-        'branches/' in desimodel_version):
+        export_version = 'trunk'
+    elif desimodel_version is 'trunk' or 'branches/' in desimodel_version:
         export_version = desimodel_version
     else:
         export_version = 'tags/' + desimodel_version
@@ -60,10 +59,10 @@ def install(desimodel=None, version=None):
     version : :class:`str`, optional
         Allows the desimodel version to be explicitly set.
 
-    Returns
-    -------
-    :class:`int`
-        The return code of the :command:`svn export` command.
+    Raises
+    ------
+    :class:`RuntimeError`
+        Standard error output from svn export command when status is non-zero.
     """
     from os import chdir, environ
     from os.path import exists, join
@@ -84,7 +83,8 @@ def install(desimodel=None, version=None):
     proc = Popen(command, stdout=PIPE, stderr=PIPE)
     out, err = proc.communicate()
     status = proc.returncode
-    return status
+    if status != 0:
+        raise RuntimeError(err.rstrip())
 
 
 def main():
@@ -122,8 +122,8 @@ If the data directory already exists, this script will not do anything.
                         help='Explicitly set the version to download.')
     options = parser.parse_args()
     try:
-        status = install(options.desimodel, options.desimodel_version)
-    except ValueError as e:
+        install(options.desimodel, options.desimodel_version)
+    except (ValueError, RuntimeError) as e:
         print(e.message)
         return 1
-    return status
+    return 0

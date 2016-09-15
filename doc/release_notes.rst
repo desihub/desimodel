@@ -7,6 +7,8 @@ desimodel Release Notes
 
 * Moved test of focalplane code into the actual test suite.
 * Preparing for Python 3.
+* Changed default svn version to trunk and added error handling to
+  install_desimodel_data.
 
 0.4.5 (2016-07-15)
 ------------------
