@@ -108,7 +108,7 @@ alternative designs.  These will never be merged into trunk but we
 will keep them around for the record:
 
 altccd
-    500 μm *versus* 250 μm thick CCDs.
+    500 micron *versus* 250 micron thick CCDs.
 
 bb
     Recreating assumptions used during early BigBOSS projections.
