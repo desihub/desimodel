@@ -9,6 +9,7 @@ desimodel Release Notes
 * Preparing for Python 3.
 * Changed default svn version to trunk and added error handling to
   install_desimodel_data.
+* Update template module file to reflect DESI+Anaconda infrastructure.
 
 0.4.5 (2016-07-15)
 ------------------
