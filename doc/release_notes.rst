@@ -10,6 +10,8 @@ desimodel Release Notes
 * Changed default svn version to trunk and added error handling to
   install_desimodel_data.
 * Update template module file to reflect DESI+Anaconda infrastructure.
+* Add code to generate random centroid offsets in desimodel.focalplane.
+* Add jupyter notebook documenting new throughput files of PR#29.
 
 0.4.5 (2016-07-15)
 ------------------
