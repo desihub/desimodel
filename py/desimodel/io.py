@@ -88,7 +88,14 @@ def load_fiberpos():
     global _fiberpos
     if _fiberpos is None:
         fiberposfile = os.path.join(os.environ['DESIMODEL'],'data','focalplane','fiberpos.fits')
-        _fiberpos = np.array(fits.getdata(fiberposfile, upper=True))
+        with fits.open(fiberposfile) as hdulist:
+            _fiberpos = hdulist[1].data
+        if 'FIBER' not in _fiberpos.dtype.names:
+            #
+            # File contains lower-case column names, but we want upper-case.
+            #
+            for i, key in enumerate(_fiberpos.dtype.names):
+                _fiberpos.columns[i].name = key.upper()
     return _fiberpos
 #
 #
@@ -105,7 +112,8 @@ def load_tiles(onlydesi=True):
     global _tiles
     if _tiles is None:
         footprint = os.path.join(os.environ['DESIMODEL'],'data','footprint','desi-tiles.fits')
-        _tiles = fits.getdata(footprint)
+        with fits.open(footprint) as hdulist:
+            _tiles = hdulist[1].data
     if onlydesi:
         return _tiles[_tiles['IN_DESI'] > 0]
     else:
