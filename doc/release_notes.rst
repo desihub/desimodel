@@ -13,6 +13,7 @@ desimodel Release Notes
 * Add code to generate random centroid offsets in :mod:`desimodel.focalplane`.
 * Add jupyter notebook documenting new throughput files of `PR#29`_.
 * Use Astropy-recommended method of reading FITS data tables.
+* Remove reference to Travis scripts in MANIFEST.in.
 
 .. _`PR#29`: https://github.com/desihub/desimodel/pull/29
 

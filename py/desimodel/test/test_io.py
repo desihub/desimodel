@@ -87,10 +87,22 @@ class TestIO(unittest.TestCase):
     def test_tiles(self):
         """Test loading of tile files.
         """
+        self.assertIsNone(io._tiles)
         t1 = io.load_tiles(onlydesi=False)
+        tile_cache_id1 = id(io._tiles)
+        self.assertIsNotNone(io._tiles)
         t2 = io.load_tiles(onlydesi=True)
+        tile_cache_id2 = id(io._tiles)
+        self.assertEqual(tile_cache_id1, tile_cache_id2)
+        self.assertIs(t1['OBSCONDITIONS'].dtype, np.dtype(np.uint16))
+        # self.assertIs(t2['OBSCONDITIONS'].dtype, np.dtype(np.uint16))
         self.assertLess(len(t2), len(t1))
         self.assertEqual(len(set(t2.TILEID) - set(t1.TILEID)), 0)
+        t3 = io.load_tiles(onlydesi=False)
+        tile_cache_id3 = id(io._tiles)
+        self.assertEqual(tile_cache_id1, tile_cache_id3)
+        self.assertIs(t3['OBSCONDITIONS'].dtype, np.dtype(np.uint16))
+
 
     def test_get_tile_radec(self):
         """Test grabbing tile information by tileID.
