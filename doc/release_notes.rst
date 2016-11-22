@@ -2,7 +2,12 @@
 desimodel Release Notes
 =======================
 
-0.4.6 (unreleased)
+0.5.1 (unreleased)
+------------------
+
+* No changes yet
+
+0.5.0 (2016-11-21)
 ------------------
 
 * Moved test of focalplane code into the actual test suite.
