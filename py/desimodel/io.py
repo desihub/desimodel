@@ -114,6 +114,12 @@ def load_tiles(onlydesi=True):
         footprint = os.path.join(os.environ['DESIMODEL'],'data','footprint','desi-tiles.fits')
         with fits.open(footprint) as hdulist:
             _tiles = hdulist[1].data
+        #
+        # Temporary workaround for problem identified in
+        # https://github.com/desihub/desimodel/issues/30
+        #
+        if any([c.bzero is not None for c in _tiles.columns]):
+            foo = [_tiles[k].dtype for k in _tiles.dtype.names]
     if onlydesi:
         return _tiles[_tiles['IN_DESI'] > 0]
     else:

@@ -95,7 +95,7 @@ class TestIO(unittest.TestCase):
         tile_cache_id2 = id(io._tiles)
         self.assertEqual(tile_cache_id1, tile_cache_id2)
         self.assertIs(t1['OBSCONDITIONS'].dtype, np.dtype(np.uint16))
-        # self.assertIs(t2['OBSCONDITIONS'].dtype, np.dtype(np.uint16))
+        self.assertIs(t2['OBSCONDITIONS'].dtype, np.dtype(np.uint16))
         self.assertLess(len(t2), len(t1))
         self.assertEqual(len(set(t2.TILEID) - set(t1.TILEID)), 0)
         t3 = io.load_tiles(onlydesi=False)
