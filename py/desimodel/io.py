@@ -116,7 +116,7 @@ def load_tiles(onlydesi=True, extra=False):
 
     #- Filter out PROGRAM=EXTRA tiles if requested
     if not extra:
-        subset &= ~np.char.startswith(_tiles['PROGRAM'], 'EXTRA')
+        subset &= ~np.char.startswith(_tiles['PROGRAM'], 'EXTRA')            
 
     if np.all(subset):
         return _tiles
