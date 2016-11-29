@@ -94,22 +94,34 @@ def load_fiberpos():
 #
 #
 _tiles = None
-def load_tiles(onlydesi=True):
+def load_tiles(onlydesi=True, extra=False):
     """Return DESI tiles structure from desimodel/data/footprint/desi-tiles.fits
 
-    Parameters
-    ----------
-    onlydesi : :class:`bool`, optional
-        If `onlydesi` is ``True``, trim to just the tiles in the DESI footprint.
+    Options
+    -------
+    onlydesi : :class:`bool` (default False)
+        If ``True``, trim to just the tiles in the DESI footprint.
+    extra : :class:`bool`, (default True)
+        If ``True``, include extra layers with PROGRAM='EXTRA'.
     """
     global _tiles
     if _tiles is None:
         footprint = os.path.join(os.environ['DESIMODEL'],'data','footprint','desi-tiles.fits')
         _tiles = fits.getdata(footprint)
+
+    #- Filter to only the DESI footprint if requested
+    subset = np.ones(len(_tiles), dtype=bool)
     if onlydesi:
-        return _tiles[_tiles['IN_DESI'] > 0]
-    else:
+        subset &= _tiles['IN_DESI'] > 0
+
+    #- Filter out PROGRAM=EXTRA tiles if requested
+    if not extra:
+        subset &= ~np.char.startswith(_tiles['PROGRAM'], 'EXTRA')
+
+    if np.all(subset):
         return _tiles
+    else:
+        return _tiles[subset]
 #
 #
 #
@@ -125,3 +137,13 @@ def get_tile_radec(tileid):
         return tiles[i]['RA'], tiles[i]['DEC']
     else:
         return (0.0, 0.0)
+
+def findfile(filename):
+    '''
+    Return full path to data file $DESIMODEL/data/filename
+
+    Note: this is a precursor for a potential future refactor where
+    desimodel data would be installed with the package and $DESIMODEL
+    would become an optional override.
+    '''
+    return os.path.join(os.getenv('DESIMODEL'), 'data', filename)

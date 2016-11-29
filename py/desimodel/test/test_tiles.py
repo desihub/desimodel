@@ -1,0 +1,60 @@
+import unittest
+import os
+
+import numpy as np
+from astropy.io import fits
+from astropy.table import Table
+
+import desimodel.io
+
+class TestTiles(unittest.TestCase):
+    '''
+    Test desi-tiles.fits
+    '''
+
+    def setUp(self):
+        self.fitstiles = desimodel.io.findfile('footprint/desi-tiles.fits')
+        self.ecsvtiles = desimodel.io.findfile('footprint/desi-tiles.ecsv')
+
+        #- tf=TilesFits  tt=TilesTable  te=TilesEcsv
+        self.tf = fits.getdata(self.fitstiles)
+        self.tt = Table.read(self.fitstiles)
+        self.te = Table.read(self.ecsvtiles, format='ascii.ecsv')
+
+    def test_options(self):
+        a = desimodel.io.load_tiles(onlydesi=False)
+        self.assertTrue(np.any(a['IN_DESI'] == 0))
+        a = desimodel.io.load_tiles(onlydesi=True)
+        self.assertTrue(np.all(a['IN_DESI'] > 0))
+
+        a = desimodel.io.load_tiles(extra=False)
+        self.assertEqual(np.sum(np.char.startswith(a['PROGRAM'], 'EXTRA')), 0)
+        a = desimodel.io.load_tiles(extra=True)
+        self.assertGreater(np.sum(np.char.startswith(a['PROGRAM'], 'EXTRA')), 0)
+
+    #- Test consistency of FITS vs. ECSV ASCII formats, allowing for rounding
+    #- differences between decimal ASCII and IEEE float32
+    def test_consistency(self):
+        self.assertEqual(sorted(self.tf.dtype.names), sorted(self.tt.colnames))
+        self.assertEqual(sorted(self.tf.dtype.names), sorted(self.te.colnames))        
+
+        for col in self.tt.colnames:
+            self.assertTrue(np.all(self.tf[col]==self.tt[col]), 'fits[{col}] != table[{col}]'.format(col=col))
+            if np.issubdtype(self.tf[col].dtype, float):
+                self.assertTrue(np.allclose(self.tf[col], self.te[col], atol=1e-4, rtol=1e-4), 'fits[{col}] != ecsv[{col}]'.format(col=col))
+            else:
+                self.assertTrue(np.all(self.tf[col]==self.te[col]), 'fits[{col}] != ecsv[{col}]'.format(col=col))
+
+    #- Test that PROGRAM does not have trailing white space in input files
+    #- Chicken-and-egg: test passes on desimodel svn trunk but not latest test
+    #- subset branch.  Not running test on master until we have a new subset
+    #- branch for which this would work (but that won't occur until after this
+    #- code merge and new tag...)
+    @unittest.skipIf('TRAVIS_JOB_ID' in os.environ, 'Skipping Travis test that fails on out-of-date test subset data')
+    def test_program(self):
+        self.assertTrue(not np.any(np.char.endswith(self.tf['PROGRAM'], ' ')))
+        self.assertTrue(not np.any(np.char.endswith(self.tt['PROGRAM'], ' ')))
+        self.assertTrue(not np.any(np.char.endswith(self.te['PROGRAM'], ' ')))
+
+if __name__ == '__main__':
+    unittest.main()
