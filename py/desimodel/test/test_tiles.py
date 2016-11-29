@@ -50,11 +50,6 @@ class TestTiles(unittest.TestCase):
                 self.assertTrue(np.all(self.tf[col]==self.te[col]), 'fits[{col}] != ecsv[{col}]'.format(col=col))
 
     #- Test that PROGRAM does not have trailing white space in input files
-    #- Chicken-and-egg: test passes on desimodel svn trunk but not latest test
-    #- subset branch.  Not running test on master until we have a new subset
-    #- branch for which this would work (but that won't occur until after this
-    #- code merge and new tag...)
-    @unittest.skipIf('TRAVIS_JOB_ID' in os.environ, 'Skipping Travis test that fails on out-of-date test subset data')
     def test_program(self):
         self.assertTrue(not np.any(np.char.endswith(self.tf['PROGRAM'], ' ')))
         self.assertTrue(not np.any(np.char.endswith(self.tt['PROGRAM'], ' ')))
