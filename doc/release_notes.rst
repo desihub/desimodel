@@ -5,7 +5,8 @@ desimodel Release Notes
 0.5.1 (unreleased)
 ------------------
 
-* No changes yet
+* By default, desimodel.io.load_tiles now excludes PROGRAM=EXTRA layers
+* Adds desi-tiles.* tests
 
 0.5.0 (2016-11-21)
 ------------------

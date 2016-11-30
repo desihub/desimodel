@@ -99,12 +99,15 @@ class TestIO(unittest.TestCase):
         tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
                                       ('RA', 'f8'),
                                       ('DEC', 'f8'),
-                                      ('IN_DESI', 'i2')])
-        t = tiles.view(np.recarray)
-        t.TILEID = np.arange(4) + 1
-        t.RA = [0.0, 1.0, 2.0, 3.0]
-        t.DEC = [-2.0, -1.0, 1.0, 2.0]
-        t.IN_DESI = [0, 1, 1, 0]
+                                      ('IN_DESI', 'i2'),
+                                      ('PROGRAM', (str, 6)),
+                                  ])
+        
+        tiles['TILEID'] = np.arange(4) + 1
+        tiles['RA'] = [0.0, 1.0, 2.0, 3.0]
+        tiles['DEC'] = [-2.0, -1.0, 1.0, 2.0]
+        tiles['IN_DESI'] = [0, 1, 1, 0]
+        tiles['PROGRAM'] = 'DARK'
         io._tiles = tiles
         ra, dec = io.get_tile_radec(1)
         self.assertEqual((ra, dec), (0.0, 0.0))
