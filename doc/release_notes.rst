@@ -2,7 +2,12 @@
 desimodel Release Notes
 =======================
 
-0.5.1 (unreleased)
+0.5.2 (unreleased)
+------------------
+
+* No changes yet
+
+0.5.1 (2016-12-01)
 ------------------
 
 * By default, desimodel.io.load_tiles now excludes PROGRAM=EXTRA layers
