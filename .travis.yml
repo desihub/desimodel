@@ -39,7 +39,7 @@ env:
         - DESIUTIL_VERSION=1.7.0
         - SPECTER_VERSION=0.6.0
         # This is the version of the svn data product to export.
-        - DESIMODEL_VERSION=branches/test-0.5.0
+        - DESIMODEL_VERSION=branches/test-0.5.1
         - MAIN_CMD='python setup.py'
         # These packages will always be installed.
         - CONDA_DEPENDENCIES='pyyaml scipy astropy'

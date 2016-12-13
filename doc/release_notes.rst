@@ -2,7 +2,18 @@
 desimodel Release Notes
 =======================
 
-0.4.6 (unreleased)
+0.5.2 (unreleased)
+------------------
+
+* No changes yet
+
+0.5.1 (2016-12-01)
+------------------
+
+* By default, desimodel.io.load_tiles now excludes PROGRAM=EXTRA layers
+* Adds desi-tiles.* tests
+
+0.5.0 (2016-11-21)
 ------------------
 
 * Moved test of focalplane code into the actual test suite.
