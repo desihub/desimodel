@@ -59,7 +59,8 @@ def trim_footprint(indir, outdir):
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     infile, outfile = inout(indir, outdir, 'desi-tiles.fits')
-    t = fits.getdata(infile)
+    with fits.open(infile) as hdulist:
+        t = hdulist[1].data
     ii = (110 < t.RA) & (t.RA < 140) & (-10 < t.DEC) & (t.DEC < 20)
     fits.writeto(outfile, t[ii])
 

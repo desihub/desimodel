@@ -114,7 +114,7 @@ class TestIO(unittest.TestCase):
                                       ('IN_DESI', 'i2'),
                                       ('PROGRAM', (str, 6)),
                                   ])
-        
+
         tiles['TILEID'] = np.arange(4) + 1
         tiles['RA'] = [0.0, 1.0, 2.0, 3.0]
         tiles['DEC'] = [-2.0, -1.0, 1.0, 2.0]
@@ -128,5 +128,8 @@ class TestIO(unittest.TestCase):
         io._tiles = io_tile_cache
 
 
-if __name__ == '__main__':
-    unittest.main()
+def test_suite():
+    """Allows testing of only this module with the command::
+        python setup.py test -m <modulename>
+    """
+    return unittest.defaultTestLoader.loadTestsFromName(__name__)

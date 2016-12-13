@@ -121,9 +121,8 @@ class FocalPlane(object):
         self._fiberpos_file = os.path.join(os.environ['DESIMODEL'],
                                            'data', 'focalplane',
                                            'fiberpos.fits')
-        # with fits.open(self._fiberpos_file) as hdulist:
-        #     self.fiberpos = hdulist[1].data
-        self.fiberpos = fits.getdata(self._fiberpos_file)
+        with fits.open(self._fiberpos_file) as hdulist:
+            self.fiberpos = hdulist[1].data
 
     def _check_radec(self, ra, dec):
         """Raise ValueError if RA or dec are out of bounds.
