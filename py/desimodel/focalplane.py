@@ -14,6 +14,12 @@ import numpy as np
 from astropy.io import fits
 import astropy.units as u
 
+# Define this here to avoid a problem with Sphinx compilation.
+try:
+    default_offset = 10.886*u.um
+except TypeError:
+    default_offset = 10.886
+
 
 def generate_random_vector_field(rms, exponent, n, seed=None, smoothing=0.05):
     """Generate a pair dx, dy of 2D Gaussian random field.
@@ -68,7 +74,7 @@ def generate_random_vector_field(rms, exponent, n, seed=None, smoothing=0.05):
     return dx, dy
 
 
-def generate_random_centroid_offsets(rms_offset=10.886*u.um, seed=123):
+def generate_random_centroid_offsets(rms_offset=default_offset, seed=123):
     """Generate random centroid offsets.
 
     Calls :func:`generate_random_vector_field` to generate offsets with
@@ -82,9 +88,9 @@ def generate_random_centroid_offsets(rms_offset=10.886*u.um, seed=123):
 
     Parameters
     ----------
-    rms_offset : astropy quantity
+    rms_offset : :class:`astropy.Quantity` instance.
         RMS that the generated offsets should have, including units.
-    seed : int
+    seed : :class:`int`
         Random number seed to use. Generated offsets should be portable
         across python versions and platforms.
 

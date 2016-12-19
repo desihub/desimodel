@@ -102,10 +102,10 @@ def load_fiberpos():
 #
 _tiles = None
 def load_tiles(onlydesi=True, extra=False):
-    """Return DESI tiles structure from desimodel/data/footprint/desi-tiles.fits
+    """Return DESI tiles structure from desimodel/data/footprint/desi-tiles.fits.
 
-    Options
-    -------
+    Parameters
+    ----------
     onlydesi : :class:`bool` (default False)
         If ``True``, trim to just the tiles in the DESI footprint.
     extra : :class:`bool`, (default True)
