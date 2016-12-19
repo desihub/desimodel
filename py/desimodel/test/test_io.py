@@ -4,6 +4,7 @@
 """
 import os
 import numpy as np
+from astropy.table import Table
 import unittest
 from .. import io
 #
@@ -36,44 +37,47 @@ class TestIO(unittest.TestCase):
         global specter_available, desimodel_available
         cls.specter_available = specter_available
         cls.desimodel_available = desimodel_available
-        # cls.data_dir = os.path.dirname(__file__)
-        # try:
-        #     cls.old_desimodel = os.environ['DESIMODEL']
-        # except KeyError:
-        #     cls.old_desimodel = None
-        # os.environ['DESIMODEL'] = cls.data_dir
 
     @classmethod
     def tearDownClass(cls):
         pass
-        # if cls.old_desimodel is None:
-        #     del os.environ['DESIMODEL']
-        # else:
-        #     os.environ['DESIMODEL'] = cls.old_desimodel
+
+    def setUp(self):
+        """Ensure that any desimodel.io caches are clear before running
+        any test.
+        """
+        io._thru = dict()
+        io._psf = dict()
+        io._params = None
+        io._fiberpos = None
+        io._tiles = None
+
+    def tearDown(self):
+        pass
 
     @unittest.skipUnless(specter_available, specter_message)
-    def test_throughput(self):
+    def test_load_throughput(self):
         """Test loading of throughput files.
         """
         for channel in ('b', 'r', 'z'):
             t = io.load_throughput(channel)
 
     @unittest.skipUnless(specter_available, specter_message)
-    def test_psf(self):
+    def test_load_psf(self):
         """Test loading of PSF files.
         """
         for channel in ('b', 'r', 'z'):
             t = io.load_psf(channel)
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
-    def test_desiparams(self):
+    def test_load_desiparams(self):
         """Test loading of basic DESI parameters.
         """
         p = io.load_desiparams()
         self.assertTrue(isinstance(p, dict))
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
-    def test_fiberpos(self):
+    def test_load_fiberpos(self):
         """Test loading of fiber positioner data.
         """
         fiberpos = io.load_fiberpos()
@@ -84,13 +88,61 @@ class TestIO(unittest.TestCase):
             x = fiberpos[key]
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
-    def test_tiles(self):
+    def test_load_tiles(self):
         """Test loading of tile files.
         """
+        self.assertIsNone(io._tiles)
         t1 = io.load_tiles(onlydesi=False)
+        tile_cache_id1 = id(io._tiles)
+        self.assertIsNotNone(io._tiles)
         t2 = io.load_tiles(onlydesi=True)
+        tile_cache_id2 = id(io._tiles)
+        self.assertEqual(tile_cache_id1, tile_cache_id2)
+        self.assertIs(t1['OBSCONDITIONS'].dtype, np.dtype(np.uint16))
+        self.assertIs(t2['OBSCONDITIONS'].dtype, np.dtype(np.uint16))
         self.assertLess(len(t2), len(t1))
+        # All tiles in DESI are also in full set.
+        self.assertTrue(np.all(np.in1d(t2['TILEID'], t1['TILEID'])))
+        # I think this is the exact same test as above, except using set theory.
         self.assertEqual(len(set(t2.TILEID) - set(t1.TILEID)), 0)
+        t3 = io.load_tiles(onlydesi=False)
+        tile_cache_id3 = id(io._tiles)
+        self.assertEqual(tile_cache_id1, tile_cache_id3)
+        self.assertIs(t3['OBSCONDITIONS'].dtype, np.dtype(np.uint16))
+        # Check for extra tiles.
+        a = io.load_tiles(extra=False)
+        self.assertEqual(np.sum(np.char.startswith(a['PROGRAM'], 'EXTRA')), 0)
+        b = io.load_tiles(extra=True)
+        self.assertGreater(np.sum(np.char.startswith(b['PROGRAM'], 'EXTRA')), 0)
+        self.assertLess(len(a), len(b))
+
+    @unittest.skipUnless(desimodel_available, desimodel_message)
+    def test_tiles_consistency(self):
+        """Test consistency of tile files.
+
+        - Validate different tile loading schemes.
+        - Test numerical consistency between FITS & ECSV versions.
+        - Assure that PROGRAM column has no trailing whitespace.
+        """
+        fitstiles = io.findfile('footprint/desi-tiles.fits')
+        ecsvtiles = io.findfile('footprint/desi-tiles.ecsv')
+        # tf=TilesFits  tt=TilesTable  te=TilesEcsv
+        tf = io.load_tiles(onlydesi=False, extra=True)
+        tt = Table.read(fitstiles)
+        te = Table.read(ecsvtiles, format='ascii.ecsv')
+        self.assertEqual(sorted(tf.dtype.names), sorted(tt.colnames))
+        self.assertEqual(sorted(tf.dtype.names), sorted(te.colnames))
+
+        for col in tt.colnames:
+            self.assertTrue(np.all(tf[col]==tt[col]), 'fits[{col}] != table[{col}]'.format(col=col))
+            if np.issubdtype(tf[col].dtype, float):
+                self.assertTrue(np.allclose(tf[col], te[col], atol=1e-4, rtol=1e-4), 'fits[{col}] != ecsv[{col}]'.format(col=col))
+            else:
+                self.assertTrue(np.all(tf[col]==te[col]), 'fits[{col}] != ecsv[{col}]'.format(col=col))
+
+        self.assertTrue(not np.any(np.char.endswith(tf['PROGRAM'], ' ')))
+        self.assertTrue(not np.any(np.char.endswith(tt['PROGRAM'], ' ')))
+        self.assertTrue(not np.any(np.char.endswith(te['PROGRAM'], ' ')))
 
     def test_get_tile_radec(self):
         """Test grabbing tile information by tileID.
@@ -102,7 +154,7 @@ class TestIO(unittest.TestCase):
                                       ('IN_DESI', 'i2'),
                                       ('PROGRAM', (str, 6)),
                                   ])
-        
+
         tiles['TILEID'] = np.arange(4) + 1
         tiles['RA'] = [0.0, 1.0, 2.0, 3.0]
         tiles['DEC'] = [-2.0, -1.0, 1.0, 2.0]
@@ -116,5 +168,8 @@ class TestIO(unittest.TestCase):
         io._tiles = io_tile_cache
 
 
-if __name__ == '__main__':
-    unittest.main()
+def test_suite():
+    """Allows testing of only this module with the command::
+        python setup.py test -m <modulename>
+    """
+    return unittest.defaultTestLoader.loadTestsFromName(__name__)

@@ -88,17 +88,24 @@ def load_fiberpos():
     global _fiberpos
     if _fiberpos is None:
         fiberposfile = os.path.join(os.environ['DESIMODEL'],'data','focalplane','fiberpos.fits')
-        _fiberpos = np.array(fits.getdata(fiberposfile, upper=True))
+        with fits.open(fiberposfile) as hdulist:
+            _fiberpos = hdulist[1].data
+        if 'FIBER' not in _fiberpos.dtype.names:
+            #
+            # File contains lower-case column names, but we want upper-case.
+            #
+            for i, key in enumerate(_fiberpos.dtype.names):
+                _fiberpos.columns[i].name = key.upper()
     return _fiberpos
 #
 #
 #
 _tiles = None
 def load_tiles(onlydesi=True, extra=False):
-    """Return DESI tiles structure from desimodel/data/footprint/desi-tiles.fits
+    """Return DESI tiles structure from desimodel/data/footprint/desi-tiles.fits.
 
-    Options
-    -------
+    Parameters
+    ----------
     onlydesi : :class:`bool` (default False)
         If ``True``, trim to just the tiles in the DESI footprint.
     extra : :class:`bool`, (default True)
@@ -107,7 +114,14 @@ def load_tiles(onlydesi=True, extra=False):
     global _tiles
     if _tiles is None:
         footprint = os.path.join(os.environ['DESIMODEL'],'data','footprint','desi-tiles.fits')
-        _tiles = fits.getdata(footprint)
+        with fits.open(footprint) as hdulist:
+            _tiles = hdulist[1].data
+        #
+        # Temporary workaround for problem identified in
+        # https://github.com/desihub/desimodel/issues/30
+        #
+        if any([c.bzero is not None for c in _tiles.columns]):
+            foo = [_tiles[k].dtype for k in _tiles.dtype.names]
 
     #- Filter to only the DESI footprint if requested
     subset = np.ones(len(_tiles), dtype=bool)
@@ -116,7 +130,7 @@ def load_tiles(onlydesi=True, extra=False):
 
     #- Filter out PROGRAM=EXTRA tiles if requested
     if not extra:
-        subset &= ~np.char.startswith(_tiles['PROGRAM'], 'EXTRA')            
+        subset &= ~np.char.startswith(_tiles['PROGRAM'], 'EXTRA')
 
     if np.all(subset):
         return _tiles
