@@ -21,6 +21,17 @@ def default_install_dir():
     return dirname(dirname(dirname(dirname(dirname(__file__)))))
 
 
+def assert_svn_exists():
+    """Assert svn command exists and raise an informative error if not"""
+
+    from subprocess import check_output, CalledProcessError
+    try:
+        r = check_output(['svn', '--version'])
+    except OSError as e:
+        raise AssertionError("svn command is not executable. Install svn to use the install script. Original Error is %s", e.strerror)
+    except CalledProcessError as e:
+        raise AssertionError("The svn command (%s) on this system does not work. Output is %s" % (e.cmd, e.output))
+
 def svn_export(desimodel_version=None):
     """Create a :command:`svn export` command suitable for downloading a
     particular desimodel version.
@@ -77,6 +88,8 @@ def install(desimodel=None, version=None):
     if exists(join(install_dir, 'data')):
         raise ValueError("{0} already exists!".format(join(install_dir,
                                                            'data')))
+    assert_svn_exists()
+
     chdir(install_dir)
     command = svn_export(version)
     # print(' '.join(command))
