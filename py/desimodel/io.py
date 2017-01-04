@@ -136,6 +136,41 @@ def load_tiles(onlydesi=True, extra=False):
         return _tiles
     else:
         return _tiles[subset]
+
+def is_point_in_desi(tiles, ra, dec, radius=1.6):
+    """Return if points given by ra, dec lie in the set of _tiles.
+
+    This function is optimized to query a lot of points.
+    radius is in units of degrees.
+
+    `tiles` is the result of load_tiles.
+
+    If a point is within `radius` distance from center of any tile,
+    it is in desi.
+
+    The shape of ra, dec must match. The current implementation
+    works only if they are both 1d vectors or scalars.
+    """
+    from scipy.spatial import cKDTree as KDTree
+
+    def toxyz(ra, dec):
+        phi = np.radians(np.asarray(ra))
+        theta = np.radians(90.0 - np.asarray(dec))
+        r = np.sin(theta)
+        x = np.cos(phi)
+        y = np.sin(phi)
+        z = np.cos(theta)
+        return np.vstack((x, y, z)).T
+
+    tilecenters = toxyz(tiles['RA'], tiles['DEC'])
+    tree = KDTree(tilecenters)
+    # radius to 3d distance
+    threshold = 2.0 * np.sin(np.radians(radius) * 0.5)
+    xyz = toxyz(ra, dec)
+    i, d = tree.query(xyz, k=1)
+
+    return d < threshold
+
 #
 #
 #
