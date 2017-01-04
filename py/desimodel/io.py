@@ -163,7 +163,7 @@ def is_point_in_desi(tiles, ra, dec, radius=1.6, return_tile_index=False):
         x = np.cos(phi)
         y = np.sin(phi)
         z = np.cos(theta)
-        return np.vstack((x, y, z)).T
+        return np.array((x, y, z)).T
 
     tilecenters = toxyz(tiles['RA'], tiles['DEC'])
     tree = KDTree(tilecenters)
@@ -177,6 +177,35 @@ def is_point_in_desi(tiles, ra, dec, radius=1.6, return_tile_index=False):
         return indesi, i
     else:
         return indesi
+
+def find_tiles_over_point(tiles, ra, dec, radius=1.6):
+    """Return a list of indices of tiles that covers the points.
+
+    This function is optimized to query a lot of points.
+    radius is in units of degrees. The return value is an array
+    of array objects
+    """
+    # sorry I don't want to contaminate the global namespace.
+    from scipy.spatial import cKDTree as KDTree
+
+    def toxyz(ra, dec):
+        phi = np.radians(np.asarray(ra))
+        theta = np.radians(90.0 - np.asarray(dec))
+        r = np.sin(theta)
+        x = np.cos(phi)
+        y = np.sin(phi)
+        z = np.cos(theta)
+        return np.array((x, y, z)).T
+
+    tilecenters = toxyz(tiles['RA'], tiles['DEC'])
+    tree = KDTree(tilecenters)
+
+    # radius to 3d distance
+    threshold = 2.0 * np.sin(np.radians(radius) * 0.5)
+    xyz = toxyz(ra, dec)
+    indices = tree.query_ball_point(xyz, threshold)
+    return indices
+
 #
 #
 #

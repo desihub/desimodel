@@ -196,16 +196,54 @@ class TestIO(unittest.TestCase):
         ret = io.is_point_in_desi(tiles, tiles['RA'], tiles['DEC'])
         self.assertEqual(len(ret), len(tiles))
 
+    def test_find_tiles_over_point(self):
+        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
+                                      ('RA', 'f8'),
+                                      ('DEC', 'f8'),
+                                      ('IN_DESI', 'i2'),
+                                      ('PROGRAM', (str, 6)),
+                                  ])
+
+        tiles['TILEID'] = np.arange(4) + 1
+        tiles['RA'] = [0.0, 1.0, 2.0, 3.0]
+        tiles['DEC'] = [-2.0, -1.0, 1.0, 2.0]
+        tiles['IN_DESI'] = [0, 1, 1, 0]
+        tiles['PROGRAM'] = 'DARK'
+
+        ret = io.find_tiles_over_point(tiles, 0.0, -2.0)
+        self.assertEqual(ret, [0, 1])
+
+        ret = io.find_tiles_over_point(tiles, 1.0, -1.0)
+        self.assertEqual(ret, [0, 1])
+
+        # outside
+        ret = io.find_tiles_over_point(tiles, 0.0, -3.7)
+        self.assertEqual(ret, [])
+
+        # array input
+        ret = io.find_tiles_over_point(tiles, (0.0,), (-3.7,))
+        self.assertEqual(len(ret), 1)
+        self.assertEqual(ret[0], [])
+
     @unittest.skipUnless(desimodel_available, desimodel_message)
-    def test_is_point_in_desi_realtiles(self):
+    def test_spatial_real_tiles(self):
         tiles = io.load_tiles()
-        # some points must be in the sky,
-        # https://github.com/desihub/desimodel/pull/37#issuecomment-270435938
         rng = np.random.RandomState(1234)
         ra = rng.uniform(0, 360, 1000)
         dec = rng.uniform(-90, 90, 1000)
+
+        # some points must be in the sky,
+        # https://github.com/desihub/desimodel/pull/37#issuecomment-270435938
         indesi = io.is_point_in_desi(tiles, ra, dec)
         self.assertTrue(np.any(indesi))
+
+        # now assert the consistency between find_tiles_over_point and is_point_in_desi
+        ret = io.find_tiles_over_point(tiles, ra, dec)
+        self.assertEqual(len(ret), len(ra))
+        indesi2 = [len(i) > 0 for i in ret]
+
+        # FIXME: is there a better assertion function for arrays?
+        self.assertEqual(list(indesi), indesi2)
 
 def test_suite():
     """Allows testing of only this module with the command::
