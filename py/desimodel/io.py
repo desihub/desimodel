@@ -137,7 +137,7 @@ def load_tiles(onlydesi=True, extra=False):
     else:
         return _tiles[subset]
 
-def is_point_in_desi(tiles, ra, dec, radius=1.6):
+def is_point_in_desi(tiles, ra, dec, radius=1.6, return_tile_index=False):
     """Return if points given by ra, dec lie in the set of _tiles.
 
     This function is optimized to query a lot of points.
@@ -150,6 +150,9 @@ def is_point_in_desi(tiles, ra, dec, radius=1.6):
 
     The shape of ra, dec must match. The current implementation
     works only if they are both 1d vectors or scalars.
+
+    If return_itle_index is True, return the index of the nearest tile in tiles array.
+
     """
     from scipy.spatial import cKDTree as KDTree
 
@@ -167,10 +170,13 @@ def is_point_in_desi(tiles, ra, dec, radius=1.6):
     # radius to 3d distance
     threshold = 2.0 * np.sin(np.radians(radius) * 0.5)
     xyz = toxyz(ra, dec)
-    i, d = tree.query(xyz, k=1)
+    d, i = tree.query(xyz, k=1)
 
-    return d < threshold
-
+    indesi = d < threshold
+    if return_tile_index:
+        return indesi, i
+    else:
+        return indesi
 #
 #
 #
