@@ -245,6 +245,9 @@ class TestIO(unittest.TestCase):
         # FIXME: is there a better assertion function for arrays?
         self.assertEqual(list(indesi), indesi2)
 
+        # Just interesting to see how many tiles overlap a random point?
+        print(np.bincount([len(i) for i in ret]))
+
 def test_suite():
     """Allows testing of only this module with the command::
         python setup.py test -m <modulename>
