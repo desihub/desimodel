@@ -137,7 +137,7 @@ def load_tiles(onlydesi=True, extra=False):
     else:
         return _tiles[subset]
 
-def is_point_in_desi(tiles, ra, dec, radius=1.6):
+def is_point_in_desi(tiles, ra, dec, radius=1.6, return_tile_index=False):
     """Return if points given by ra, dec lie in the set of _tiles.
 
     This function is optimized to query a lot of points.
@@ -150,6 +150,9 @@ def is_point_in_desi(tiles, ra, dec, radius=1.6):
 
     The shape of ra, dec must match. The current implementation
     works only if they are both 1d vectors or scalars.
+
+    If return_itle_index is True, return the index of the nearest tile in tiles array.
+
     """
     from scipy.spatial import cKDTree as KDTree
 
@@ -160,16 +163,48 @@ def is_point_in_desi(tiles, ra, dec, radius=1.6):
         x = np.cos(phi)
         y = np.sin(phi)
         z = np.cos(theta)
-        return np.vstack((x, y, z)).T
+        return np.array((x, y, z)).T
 
     tilecenters = toxyz(tiles['RA'], tiles['DEC'])
     tree = KDTree(tilecenters)
     # radius to 3d distance
     threshold = 2.0 * np.sin(np.radians(radius) * 0.5)
     xyz = toxyz(ra, dec)
-    i, d = tree.query(xyz, k=1)
+    d, i = tree.query(xyz, k=1)
 
-    return d < threshold
+    indesi = d < threshold
+    if return_tile_index:
+        return indesi, i
+    else:
+        return indesi
+
+def find_tiles_over_point(tiles, ra, dec, radius=1.6):
+    """Return a list of indices of tiles that covers the points.
+
+    This function is optimized to query a lot of points.
+    radius is in units of degrees. The return value is an array
+    of array objects
+    """
+    # sorry I don't want to contaminate the global namespace.
+    from scipy.spatial import cKDTree as KDTree
+
+    def toxyz(ra, dec):
+        phi = np.radians(np.asarray(ra))
+        theta = np.radians(90.0 - np.asarray(dec))
+        r = np.sin(theta)
+        x = np.cos(phi)
+        y = np.sin(phi)
+        z = np.cos(theta)
+        return np.array((x, y, z)).T
+
+    tilecenters = toxyz(tiles['RA'], tiles['DEC'])
+    tree = KDTree(tilecenters)
+
+    # radius to 3d distance
+    threshold = 2.0 * np.sin(np.radians(radius) * 0.5)
+    xyz = toxyz(ra, dec)
+    indices = tree.query_ball_point(xyz, threshold)
+    return indices
 
 #
 #
