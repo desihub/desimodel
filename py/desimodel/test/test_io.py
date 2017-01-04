@@ -98,8 +98,11 @@ class TestIO(unittest.TestCase):
         t2 = io.load_tiles(onlydesi=True)
         tile_cache_id2 = id(io._tiles)
         self.assertEqual(tile_cache_id1, tile_cache_id2)
-        self.assertIs(t1['OBSCONDITIONS'].dtype, np.dtype(np.uint16))
-        self.assertIs(t2['OBSCONDITIONS'].dtype, np.dtype(np.uint16))
+        #- Temporarily support OBSCONDITIONS as u2 (old) or i4 (new)
+        self.assertTrue(np.issubdtype(t1['OBSCONDITIONS'].dtype, 'i4') or \
+                        np.issubdtype(t1['OBSCONDITIONS'].dtype, 'u2') )
+        self.assertTrue(np.issubdtype(t2['OBSCONDITIONS'].dtype, 'i4') or \
+                        np.issubdtype(t2['OBSCONDITIONS'].dtype, 'u2') )
         self.assertLess(len(t2), len(t1))
         # All tiles in DESI are also in full set.
         self.assertTrue(np.all(np.in1d(t2['TILEID'], t1['TILEID'])))
@@ -108,7 +111,8 @@ class TestIO(unittest.TestCase):
         t3 = io.load_tiles(onlydesi=False)
         tile_cache_id3 = id(io._tiles)
         self.assertEqual(tile_cache_id1, tile_cache_id3)
-        self.assertIs(t3['OBSCONDITIONS'].dtype, np.dtype(np.uint16))
+        self.assertTrue(np.issubdtype(t3['OBSCONDITIONS'].dtype, 'i4') or \
+                        np.issubdtype(t3['OBSCONDITIONS'].dtype, 'u2') )
         # Check for extra tiles.
         a = io.load_tiles(extra=False)
         self.assertEqual(np.sum(np.char.startswith(a['PROGRAM'], 'EXTRA')), 0)
