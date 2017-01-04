@@ -123,6 +123,11 @@ def load_tiles(onlydesi=True, extra=False):
         if any([c.bzero is not None for c in _tiles.columns]):
             foo = [_tiles[k].dtype for k in _tiles.dtype.names]
 
+        #- Check for out-of-date tiles file
+        if np.issubdtype(_tiles['OBSCONDITIONS'].dtype, 'u2'):
+            import warnings
+            warnings.warn('old desi-tiles.fits with uint16 OBSCONDITIONS; please update your $DESIMODEL checkout', DeprecationWarning)
+
     #- Filter to only the DESI footprint if requested
     subset = np.ones(len(_tiles), dtype=bool)
     if onlydesi:
