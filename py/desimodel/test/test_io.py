@@ -185,19 +185,19 @@ class TestIO(unittest.TestCase):
         tiles['IN_DESI'] = [0, 1, 1, 0]
         tiles['PROGRAM'] = 'DARK'
 
-        ret = io.is_point_in_desi(tiles, 0.0, -2.0, return_tile_index=True)
+        ret = io.is_point_in_desi(tiles, 0.0, -2.0, radius=1.605, return_tile_index=True)
         self.assertEqual(ret, (True, 0))
 
-        ret = io.is_point_in_desi(tiles, (0.0,), (-2.0,), return_tile_index=True)
+        ret = io.is_point_in_desi(tiles, (0.0,), (-2.0,), radius=1.605, return_tile_index=True)
         self.assertEqual(ret, ([True], [0]))
 
-        ret = io.is_point_in_desi(tiles, 0.0, -3.7, return_tile_index=True)
+        ret = io.is_point_in_desi(tiles, 0.0, -3.7, radius=1.605, return_tile_index=True)
         self.assertEqual(ret, (False, 0))
 
-        ret = io.is_point_in_desi(tiles, -3.0, -2.0, return_tile_index=True)
+        ret = io.is_point_in_desi(tiles, -3.0, -2.0, radius=1.605, return_tile_index=True)
         self.assertEqual(ret, (False, 0))
 
-        ret = io.is_point_in_desi(tiles, tiles['RA'], tiles['DEC'])
+        ret = io.is_point_in_desi(tiles, tiles['RA'], tiles['DEC'], radius=1.605)
         self.assertEqual(len(ret), len(tiles))
 
     def test_embed_sphere(self):
@@ -228,7 +228,7 @@ class TestIO(unittest.TestCase):
 
         ra = rng.uniform(-10, 10, 100000)
         dec = np.degrees(np.arcsin(rng.uniform(-0.1, 0.1, 100000)))
-        lists = io.find_points_in_tiles(tiles, ra, dec)
+        lists = io.find_points_in_tiles(tiles, ra, dec, radius=1.605)
 
         # assert we've found roughly same number of objects per tile
         counts = np.array([len(i) for i in lists])
@@ -240,7 +240,7 @@ class TestIO(unittest.TestCase):
             xyzc = io._embed_sphere(tiles['RA'][i], tiles['DEC'][i])
             diff = xyz - xyzc
             dist = np.einsum('ij, ij->i', diff, diff) ** 0.5
-            self.assertLess(dist.max(), 2 * np.sin(np.radians(1.6) * 0.5))
+            self.assertLess(dist.max(), 2 * np.sin(np.radians(1.605) * 0.5))
 
         # tiles overlapped, so we must have duplicates
         full = np.concatenate(lists)
@@ -263,18 +263,18 @@ class TestIO(unittest.TestCase):
         tiles['IN_DESI'] = [0, 1, 1, 0]
         tiles['PROGRAM'] = 'DARK'
 
-        ret = io.find_tiles_over_point(tiles, 0.0, -2.0)
+        ret = io.find_tiles_over_point(tiles, 0.0, -2.0, radius=1.605)
         self.assertEqual(ret, [0, 1])
 
-        ret = io.find_tiles_over_point(tiles, 1.0, -1.0)
+        ret = io.find_tiles_over_point(tiles, 1.0, -1.0, radius=1.605)
         self.assertEqual(ret, [0, 1])
 
         # outside
-        ret = io.find_tiles_over_point(tiles, 0.0, -3.7)
+        ret = io.find_tiles_over_point(tiles, 0.0, -3.7, radius=1.605)
         self.assertEqual(ret, [])
 
         # array input
-        ret = io.find_tiles_over_point(tiles, (0.0,), (-3.7,))
+        ret = io.find_tiles_over_point(tiles, (0.0,), (-3.7,), radius=1.605)
         self.assertEqual(len(ret), 1)
         self.assertEqual(ret[0], [])
 
