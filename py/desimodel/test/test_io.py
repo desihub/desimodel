@@ -246,7 +246,7 @@ class TestIO(unittest.TestCase):
         full = np.concatenate(lists)
         self.assertLess(len(np.unique(full)), len(full))
 
-        list1 = io.find_points_in_tiles(tiles[0], ra, dec)
+        list1 = io.find_points_in_tiles(tiles[0], ra, dec, radius=1.605)
         self.assertEqual(sorted(list1), sorted(lists[0]))
 
     def test_find_tiles_over_point(self):
@@ -287,11 +287,11 @@ class TestIO(unittest.TestCase):
 
         # some points must be in the sky,
         # https://github.com/desihub/desimodel/pull/37#issuecomment-270435938
-        indesi = io.is_point_in_desi(tiles, ra, dec)
+        indesi = io.is_point_in_desi(tiles, ra, dec, radius=1.605)
         self.assertTrue(np.any(indesi))
 
         # now assert the consistency between find_tiles_over_point and is_point_in_desi
-        ret = io.find_tiles_over_point(tiles, ra, dec)
+        ret = io.find_tiles_over_point(tiles, ra, dec, radius=1.605)
         self.assertEqual(len(ret), len(ra))
         indesi2 = [len(i) > 0 for i in ret]
 

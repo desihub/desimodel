@@ -152,7 +152,7 @@ def _embed_sphere(ra, dec):
     z = np.cos(theta)
     return np.array((x, y, z)).T
 
-def is_point_in_desi(tiles, ra, dec, radius=1.605, return_tile_index=False):
+def is_point_in_desi(tiles, ra, dec, radius, return_tile_index=False):
     """Return if points given by ra, dec lie in the set of _tiles.
 
     This function is optimized to query a lot of points.
@@ -187,7 +187,7 @@ def is_point_in_desi(tiles, ra, dec, radius=1.605, return_tile_index=False):
     else:
         return indesi
 
-def find_tiles_over_point(tiles, ra, dec, radius=1.605):
+def find_tiles_over_point(tiles, ra, dec, radius):
     """Return a list of indices of tiles that covers the points.
 
     This function is optimized to query a lot of points.
@@ -212,7 +212,7 @@ def find_tiles_over_point(tiles, ra, dec, radius=1.605):
     indices = tree.query_ball_point(xyz, threshold)
     return indices
 
-def find_points_in_tiles(tiles, ra, dec, radius=1.605):
+def find_points_in_tiles(tiles, ra, dec, radius):
     """Return a list of indices of points that are within each provided tile(s).
 
     This function is optimized to query a lot of points with relatively few tiles.
