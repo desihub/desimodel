@@ -210,6 +210,45 @@ class TestIO(unittest.TestCase):
         norm = np.einsum('ij, ij->i', ret, ret)
         self.assertTrue(all(abs(norm - 1.0) < 1e-5))
 
+    def test_find_points_in_tiles(self):
+        rng = np.random.RandomState(1234)
+
+        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
+                                      ('RA', 'f8'),
+                                      ('DEC', 'f8'),
+                                      ('IN_DESI', 'i2'),
+                                      ('PROGRAM', (str, 6)),
+                                  ])
+
+        tiles['TILEID'] = np.arange(4) + 1
+        tiles['RA'] = [0.0, 1.0, 2.0, 3.0]
+        tiles['DEC'] = [-2.0, -1.0, 1.0, 2.0]
+        tiles['IN_DESI'] = [0, 1, 1, 0]
+        tiles['PROGRAM'] = 'DARK'
+
+        ra = rng.uniform(-10, 10, 100000)
+        dec = np.degrees(np.arcsin(rng.uniform(-0.1, 0.1, 100000)))
+        lists = io.find_points_in_tiles(tiles, ra, dec)
+
+        # assert we've found roughly same number of objects per tile
+        counts = np.array([len(i) for i in lists])
+        self.assertLess(counts.std() / counts.mean(), 1e-2)
+
+        # assert each list are indeed in the cell.
+        for i, ii in enumerate(lists):
+            xyz = io._embed_sphere(ra[ii], dec[ii])
+            xyzc = io._embed_sphere(tiles['RA'][i], tiles['DEC'][i])
+            diff = xyz - xyzc
+            dist = np.einsum('ij, ij->i', diff, diff) ** 0.5
+            self.assertLess(dist.max(), 2 * np.sin(np.radians(1.6) * 0.5))
+
+        # tiles overlapped, so we must have duplicates
+        full = np.concatenate(lists)
+        self.assertLess(len(np.unique(full)), len(full))
+
+        list1 = io.find_points_in_tiles(tiles[0], ra, dec)
+        self.assertEqual(sorted(list1), sorted(lists[0]))
+
     def test_find_tiles_over_point(self):
         tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
                                       ('RA', 'f8'),

@@ -189,7 +189,11 @@ def find_tiles_over_point(tiles, ra, dec, radius=1.6):
 
     This function is optimized to query a lot of points.
     radius is in units of degrees. The return value is an array
-    of array objects
+    of list objects that are the indices of tiles that cover each point.
+
+    The indices are not sorted in any particular order.
+
+    if ra, dec are scalars, a single list is returned.
     """
     from scipy.spatial import cKDTree as KDTree
 
@@ -199,6 +203,34 @@ def find_tiles_over_point(tiles, ra, dec, radius=1.6):
     # radius to 3d distance
     threshold = 2.0 * np.sin(np.radians(radius) * 0.5)
     xyz = _embed_sphere(ra, dec)
+    indices = tree.query_ball_point(xyz, threshold)
+    return indices
+
+def find_points_in_tiles(tiles, ra, dec, radius=1.6):
+    """Return a list of indices of points that are within each provided tile(s).
+
+    This function is optimized to query a lot of points with relatively few tiles.
+
+    radius is in units of degrees. The return value is an array
+    of lists that contains the index of points that are in each tile.
+    The indices are not sorted in any particular order.
+
+    if tiles is a scalar, a single list is returned.
+    """
+    from scipy.spatial import cKDTree as KDTree
+
+    # check for malformed input shapes. Sorry we currently only
+    # deal with vector inputs. (for a sensible definition of indices)
+
+    assert ra.ndim == 1
+    assert dec.ndim == 1
+
+    points = _embed_sphere(ra, dec)
+    tree = KDTree(points)
+
+    # radius to 3d distance
+    threshold = 2.0 * np.sin(np.radians(radius) * 0.5)
+    xyz = _embed_sphere(tiles['RA'], tiles['DEC'])
     indices = tree.query_ball_point(xyz, threshold)
     return indices
 
