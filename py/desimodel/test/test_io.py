@@ -98,8 +98,11 @@ class TestIO(unittest.TestCase):
         t2 = io.load_tiles(onlydesi=True)
         tile_cache_id2 = id(io._tiles)
         self.assertEqual(tile_cache_id1, tile_cache_id2)
-        self.assertIs(t1['OBSCONDITIONS'].dtype, np.dtype(np.uint16))
-        self.assertIs(t2['OBSCONDITIONS'].dtype, np.dtype(np.uint16))
+        #- Temporarily support OBSCONDITIONS as u2 (old) or i4 (new)
+        self.assertTrue(np.issubdtype(t1['OBSCONDITIONS'].dtype, 'i4') or \
+                        np.issubdtype(t1['OBSCONDITIONS'].dtype, 'u2') )
+        self.assertTrue(np.issubdtype(t2['OBSCONDITIONS'].dtype, 'i4') or \
+                        np.issubdtype(t2['OBSCONDITIONS'].dtype, 'u2') )
         self.assertLess(len(t2), len(t1))
         # All tiles in DESI are also in full set.
         self.assertTrue(np.all(np.in1d(t2['TILEID'], t1['TILEID'])))
@@ -108,7 +111,8 @@ class TestIO(unittest.TestCase):
         t3 = io.load_tiles(onlydesi=False)
         tile_cache_id3 = id(io._tiles)
         self.assertEqual(tile_cache_id1, tile_cache_id3)
-        self.assertIs(t3['OBSCONDITIONS'].dtype, np.dtype(np.uint16))
+        self.assertTrue(np.issubdtype(t3['OBSCONDITIONS'].dtype, 'i4') or \
+                        np.issubdtype(t3['OBSCONDITIONS'].dtype, 'u2') )
         # Check for extra tiles.
         a = io.load_tiles(extra=False)
         self.assertEqual(np.sum(np.char.startswith(a['PROGRAM'], 'EXTRA')), 0)
@@ -181,20 +185,69 @@ class TestIO(unittest.TestCase):
         tiles['IN_DESI'] = [0, 1, 1, 0]
         tiles['PROGRAM'] = 'DARK'
 
-        ret = io.is_point_in_desi(tiles, 0.0, -2.0, return_tile_index=True)
+        ret = io.is_point_in_desi(tiles, 0.0, -2.0, radius=1.605, return_tile_index=True)
         self.assertEqual(ret, (True, 0))
 
-        ret = io.is_point_in_desi(tiles, (0.0,), (-2.0,), return_tile_index=True)
+        ret = io.is_point_in_desi(tiles, (0.0,), (-2.0,), radius=1.605, return_tile_index=True)
         self.assertEqual(ret, ([True], [0]))
 
-        ret = io.is_point_in_desi(tiles, 0.0, -3.7, return_tile_index=True)
+        ret = io.is_point_in_desi(tiles, 0.0, -3.7, radius=1.605, return_tile_index=True)
         self.assertEqual(ret, (False, 0))
 
-        ret = io.is_point_in_desi(tiles, -3.0, -2.0, return_tile_index=True)
+        ret = io.is_point_in_desi(tiles, -3.0, -2.0, radius=1.605, return_tile_index=True)
         self.assertEqual(ret, (False, 0))
 
-        ret = io.is_point_in_desi(tiles, tiles['RA'], tiles['DEC'])
+        ret = io.is_point_in_desi(tiles, tiles['RA'], tiles['DEC'], radius=1.605)
         self.assertEqual(len(ret), len(tiles))
+
+    def test_embed_sphere(self):
+        rng = np.random.RandomState(1234)
+        ra = rng.uniform(0, 360, size=1000)
+        dec = rng.uniform(-90, 90, size=1000)
+
+        ret = io._embed_sphere(ra, dec)
+        self.assertEqual(ret.shape, (1000, 3))
+        norm = np.einsum('ij, ij->i', ret, ret)
+        self.assertTrue(all(abs(norm - 1.0) < 1e-5))
+
+    def test_find_points_in_tiles(self):
+        rng = np.random.RandomState(1234)
+
+        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
+                                      ('RA', 'f8'),
+                                      ('DEC', 'f8'),
+                                      ('IN_DESI', 'i2'),
+                                      ('PROGRAM', (str, 6)),
+                                  ])
+
+        tiles['TILEID'] = np.arange(4) + 1
+        tiles['RA'] = [0.0, 1.0, 2.0, 3.0]
+        tiles['DEC'] = [-2.0, -1.0, 1.0, 2.0]
+        tiles['IN_DESI'] = [0, 1, 1, 0]
+        tiles['PROGRAM'] = 'DARK'
+
+        ra = rng.uniform(-10, 10, 100000)
+        dec = np.degrees(np.arcsin(rng.uniform(-0.1, 0.1, 100000)))
+        lists = io.find_points_in_tiles(tiles, ra, dec, radius=1.605)
+
+        # assert we've found roughly same number of objects per tile
+        counts = np.array([len(i) for i in lists])
+        self.assertLess(counts.std() / counts.mean(), 1e-2)
+
+        # assert each list are indeed in the cell.
+        for i, ii in enumerate(lists):
+            xyz = io._embed_sphere(ra[ii], dec[ii])
+            xyzc = io._embed_sphere(tiles['RA'][i], tiles['DEC'][i])
+            diff = xyz - xyzc
+            dist = np.einsum('ij, ij->i', diff, diff) ** 0.5
+            self.assertLess(dist.max(), 2 * np.sin(np.radians(1.605) * 0.5))
+
+        # tiles overlapped, so we must have duplicates
+        full = np.concatenate(lists)
+        self.assertLess(len(np.unique(full)), len(full))
+
+        list1 = io.find_points_in_tiles(tiles[0], ra, dec, radius=1.605)
+        self.assertEqual(sorted(list1), sorted(lists[0]))
 
     def test_find_tiles_over_point(self):
         tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
@@ -210,18 +263,18 @@ class TestIO(unittest.TestCase):
         tiles['IN_DESI'] = [0, 1, 1, 0]
         tiles['PROGRAM'] = 'DARK'
 
-        ret = io.find_tiles_over_point(tiles, 0.0, -2.0)
+        ret = io.find_tiles_over_point(tiles, 0.0, -2.0, radius=1.605)
         self.assertEqual(ret, [0, 1])
 
-        ret = io.find_tiles_over_point(tiles, 1.0, -1.0)
+        ret = io.find_tiles_over_point(tiles, 1.0, -1.0, radius=1.605)
         self.assertEqual(ret, [0, 1])
 
         # outside
-        ret = io.find_tiles_over_point(tiles, 0.0, -3.7)
+        ret = io.find_tiles_over_point(tiles, 0.0, -3.7, radius=1.605)
         self.assertEqual(ret, [])
 
         # array input
-        ret = io.find_tiles_over_point(tiles, (0.0,), (-3.7,))
+        ret = io.find_tiles_over_point(tiles, (0.0,), (-3.7,), radius=1.605)
         self.assertEqual(len(ret), 1)
         self.assertEqual(ret[0], [])
 
@@ -234,11 +287,11 @@ class TestIO(unittest.TestCase):
 
         # some points must be in the sky,
         # https://github.com/desihub/desimodel/pull/37#issuecomment-270435938
-        indesi = io.is_point_in_desi(tiles, ra, dec)
+        indesi = io.is_point_in_desi(tiles, ra, dec, radius=1.605)
         self.assertTrue(np.any(indesi))
 
         # now assert the consistency between find_tiles_over_point and is_point_in_desi
-        ret = io.find_tiles_over_point(tiles, ra, dec)
+        ret = io.find_tiles_over_point(tiles, ra, dec, radius=1.605)
         self.assertEqual(len(ret), len(ra))
         indesi2 = [len(i) > 0 for i in ret]
 
