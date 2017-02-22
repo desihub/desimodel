@@ -11,6 +11,7 @@ from astropy.io import fits
 import yaml
 import numpy as np
 import warnings
+
 #
 #- PSF and throughput, which require specter
 #
@@ -142,122 +143,29 @@ def load_tiles(onlydesi=True, extra=False):
     else:
         return _tiles[subset]
 
-def _embed_sphere(ra, dec):
-    """ embed RA DEC to a uniform sphere in three-d """
-    phi = np.radians(np.asarray(ra))
-    theta = np.radians(90.0 - np.asarray(dec))
-    r = np.sin(theta)
-    x = r * np.cos(phi)
-    y = r * np.sin(phi)
-    z = np.cos(theta)
-    return np.array((x, y, z)).T
+_platescale = None
+def load_platescale():
+    '''
+    Loads platescale.txt, returning structured array with columns
 
-def is_point_in_desi(tiles, ra, dec, radius, return_tile_index=False):
-    """Return if points given by ra, dec lie in the set of _tiles.
+        radius: radius from center of focal plane [mm]
+        theta: radial angle that has a centroid at this radius [deg]
+        radial_platescale: Meridional (radial) plate scale [um/arcsec]
+        az_platescale: Sagittal (azimuthal) plate scale [um/arcsec]
+    '''
+    global _platescale
+    if _platescale is not None:
+        return _platescale
 
-    This function is optimized to query a lot of points.
-    radius is in units of degrees.
-
-    `tiles` is the result of load_tiles.
-
-    If a point is within `radius` distance from center of any tile,
-    it is in desi.
-
-    The shape of ra, dec must match. The current implementation
-    works only if they are both 1d vectors or scalars.
-
-    If return_itle_index is True, return the index of the nearest tile in tiles array.
-
-    A usual choice for radius in DESI is 1.605 degrees, which comes
-    from the field_radius of 414mm.
-
-    """
-    from scipy.spatial import cKDTree as KDTree
-
-    tilecenters = _embed_sphere(tiles['RA'], tiles['DEC'])
-    tree = KDTree(tilecenters)
-    # radius to 3d distance
-    threshold = 2.0 * np.sin(np.radians(radius) * 0.5)
-    xyz = _embed_sphere(ra, dec)
-    d, i = tree.query(xyz, k=1)
-
-    indesi = d < threshold
-    if return_tile_index:
-        return indesi, i
-    else:
-        return indesi
-
-def find_tiles_over_point(tiles, ra, dec, radius):
-    """Return a list of indices of tiles that covers the points.
-
-    This function is optimized to query a lot of points.
-    radius is in units of degrees. The return value is an array
-    of list objects that are the indices of tiles that cover each point.
-
-    The indices are not sorted in any particular order.
-
-    if ra, dec are scalars, a single list is returned.
-
-    A usual choice for radius in DESI is 1.605 degrees, which comes
-    from the field_radius of 414mm.
-    """
-    from scipy.spatial import cKDTree as KDTree
-
-    tilecenters = _embed_sphere(tiles['RA'], tiles['DEC'])
-    tree = KDTree(tilecenters)
-
-    # radius to 3d distance
-    threshold = 2.0 * np.sin(np.radians(radius) * 0.5)
-    xyz = _embed_sphere(ra, dec)
-    indices = tree.query_ball_point(xyz, threshold)
-    return indices
-
-def find_points_in_tiles(tiles, ra, dec, radius):
-    """Return a list of indices of points that are within each provided tile(s).
-
-    This function is optimized to query a lot of points with relatively few tiles.
-
-    radius is in units of degrees. The return value is an array
-    of lists that contains the index of points that are in each tile.
-    The indices are not sorted in any particular order.
-
-    if tiles is a scalar, a single list is returned.
-
-    A usual choice for radius in DESI is 1.605 degrees, which comes
-    from the field_radius of 414mm.
-    """
-    from scipy.spatial import cKDTree as KDTree
-
-    # check for malformed input shapes. Sorry we currently only
-    # deal with vector inputs. (for a sensible definition of indices)
-
-    assert ra.ndim == 1
-    assert dec.ndim == 1
-
-    points = _embed_sphere(ra, dec)
-    tree = KDTree(points)
-
-    # radius to 3d distance
-    threshold = 2.0 * np.sin(np.radians(radius) * 0.5)
-    xyz = _embed_sphere(tiles['RA'], tiles['DEC'])
-    indices = tree.query_ball_point(xyz, threshold)
-    return indices
-
-#
-#
-#
-def get_tile_radec(tileid):
-    """Return (ra, dec) in degrees for the requested tileid.
-
-    If tileid is not in DESI, return (0.0, 0.0)
-    TODO: should it raise and exception instead?
-    """
-    tiles = load_tiles()
-    if tileid in tiles['TILEID']:
-        i = np.where(tiles['TILEID'] == tileid)[0][0]
-        return tiles[i]['RA'], tiles[i]['DEC']
-    else:
-        return (0.0, 0.0)
+    infile = findfile('focalplane/platescale.txt')
+    columns = [
+        ('radius', 'f8'),
+        ('theta', 'f8'),
+        ('radial_platescale', 'f8'),
+        ('az_platescale', 'f8'),
+    ]
+    _platescale = np.loadtxt(infile, usecols=[0,1,6,7], dtype=columns)
+    return _platescale
 
 def findfile(filename):
     '''

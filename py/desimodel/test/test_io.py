@@ -3,6 +3,7 @@
 """Test desimodel.io.
 """
 import os
+import uuid
 import numpy as np
 from astropy.table import Table
 import unittest
@@ -37,10 +38,13 @@ class TestIO(unittest.TestCase):
         global specter_available, desimodel_available
         cls.specter_available = specter_available
         cls.desimodel_available = desimodel_available
+        cls.trimdir = 'test-'+uuid.uuid4().hex
 
     @classmethod
     def tearDownClass(cls):
-        pass
+        if os.path.exists(cls.trimdir):
+            import shutil
+            shutil.rmtree(cls.trimdir)
 
     def setUp(self):
         """Ensure that any desimodel.io caches are clear before running
@@ -86,6 +90,14 @@ class TestIO(unittest.TestCase):
         for key in ('FIBER', 'POSITIONER', 'SPECTROGRAPH', 'X', 'Y', 'Z'):
             self.assertIn(key, fiberpos.dtype.names)
             x = fiberpos[key]
+
+    @unittest.skipUnless(desimodel_available, desimodel_message)
+    def test_load_platescale(self):
+        """Test loading platescale.txt file.
+        """
+        p1 = io.load_platescale()
+        p2 = io.load_platescale()
+        self.assertTrue(p1 is p2)  #- caching worked
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_load_tiles(self):
@@ -148,158 +160,17 @@ class TestIO(unittest.TestCase):
         self.assertTrue(not np.any(np.char.endswith(tt['PROGRAM'], ' ')))
         self.assertTrue(not np.any(np.char.endswith(te['PROGRAM'], ' ')))
 
-    def test_get_tile_radec(self):
-        """Test grabbing tile information by tileID.
-        """
-        io_tile_cache = io._tiles
-        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
-                                      ('RA', 'f8'),
-                                      ('DEC', 'f8'),
-                                      ('IN_DESI', 'i2'),
-                                      ('PROGRAM', (str, 6)),
-                                  ])
-
-        tiles['TILEID'] = np.arange(4) + 1
-        tiles['RA'] = [0.0, 1.0, 2.0, 3.0]
-        tiles['DEC'] = [-2.0, -1.0, 1.0, 2.0]
-        tiles['IN_DESI'] = [0, 1, 1, 0]
-        tiles['PROGRAM'] = 'DARK'
-        io._tiles = tiles
-        ra, dec = io.get_tile_radec(1)
-        self.assertEqual((ra, dec), (0.0, 0.0))
-        ra, dec, = io.get_tile_radec(2)
-        self.assertEqual((ra, dec), (1.0, -1.0))
-        io._tiles = io_tile_cache
-
-    def test_is_point_in_desi_mock(self):
-        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
-                                      ('RA', 'f8'),
-                                      ('DEC', 'f8'),
-                                      ('IN_DESI', 'i2'),
-                                      ('PROGRAM', (str, 6)),
-                                  ])
-
-        tiles['TILEID'] = np.arange(4) + 1
-        tiles['RA'] = [0.0, 1.0, 2.0, 3.0]
-        tiles['DEC'] = [-2.0, -1.0, 1.0, 2.0]
-        tiles['IN_DESI'] = [0, 1, 1, 0]
-        tiles['PROGRAM'] = 'DARK'
-
-        ret = io.is_point_in_desi(tiles, 0.0, -2.0, radius=1.605, return_tile_index=True)
-        self.assertEqual(ret, (True, 0))
-
-        ret = io.is_point_in_desi(tiles, (0.0,), (-2.0,), radius=1.605, return_tile_index=True)
-        self.assertEqual(ret, ([True], [0]))
-
-        ret = io.is_point_in_desi(tiles, 0.0, -3.7, radius=1.605, return_tile_index=True)
-        self.assertEqual(ret, (False, 0))
-
-        ret = io.is_point_in_desi(tiles, -3.0, -2.0, radius=1.605, return_tile_index=True)
-        self.assertEqual(ret, (False, 0))
-
-        ret = io.is_point_in_desi(tiles, tiles['RA'], tiles['DEC'], radius=1.605)
-        self.assertEqual(len(ret), len(tiles))
-
-    def test_embed_sphere(self):
-        rng = np.random.RandomState(1234)
-        ra = rng.uniform(0, 360, size=1000)
-        dec = rng.uniform(-90, 90, size=1000)
-
-        ret = io._embed_sphere(ra, dec)
-        self.assertEqual(ret.shape, (1000, 3))
-        norm = np.einsum('ij, ij->i', ret, ret)
-        self.assertTrue(all(abs(norm - 1.0) < 1e-5))
-
-    def test_find_points_in_tiles(self):
-        rng = np.random.RandomState(1234)
-
-        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
-                                      ('RA', 'f8'),
-                                      ('DEC', 'f8'),
-                                      ('IN_DESI', 'i2'),
-                                      ('PROGRAM', (str, 6)),
-                                  ])
-
-        tiles['TILEID'] = np.arange(4) + 1
-        tiles['RA'] = [0.0, 1.0, 2.0, 3.0]
-        tiles['DEC'] = [-2.0, -1.0, 1.0, 2.0]
-        tiles['IN_DESI'] = [0, 1, 1, 0]
-        tiles['PROGRAM'] = 'DARK'
-
-        ra = rng.uniform(-10, 10, 100000)
-        dec = np.degrees(np.arcsin(rng.uniform(-0.1, 0.1, 100000)))
-        lists = io.find_points_in_tiles(tiles, ra, dec, radius=1.605)
-
-        # assert we've found roughly same number of objects per tile
-        counts = np.array([len(i) for i in lists])
-        self.assertLess(counts.std() / counts.mean(), 1e-2)
-
-        # assert each list are indeed in the cell.
-        for i, ii in enumerate(lists):
-            xyz = io._embed_sphere(ra[ii], dec[ii])
-            xyzc = io._embed_sphere(tiles['RA'][i], tiles['DEC'][i])
-            diff = xyz - xyzc
-            dist = np.einsum('ij, ij->i', diff, diff) ** 0.5
-            self.assertLess(dist.max(), 2 * np.sin(np.radians(1.605) * 0.5))
-
-        # tiles overlapped, so we must have duplicates
-        full = np.concatenate(lists)
-        self.assertLess(len(np.unique(full)), len(full))
-
-        list1 = io.find_points_in_tiles(tiles[0], ra, dec, radius=1.605)
-        self.assertEqual(sorted(list1), sorted(lists[0]))
-
-    def test_find_tiles_over_point(self):
-        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
-                                      ('RA', 'f8'),
-                                      ('DEC', 'f8'),
-                                      ('IN_DESI', 'i2'),
-                                      ('PROGRAM', (str, 6)),
-                                  ])
-
-        tiles['TILEID'] = np.arange(4) + 1
-        tiles['RA'] = [0.0, 1.0, 2.0, 3.0]
-        tiles['DEC'] = [-2.0, -1.0, 1.0, 2.0]
-        tiles['IN_DESI'] = [0, 1, 1, 0]
-        tiles['PROGRAM'] = 'DARK'
-
-        ret = io.find_tiles_over_point(tiles, 0.0, -2.0, radius=1.605)
-        self.assertEqual(ret, [0, 1])
-
-        ret = io.find_tiles_over_point(tiles, 1.0, -1.0, radius=1.605)
-        self.assertEqual(ret, [0, 1])
-
-        # outside
-        ret = io.find_tiles_over_point(tiles, 0.0, -3.7, radius=1.605)
-        self.assertEqual(ret, [])
-
-        # array input
-        ret = io.find_tiles_over_point(tiles, (0.0,), (-3.7,), radius=1.605)
-        self.assertEqual(len(ret), 1)
-        self.assertEqual(ret[0], [])
-
     @unittest.skipUnless(desimodel_available, desimodel_message)
-    def test_spatial_real_tiles(self):
-        tiles = io.load_tiles()
-        rng = np.random.RandomState(1234)
-        ra = rng.uniform(0, 360, 1000)
-        dec = rng.uniform(-90, 90, 1000)
+    def test_trim_data(self):
+        '''Test trimming data files for lightweight tests'''
+        psffile = io.findfile('specpsf/psf-b.fits')
+        if os.path.getsize(psffile) > 20e6:
+            from .. import trim
+            indir = os.path.join(os.getenv('DESIMODEL'), 'data')
+            trim.trim_data(indir, self.trimdir)
+            self.assertTrue(os.path.isdir(self.trimdir))
+            self.assertGreater(len(list(os.walk(self.trimdir))), 1)
 
-        # some points must be in the sky,
-        # https://github.com/desihub/desimodel/pull/37#issuecomment-270435938
-        indesi = io.is_point_in_desi(tiles, ra, dec, radius=1.605)
-        self.assertTrue(np.any(indesi))
-
-        # now assert the consistency between find_tiles_over_point and is_point_in_desi
-        ret = io.find_tiles_over_point(tiles, ra, dec, radius=1.605)
-        self.assertEqual(len(ret), len(ra))
-        indesi2 = [len(i) > 0 for i in ret]
-
-        # FIXME: is there a better assertion function for arrays?
-        self.assertEqual(list(indesi), indesi2)
-
-        # Just interesting to see how many tiles overlap a random point?
-        print(np.bincount([len(i) for i in ret]))
 
 def test_suite():
     """Allows testing of only this module with the command::
