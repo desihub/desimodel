@@ -4,12 +4,21 @@
 """
 import unittest
 import numpy as np
-from ..focalplane import FocalPlane
+from ..focalplane import FocalPlane, generate_random_centroid_offsets
 
 
 class TestFocalplane(unittest.TestCase):
     """Test desimodel.focalplane.
     """
+
+    def test_random_offsets(self):
+        """Test generating random positioner offsets.
+        """
+        dx, dy = generate_random_centroid_offsets(1.0)
+        self.assertEqual(dx.shape, dy.shape)
+        dr = np.sqrt(dx**2 + dy**2)
+        self.assertAlmostEqual(np.std(dr), 1.0)
+        self.assertLess(np.max(dr), 7)
 
     def test_check_radec(self):
         """Test the RA, Dec bounds checking.

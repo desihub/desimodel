@@ -3,6 +3,7 @@
 """Test desimodel.io.
 """
 import os
+import uuid
 import numpy as np
 from astropy.table import Table
 import unittest
@@ -37,10 +38,13 @@ class TestIO(unittest.TestCase):
         global specter_available, desimodel_available
         cls.specter_available = specter_available
         cls.desimodel_available = desimodel_available
+        cls.trimdir = 'test-'+uuid.uuid4().hex
 
     @classmethod
     def tearDownClass(cls):
-        pass
+        if os.path.exists(cls.trimdir):
+            import shutil
+            shutil.rmtree(cls.trimdir)
 
     def setUp(self):
         """Ensure that any desimodel.io caches are clear before running
@@ -86,6 +90,14 @@ class TestIO(unittest.TestCase):
         for key in ('FIBER', 'POSITIONER', 'SPECTROGRAPH', 'X', 'Y', 'Z'):
             self.assertIn(key, fiberpos.dtype.names)
             x = fiberpos[key]
+
+    @unittest.skipUnless(desimodel_available, desimodel_message)
+    def test_load_platescale(self):
+        """Test loading platescale.txt file.
+        """
+        p1 = io.load_platescale()
+        p2 = io.load_platescale()
+        self.assertTrue(p1 is p2)  #- caching worked
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_load_tiles(self):
@@ -148,28 +160,16 @@ class TestIO(unittest.TestCase):
         self.assertTrue(not np.any(np.char.endswith(tt['PROGRAM'], ' ')))
         self.assertTrue(not np.any(np.char.endswith(te['PROGRAM'], ' ')))
 
-    def test_get_tile_radec(self):
-        """Test grabbing tile information by tileID.
-        """
-        io_tile_cache = io._tiles
-        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
-                                      ('RA', 'f8'),
-                                      ('DEC', 'f8'),
-                                      ('IN_DESI', 'i2'),
-                                      ('PROGRAM', (str, 6)),
-                                  ])
-
-        tiles['TILEID'] = np.arange(4) + 1
-        tiles['RA'] = [0.0, 1.0, 2.0, 3.0]
-        tiles['DEC'] = [-2.0, -1.0, 1.0, 2.0]
-        tiles['IN_DESI'] = [0, 1, 1, 0]
-        tiles['PROGRAM'] = 'DARK'
-        io._tiles = tiles
-        ra, dec = io.get_tile_radec(1)
-        self.assertEqual((ra, dec), (0.0, 0.0))
-        ra, dec, = io.get_tile_radec(2)
-        self.assertEqual((ra, dec), (1.0, -1.0))
-        io._tiles = io_tile_cache
+    @unittest.skipUnless(desimodel_available, desimodel_message)
+    def test_trim_data(self):
+        '''Test trimming data files for lightweight tests'''
+        psffile = io.findfile('specpsf/psf-b.fits')
+        if os.path.getsize(psffile) > 20e6:
+            from .. import trim
+            indir = os.path.join(os.getenv('DESIMODEL'), 'data')
+            trim.trim_data(indir, self.trimdir)
+            self.assertTrue(os.path.isdir(self.trimdir))
+            self.assertGreater(len(list(os.walk(self.trimdir))), 1)
 
 
 def test_suite():

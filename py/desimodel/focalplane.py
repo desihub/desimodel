@@ -1,4 +1,4 @@
-# License information goes here
+# See LICENSE.rst for BSD 3-clause license info
 # -*- coding: utf-8 -*-
 """
 ====================
@@ -102,6 +102,32 @@ def generate_random_centroid_offsets(rms_offset=default_offset, seed=123):
     return generate_random_vector_field(
         rms_offset, exponent=-1.0, n=256, seed=seed, smoothing=0.05)
 
+_tile_radius_deg = None
+_tile_radius_mm = None
+
+def get_tile_radius_mm():
+    '''Returns radius in mm to the middle of the outermost positioner'''
+    global _tile_radius_mm
+    if _tile_radius_mm is None:
+        import desimodel.io
+        fp = desimodel.io.load_fiberpos()
+        p = desimodel.io.load_desiparams()
+        _tile_radius_mm = np.sqrt(np.max(fp['X']**2 + fp['Y']**2))  # + p['positioners']['radius_max']
+
+    return _tile_radius_mm
+
+def get_tile_radius_deg():
+    '''Returns radius in degrees to the middle of the outermost positioner'''
+    global _tile_radius_deg
+    if _tile_radius_deg is None:
+        import scipy.interpolate
+        import desimodel.io
+        rmax = get_tile_radius_mm()
+        platescale = desimodel.io.load_platescale()
+        fn = scipy.interpolate.interp1d(platescale['radius'], platescale['theta'], kind='quadratic')
+        _tile_radius_deg = float(fn(rmax))
+
+    return _tile_radius_deg
 
 class FocalPlane(object):
     """A class for modeling the DESI focal plane and converting between

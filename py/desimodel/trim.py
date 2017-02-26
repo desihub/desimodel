@@ -103,14 +103,14 @@ def trim_spectra(indir, outdir):
         'ZenithExtinction-KPNO.dat',
         ):
         i = 0
-        fx = open(os.path.join(outdir, filename), 'w')
-        for line in open(os.path.join(indir, filename)):
-            if line.startswith('#'):
-                fx.write(line)
-            elif i%20 == 0:
-                fx.write(line)
-            i += 1
-        fx.close()
+        with open(os.path.join(indir, filename)) as infx:
+            with open(os.path.join(outdir, filename), 'w') as outfx:
+                for line in infx:
+                    if line.startswith('#'):
+                        outfx.write(line)
+                    elif i%20 == 0:
+                        outfx.write(line)
+                    i += 1
 
 def trim_targets(indir, outdir):
     '''copy everything in targets/'''

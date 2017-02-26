@@ -11,6 +11,7 @@ from astropy.io import fits
 import yaml
 import numpy as np
 import warnings
+
 #
 #- PSF and throughput, which require specter
 #
@@ -141,21 +142,30 @@ def load_tiles(onlydesi=True, extra=False):
         return _tiles
     else:
         return _tiles[subset]
-#
-#
-#
-def get_tile_radec(tileid):
-    """Return (ra, dec) in degrees for the requested tileid.
 
-    If tileid is not in DESI, return (0.0, 0.0)
-    TODO: should it raise and exception instead?
-    """
-    tiles = load_tiles()
-    if tileid in tiles['TILEID']:
-        i = np.where(tiles['TILEID'] == tileid)[0][0]
-        return tiles[i]['RA'], tiles[i]['DEC']
-    else:
-        return (0.0, 0.0)
+_platescale = None
+def load_platescale():
+    '''
+    Loads platescale.txt, returning structured array with columns
+
+        radius: radius from center of focal plane [mm]
+        theta: radial angle that has a centroid at this radius [deg]
+        radial_platescale: Meridional (radial) plate scale [um/arcsec]
+        az_platescale: Sagittal (azimuthal) plate scale [um/arcsec]
+    '''
+    global _platescale
+    if _platescale is not None:
+        return _platescale
+
+    infile = findfile('focalplane/platescale.txt')
+    columns = [
+        ('radius', 'f8'),
+        ('theta', 'f8'),
+        ('radial_platescale', 'f8'),
+        ('az_platescale', 'f8'),
+    ]
+    _platescale = np.loadtxt(infile, usecols=[0,1,6,7], dtype=columns)
+    return _platescale
 
 def findfile(filename):
     '''
