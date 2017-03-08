@@ -5,17 +5,20 @@ Fiber Positioners
 Files
 =====
 
-etc/data/inputs/focalplane/pos_on_z1.txt is a text file version of DESI-0403v2,
-mapping the location of the fiber positioners in the DESI focal plane.
+data/inputs/focalplane/DESI-0530-posloc.txt defines the location of the
+positioners on the focal plane, taken from DESI-0530 tab
+PositionerAndFiducialLocations cells B40-J589 .
 
-bin/randomize_fibers randomly assigns fibers to positioners and makes
-a mapping for each spectrograph, output to etc/data/focalplane/fiberpos.* in
+data/inputs/focalplane/cassette_order.txt defines the order of which
+cassettes map to which ranges of fibers on the spectrograph slithead.
+
+bin/randomize_fibers combines these while randomizing fibers within a
+cassette, with output to data/focalplane/fiberpos.* in
 fits and ascii formats.
 
 The square cutouts in the corner of each focal plane wedge are for the
-guider/focus cameras.  Additionally there are random holes within
-the plane without a fiber assigned to mimic placement of fiducials.
-Hopefully the final DESI system will have more evenly distributed fiducials.
+guider/focus cameras.  Additionally there are positioner holes reserved
+for unmoving fiducials.
 
 fiberpos.txt is a text file with columns
 
@@ -25,6 +28,9 @@ fiberpos.txt is a text file with columns
 * x, y, z [mm]
 
 fiberpos.fits contains a binary table with the same information.
+
+fiberpos-all.* includes information about non-spectro positioner holes, e.g.
+locations of fidicials (postype=FIF) and sky monitor fibers (postype=ETC).
 
 Coordinate Systems
 ==================

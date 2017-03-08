@@ -1,9 +1,35 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from sys import exit
-#
-#
-#
+
+def write_text_fiberpos(filename, fiberpos):
+    '''
+    Writes a fiberpos table to filename, maintaining backwards compatibility
+    with the original fiberpos.txt format
+
+    Args:
+        filename: output file name string
+        fiberpos: astropy Table of fiber positions
+    '''
+
+    #- Write the old text file format for backwards compatibility
+    fxlines = [
+        "#- Fiber to positioner mapping; x,y,z in mm on focal plane",
+        "#- See doc/fiberpos.rst for more details.",
+        "#- Coordinates at zenith: +x = East = +RA; +y = South = -dec",
+        "",
+        '#- fiber positioner spectro  x  y  z']
+    for row in fiberpos:
+        fxlines.append("{:4d}  {:4d}  {:2d}  {:12.6f}  {:12.6f}  {:12.6f}".format(
+            row['fiber'], row['positioner'], row['spectro'],
+            row['x'], row['y'], row['z'],
+        ))
+
+    fx = open(filename, 'w')
+    fx.write('\n'.join(fxlines)+'\n')
+    fx.close()
+
+
 def main():
     """
     Randomize fibers from focal plane to spectrograph.
@@ -16,139 +42,122 @@ def main():
     Stephen Bailey, LBL
     Fall 2013
     """
-    import random
-    import numpy as np
-    import fitsio
-    #- input parameters
     import argparse
-    from sys import argv
+    import os
+    import sys
 
-    parser = argparse.ArgumentParser(prog=argv[0])
+    import numpy as np
+    from astropy.table import Table, vstack
+
+    parser = argparse.ArgumentParser(prog=sys.argv[0])
     parser.add_argument("-i", "--input", action='store', metavar='FILE',
-        default='pos_on_z1.txt', help="positioner location filename")
-    parser.add_argument("-o", "--output", action='store', metavar='FILE',
-        default='fiberpos.txt', help="fiber position filename")
+        default='DESI-0530-posloc.txt', help="positioner location filename")
+    parser.add_argument("-c", "--cassettes", action='store', metavar='FILE',
+        default='cassette_order.txt', help="Order of cassettes on slit heads")
+    parser.add_argument("-o", "--outdir", action='store', metavar='DIR',
+        default='.', help="output directory")
     parser.add_argument("--debug",   help="debug with ipython prompt at end", action="store_true")
 
     opts = parser.parse_args()
 
     #- Random but reproducible
     seed = 2
-    random.seed(seed)                  #- for select
-    np.random.seed(seed)               #- for shuffle
+    np.random.seed(seed)
 
-    #- Basic DESI parameters hardcoded
-    nspectro = 10
-    nfib_per_spectro = 500
-    nfib = nspectro * nfib_per_spectro
+    #- Read positioner locations on the focal plane
+    colnames = ['positioner', 'postype', 'x', 'y', 'z', 'preces', 'nutat', 'spin', 'cassette']
+    posloc = Table.read(opts.input, format='ascii', names=colnames)
+    if 'comments' in posloc.meta.keys():
+        del posloc.meta['comments']
 
-    #- Read positioner location file
-    columns = [('n', int),
-               ('x', float),
-               ('y', float),
-               ('z', float),
-               ('precess', float),
-               ('nutation', float),
-               ('spin', float),
-               ('rotsym', int),
-               ('remove', int),
-              ]
-    data = np.loadtxt(opts.input, dtype=columns).view(np.recarray)
+    #- Read mapping of cassettes on focal plane to fibers on slithead
+    colnames = ['fibermin', 'fibermax', 'sp0', 'sp1', 'sp2', 'sp3', 'sp4', 'sp5', 'sp6', 'sp7', 'sp8', 'sp9']
+    cassettes = Table.read(opts.cassettes, format='ascii', names=colnames)
 
-    #- Remove the locations flagged for the guide cameras
-    #- (and eventually the fiducials)
-    ii = data['remove'] == 0
-    data = data[ii]
+    #- Randomize fibers within a cassette
+    petals = list()
+    for p in range(10):
+        fiberpos = posloc.copy(copy_data=True)
+        fiberpos['fiber'] = -1
+        fiberpos['spectro'] = p
+        iipos = (fiberpos['postype'] == 'POS')
+        fiberpos['positioner'] += p*len(fiberpos)
+        for c in range(1,11):
+            ii = (cassettes['sp'+str(p)] == c)
+            assert np.count_nonzero(ii) == 1
+            fibermin = p*500 + cassettes['fibermin'][ii][0]
+            fibermax = p*500 + cassettes['fibermax'][ii][0]
 
-    #- For now # sectors == # spectrographs.
-    #- If that changes in a later design, crash now and fix code
-    assert nspectro == len(set(data['rotsym']))
+            jj = iipos & (fiberpos['cassette'] == str(c))  #- includes 'N/A' so column is string not int
+            assert np.count_nonzero(jj) == 50
+            fiber = list(range(fibermin, fibermax+1))
+            np.random.shuffle(fiber)
+            fiberpos['fiber'][jj] = fiber
 
-    #- setup fiber position table
-    fibercols = [('fiber', int),
-                 ('positioner', int),
-                 ('spectrograph', int),
-                 ('x', float),
-                 ('y', float),
-                 ('z', float),
-                ]
-    fiberpos = np.zeros(nfib, dtype=fibercols).view(np.recarray)
+        #- Petal 0 is at the "bottom"; See DESI-0530
+        phi = np.radians((7*36 + 36*p)%360)
+        x = np.cos(phi)*fiberpos['x'] - np.sin(phi)*fiberpos['y']
+        y = np.sin(phi)*fiberpos['x'] + np.cos(phi)*fiberpos['y']
+        fiberpos['x'] = x
+        fiberpos['y'] = y
 
-    #- Randomize fiber assignment within a spectrograph
-    ifiber = np.arange(nfib_per_spectro)
-    for i in range(nspectro):
-        #- Get positions for this spectrograph
-        pos = data[(data.rotsym == i) & (data.remove == 0)].copy()
+        petals.append(fiberpos)
 
-        #- Mark any extras for removal as fiducials
-        nfid = len(pos) - nfib_per_spectro
-        assert nfid >= 0
-        if nfid > 0:
-            #- Check min/max angles to avoid removing edge positioners
-            #- Oddly, np.math.atan2 only accepts scalar input
-            phi = [np.math.atan2(y, x) for y,x in zip(pos.y, pos.x)]
-            phi = (np.array(phi)+2*np.pi)%(2*np.pi)  #- [0,2pi]
+    fiberpos = vstack(petals)
+    fiberpos.sort('fiber')
+    ii = (fiberpos['postype'] == 'POS')
 
-            #- interior angles ok to knock out fibers
-            ii = np.where((np.min(phi)+0.1 < phi) & (phi < np.max(phi)-0.1))[0]
-            remove = random.sample(ii, nfid)
-            pos['remove'][random.sample(ii, nfid)] = 2
-            pos = pos[pos['remove'] == 0]
-            assert len(pos) == nfib_per_spectro
+    #- Sanity checks before writing output
+    fp = fiberpos[ii]
+    assert len(fp) == 5000
+    assert len(np.unique(fp['fiber'])) == 5000
+    assert min(fp['fiber']) == 0
+    assert max(fp['fiber']) == 4999
+    assert len(set(fp['spectro'])) == 10
+    assert min(fp['spectro']) == 0
+    assert max(fp['spectro']) == 9
+    assert len(np.unique(fiberpos['positioner'])) == len(fiberpos)
 
-        #- Shuffle positioner -> fiber assignment
-        #- Directly shuffling pos doesn't appear to work.  Bug in shuffle ?!?
-        ii = np.arange(len(pos))
-        np.random.shuffle(ii)
-        pos = pos[ii]
+    #- Pick filenames in output directory
+    textout = os.path.join(opts.outdir, 'fiberpos.txt')
+    fitsout = os.path.join(opts.outdir, 'fiberpos.fits')
+    pngout = os.path.join(opts.outdir, 'fiberpos.png')
 
-        #- Fill fiberpos array
-        ii = list(range(i*nfib_per_spectro, (i+1)*nfib_per_spectro))
-        fiberpos['fiber'][ii] = ifiber + i*nfib_per_spectro
-        fiberpos['positioner'][ii] = pos['n']
-        fiberpos['spectrograph'][ii] = i
-        fiberpos['x'][ii] = pos['x']
-        fiberpos['y'][ii] = pos['y']
-        fiberpos['z'][ii] = pos['z']
+    #- Drop some columns we don't need
+    fiberpos.remove_columns(['preces', 'nutat', 'spin', 'cassette'])
 
-    if opts.output.endswith('.txt'):
-        textout = opts.output
-        fitsout = opts.output.replace('.txt', '.fits')
-    elif opts.output.endswith('.fits'):
-        fitsout = opts.output
-        textout = opts.output.replace('.fits', '.txt')
+    #- Update i8 -> i4 for integer columns
+    for colname in ['fiber', 'positioner', 'spectro']:
+        fiberpos.replace_column(colname, fiberpos[colname].astype('i4'))
 
-    pngout = textout.replace('.txt', '.png')
+    #- Set units and descriptions
+    fiberpos['x'].unit = 'mm'
+    fiberpos['y'].unit = 'mm'
+    fiberpos['z'].unit = 'mm'
+    fiberpos['x'].description = 'focal surface location [mm]'
+    fiberpos['y'].description = 'focal surface location [mm]'
+    fiberpos['z'].description = 'focal surface location [mm]'
+    fiberpos['fiber'].description = 'fiber number [0-4999]'
+    fiberpos['positioner'].description = 'focal plane positioner hole number'
+    fiberpos['spectro'].description = 'spectrograph number [0-9]'
+    fiberpos.meta['comments'] = ["Coordinates at zenith: +x = East = +RA; +y = South = -dec"]
 
-    #- Write fits file, then fix up comments (!)
-    fitsio.write(fitsout, fiberpos, extname='FIBERPOS', clobber=True)
-    fx = fitsio.FITS(fitsout, 'rw')
-    hdr = fx['FIBERPOS'].read_header()
-    fx['FIBERPOS'].write_key('TTYPE1', hdr['TTYPE1'], 'fiber number [0-4999]')
-    fx['FIBERPOS'].write_key('TTYPE2', hdr['TTYPE2'], 'positioner number [0-4999]')
-    fx['FIBERPOS'].write_key('TTYPE3', hdr['TTYPE3'], 'spectrograph number [0-9]')
-    fx['FIBERPOS'].write_key('TTYPE4', hdr['TTYPE4'], 'positioner x center [mm]')
-    fx['FIBERPOS'].write_key('TTYPE5', hdr['TTYPE5'], 'positioner y center [mm]')
-    fx['FIBERPOS'].write_key('TTYPE6', hdr['TTYPE6'], 'positioner z location [mm]')
-    fx.close()
+    #- Write old text format with just fiber, positioner, spectro, x, y, z
+    write_text_fiberpos(textout, fiberpos[ii])
+    cols = ['fiber', 'positioner', 'spectro', 'x', 'y', 'z']
+    fiberpos[ii][cols].write(fitsout, format='fits', overwrite=True)
 
-    #- Write a text file format
-    fxlines = [
-        "#- Fiber to positioner mapping; x,y,z in mm on focal plane",
-        "#- See doc/fiberpos.rst for more details.",
-        "#- Coordinates at zenith: +x = East = +RA; +y = South = -dec",
-        "",
-        '#- fiber positioner spectro  x  y  z']
-    for row in fiberpos:
-        ### fxlines.append("{fiber:4d}  {positioner:4d}  {spectrograph:2d}  {x:12.6f}  {y:12.6f}  {z:12.6f}".format(**row))
-        fxlines.append("{:4d}  {:4d}  {:2d}  {:12.6f}  {:12.6f}  {:12.6f}".format(*row))
-    with open(textout,'w') as fx:
-        fx.write('\n'.join(fxlines)+'\n')
-    fx.close()
+    #- Write ecsv and fits format with all columns and rows, including
+    #- fiducials (postype='FIF') and sky monitor (postype='ETC')
+    fiberpos.sort('positioner')
+    fiberpos.write(fitsout.replace('.fits', '-all.fits'), format='fits', overwrite=True)
+    fiberpos.write(textout.replace('.txt', '-all.ecsv'), format='ascii.ecsv')
 
+    #- Visualize mapping
+    ii = (fiberpos['postype'] == 'POS')
     import pylab as P
     P.figure(figsize=(7,7))
-    P.scatter(fiberpos.x, fiberpos.y, c=fiberpos.fiber, edgecolor='none')
+    P.scatter(fiberpos['x'][ii], fiberpos['y'][ii], c=fiberpos['fiber'][ii]%500, edgecolor='none')
     P.grid()
     P.xlim(-420,420)
     P.ylim(-420,420)
@@ -158,14 +167,10 @@ def main():
 
     if opts.debug:
         #--- DEBUG ---
-        P.ion()
-        P.show()
         import IPython
         IPython.embed()
         #--- DEBUG ---
 
     return 0
-#
-#
-#
+
 exit(main())

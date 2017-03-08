@@ -14,6 +14,7 @@ Contents
     :maxdepth: 1
 
     release_notes.rst
+    update_inputs.rst
     testing.rst
     fiberpos.rst
     footprint.rst

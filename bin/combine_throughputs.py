@@ -122,7 +122,7 @@ def main():
     spec = dict()
     spec['b'] = load_spec_throughput(datadir+'/inputs/throughput/DESI-0334-spectro/blue-thru.txt')
     spec['r'] = load_spec_throughput(datadir+'/inputs/throughput/DESI-0334-spectro/red-thru.txt')
-    spec['z'] = load_spec_throughput(datadir+'/inputs/throughput/DESI-0334-spectro/nir-thru-500.txt')
+    spec['z'] = load_spec_throughput(datadir+'/inputs/throughput/DESI-0334-spectro/nir-thru-250.txt')
 
     #- Load wavemin / wavemax from PSF files
     wmin = dict()
@@ -140,7 +140,7 @@ def main():
                     extinction=extinction(ww),
                     fiberinput=fiberinput['elg'](ww) )
         hdr = list()
-        hdr.append(dict(name='EXPTIME', value=params['exptime'], comment='default exposure time [sec]'))
+        hdr.append(dict(name='EXPTIME', value=params['exptime_dark'], comment='default exposure time [sec]'))
         hdr.append(dict(name='GEOMAREA', value=params['area']['geometric_area'], comment='geometric area of mirror - obscurations'))
         hdr.append(dict(name='FIBERDIA', value=params['fibers']['diameter_arcsec'], comment='average fiber diameter [arcsec]'))
         hdr.append(dict(name='WAVEMIN', value=wmin[channel], comment='Minimum wavelength [Angstroms]'))

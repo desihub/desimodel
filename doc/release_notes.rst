@@ -2,13 +2,16 @@
 desimodel Release Notes
 =======================
 
-0.5.2 (unreleased)
+0.6.0 (unreleased)
 ------------------
 
 * Add desimodel.seeing module with functions that model the expected DESI
   zenith seeing at 6355A, with an accompanying jupyter notebook.
 * Altered xy offset RMS calculation in focalplane.py to scale the distribution
   RMS rather than the sample standard deviation.
+* Update focal plane to positioner mapping
+* z-channel 250 um CCD instead of 500 um CCD
+* Update DocDB -> desimodel update method for fiberpos and throughput
 
 0.5.1 (2016-12-01)
 ------------------
