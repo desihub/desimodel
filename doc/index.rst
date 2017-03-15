@@ -29,6 +29,9 @@ The desimodel package/API
 .. automodule:: desimodel.focalplane
     :members:
 
+.. automodule:: desimodel.seeing
+    :members:
+
 .. automodule:: desimodel.install
     :members:
 
