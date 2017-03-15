@@ -97,7 +97,7 @@ def sample(n_sample, dt_sec=300., max_seeing=5., seed=None,
 
     The algorithm is fast enough to use even when the time structure is not
     needed.  The time required to simulate the full 5-year survey at 5-minute
-    resolution (158 million samples) is < 2 minutes.  The memory requirements
+    resolution (~175K samples) is < 1 second.  The memory requirements
     and timing are both approximately linear in n_sample.
 
     Parameters
