@@ -5,7 +5,8 @@ desimodel Release Notes
 0.5.2 (unreleased)
 ------------------
 
-* No changes yet
+* Add desimodel.seeing module with functions that model the expected DESI
+  zenith seeing at 6355A, with an accompanying jupyter notebook.
 
 0.5.1 (2016-12-01)
 ------------------
