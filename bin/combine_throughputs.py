@@ -45,9 +45,7 @@ def load_fiberinput(filename):
 def load_spec_throughput(filename):
     """
     Spectrograph throughputs from DESI-0334 have wavelength [nm] in the
-    first column and total throughput in the last column.  However, the NIR
-    throughput has the total in the second-to-the-last column, thus
-    the support for the column= keyword.
+    first column and total throughput in the last column.
 
     Returns InterpolatedUnivariateSpline instance.
     """

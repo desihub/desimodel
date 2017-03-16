@@ -2,6 +2,11 @@
 How to update inputs from DocDB
 ===============================
 
+Context: Inputs from DocDB that require reformatting before using are kept
+in data/inputs/ and then reformatted using scripts in bin/ .  Inputs from
+DocDB that can be used as-is are directly added to their final location
+under data/.
+
 Basic Setup
 ===========
 
