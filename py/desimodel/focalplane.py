@@ -67,8 +67,7 @@ def generate_random_vector_field(rms, exponent, n, seed=None, smoothing=0.05):
     offsets = np.fft.ifft2(A)
 
     # Rescale to the specified RMS radial offset.
-    dr2 = (offsets.real**2 + offsets.imag**2).flatten()
-    rescale = rms / np.sqrt(np.average(dr2))
+    rescale = rms / np.sqrt(np.var(offsets.real) + np.var(offsets.imag))
     dx = offsets.real * rescale
     dy = offsets.imag * rescale
 
