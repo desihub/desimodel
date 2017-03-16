@@ -7,8 +7,8 @@ desimodel Release Notes
 
 * Add desimodel.seeing module with functions that model the expected DESI
   zenith seeing at 6355A, with an accompanying jupyter notebook.
-* Altered xy offset RMS calculation in focalplane.py to use the radial
-  projection of the 2D distribution.
+* Altered xy offset RMS calculation in focalplane.py to scale the distribution
+  RMS rather than the sample standard deviation.
 
 0.5.1 (2016-12-01)
 ------------------
