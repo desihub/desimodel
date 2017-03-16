@@ -67,7 +67,10 @@ def generate_random_vector_field(rms, exponent, n, seed=None, smoothing=0.05):
     offsets = np.fft.ifft2(A)
 
     # Rescale to the specified RMS radial offset.
-    rescale = rms / np.std(np.sqrt(offsets.real ** 2 + offsets.imag ** 2))
+    # Note that we're using the definition of RMS for the radial projection 
+    # of a 2D distribution (the 68th percentile).
+    dr = np.sqrt(offsets.real ** 2 + offsets.imag ** 2).flatten()
+    rescale = rms / np.percentile(dr, 68)
     dx = offsets.real * rescale
     dy = offsets.imag * rescale
 
