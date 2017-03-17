@@ -14,8 +14,8 @@ def update(outdir=None, seed=2):
     TODO: document
     '''
     #- Download input files from DocDB
-    cassette_file = docdb.download_docdb(2721, 1, 'cassette_order.txt')
-    xls_fp_layout = docdb.download_docdb(530, 10, 'DESI-0530-v10 (Focal Plane Layout).xlsx')
+    cassette_file = docdb.download(2721, 1, 'cassette_order.txt')
+    xls_fp_layout = docdb.download(530, 10, 'DESI-0530-v10 (Focal Plane Layout).xlsx')
     
     #- Random but reproducible
     np.random.seed(seed)

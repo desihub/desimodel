@@ -175,7 +175,7 @@ def findfile(filename):
     desimodel data would be installed with the package and $DESIMODEL
     would become an optional override.
     '''
-    return os.path.join(os.getenv('DESIMODEL'), 'data', filename)
+    return os.path.join(datadir(), filename)
 
 def datadir():
     '''

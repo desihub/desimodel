@@ -20,9 +20,14 @@ def _xls_col2int(col):
 
     return index-1
 
-def xls_read_row(filename, sheetname, rownum, firstcol, lastcol):
+def xls_read_row(filename, sheetname, rownum, firstcol, lastcol, dtype=None):
     import xlrd
-    pass
+    icol = _xls_col2int(firstcol)
+    jcol = _xls_col2int(lastcol)
+    with xlrd.open_workbook(filename) as wb:
+        s = wb.sheet_by_name(sheetname)
+        values = s.row_values(rownum-1, icol, jcol+1)
+        return np.array(values, dtype=dtype)
 
 def xls_read_col(filename, sheetname, column, firstrow, lastrow, dtype=None):
     '''
@@ -32,11 +37,11 @@ def xls_read_col(filename, sheetname, column, firstrow, lastrow, dtype=None):
     icol = _xls_col2int(column)
     with xlrd.open_workbook(filename) as wb:
         s = wb.sheet_by_name(sheetname)
-        values = s.col_values(icol, firstrow-1, lastrow-1)
+        values = s.col_values(icol, firstrow-1, lastrow)
         return np.array(values, dtype=dtype)
     
 
-def download_docdb(docnum, docver, filename, outdir=None, overwrite=False):
+def download(docnum, docver, filename, outdir=None, overwrite=False):
     '''
     Downloads and writes outdir/docnum-docver-filename
 
