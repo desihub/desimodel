@@ -176,3 +176,15 @@ def findfile(filename):
     would become an optional override.
     '''
     return os.path.join(os.getenv('DESIMODEL'), 'data', filename)
+
+def datadir():
+    '''
+    Returns location to desimodel data
+
+    if set, $DESIMODEL overrides data installed with the package
+    '''
+    if 'DESIMODEL' in os.environ:
+        return os.path.abspath(os.path.join(os.environ['DESIMODEL'], 'data'))
+    else:
+        import pkg_resources
+        return pkg_resources.resource_filename('desimodel', 'data')
