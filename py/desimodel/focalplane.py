@@ -21,7 +21,7 @@ except TypeError:
     default_offset = 10.886
 
 
-def generate_random_vector_field(rms, exponent, n, seed=None, smoothing=0.05):
+def generate_random_vector_field(rms, exponent, n, seed=None, smoothing=0.02):
     """Generate a pair dx, dy of 2D Gaussian random field.
 
     The random field is generated with a power spectrum P(k) ~ r ** exponent
@@ -100,7 +100,7 @@ def generate_random_centroid_offsets(rms_offset=default_offset, seed=123):
         Tuple dx, dy of centroid offset arrays with units.
     """
     return generate_random_vector_field(
-        rms_offset, exponent=-1.0, n=256, seed=seed, smoothing=0.05)
+        rms_offset, exponent=-1.0, n=256, seed=seed, smoothing=0.02)
 
 _tile_radius_deg = None
 _tile_radius_mm = None
