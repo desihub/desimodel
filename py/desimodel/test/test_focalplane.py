@@ -17,7 +17,7 @@ class TestFocalplane(unittest.TestCase):
         dx, dy = generate_random_centroid_offsets(1.0)
         self.assertEqual(dx.shape, dy.shape)
         dr = np.sqrt(dx**2 + dy**2)
-        self.assertAlmostEqual(np.std(dr), 1.0)
+        self.assertAlmostEqual(np.sqrt(np.average(dr**2)), 1.0)
         self.assertLess(np.max(dr), 7)
 
     def test_check_radec(self):
