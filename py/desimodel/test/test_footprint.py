@@ -98,7 +98,7 @@ class TestFootprint(unittest.TestCase):
 
         ra = rng.uniform(-10, 10, 100000)
         dec = np.degrees(np.arcsin(rng.uniform(-0.1, 0.1, 100000)))
-        lists = footprint.find_points_in_tiles(tiles, ra, dec)
+        lists = footprint.find_points_in_tiles(tiles, ra, dec, radius=1.6058)
 
         # assert we've found roughly same number of objects per tile
         counts = np.array([len(i) for i in lists])

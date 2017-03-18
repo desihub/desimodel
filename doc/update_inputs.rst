@@ -43,7 +43,7 @@ Throughput
 
     import desimodel.inputs.throughput
     desimodel.inputs.throughput.update()
-    
+
 To Do
 =====
 
@@ -56,7 +56,7 @@ Update methodology and document how to update the following:
   * desimodel/data/focalplane/platescale.txt
   * trimming the full files into a small test set (desimodel.trim)
   * Optical distortions
-      
+
       * data/inputs/throughput/raytracing.txt
       * data/throughput/DESI-0347_blur.ecsv
       * data/throughput/DESI-0347_offset.ecsv

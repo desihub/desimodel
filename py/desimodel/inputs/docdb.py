@@ -72,7 +72,7 @@ def xls_read_col(filename, sheetname, column, firstrow, lastrow, dtype=None):
         s = wb.sheet_by_name(sheetname)
         values = s.col_values(icol, firstrow-1, lastrow)
         return np.array(values, dtype=dtype)
-    
+
 
 def download(docnum, docver, filename, outdir=None, overwrite=False):
     '''
@@ -91,7 +91,7 @@ def download(docnum, docver, filename, outdir=None, overwrite=False):
         path to output file written
 
     Notes:
-    
+
       * only supports python3
       * creates outdir if needed
       * prepends DESI-{docnum}v{docver} to {filename} even if filename

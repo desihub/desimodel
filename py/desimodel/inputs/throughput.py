@@ -15,19 +15,19 @@ from ..io import datadir, findfile
 def update(outdir=None):
     '''
     Update thru-*.fits from DESI-0347 and DESI-0344
-    
+
     Options:
         outdir: string output directory, default $DESIMODEL/data/throughput
     '''
-    
+
     master_thru_file = docdb.download(347, 11, 'DESI-347-v11 Throughput Noise SNR Calcs.xlsx')
     desi_yaml_file   = docdb.download(347, 11, 'desi.yaml')
-    
+
     ccd_thru_file = dict()
     ccd_thru_file['b'] = docdb.download(334, 3, 'blue-thru.txt')
     ccd_thru_file['r'] = docdb.download(334, 3, 'red-thru.txt')
     ccd_thru_file['z'] = docdb.download(334, 3, 'nir-thru-250.txt')
-    
+
     with open(desi_yaml_file) as fx:
         params = yaml.load(fx)
 
@@ -40,10 +40,10 @@ def update(outdir=None):
 
     #- Load pre-spectrograph throughputs
     thru = load_throughput(master_thru_file)
-    
+
     #- Load pre-computed fiberloss for reference objects
     fiberinput = dict()
-    for objtype in ['elg', 'lrg', 'sky', 'star']:        
+    for objtype in ['elg', 'lrg', 'sky', 'star']:
         fiberinput[objtype] = load_fiberinput(
             findfile('throughput/fiberloss-{}.dat'.format(objtype)) )
 
@@ -92,7 +92,7 @@ def load_throughput(filename):
     """
     Load throughputs from DESI-0347, removing the spectrograph contributions
     which will be loaded separately from higher resolution data.
-    
+
     Args:
         filename: DESI-0347 Excel file location
 
@@ -101,7 +101,7 @@ def load_throughput(filename):
     wave = docdb.xls_read_row(filename, 'Throughput', 3, 'C', 'P')*10
     thru = docdb.xls_read_row(filename, 'Throughput', 112, 'C', 'P')
     specthru = docdb.xls_read_row(filename, 'Throughput', 93, 'C', 'P')
-    
+
     assert len(wave) == 14
     assert len(wave) == len(thru)
     assert len(wave) == len(specthru)
@@ -111,7 +111,7 @@ def load_throughput(filename):
 def load_fiberinput(filename):
     """
     Load fiberinput as calculated by fiberloss.py
-    
+
     Args:
         filename: fiberloss input file,
             e.g. $DESIMODEL/data/throughput/fiberloss-elg.dat
@@ -127,10 +127,10 @@ def load_fiberinput(filename):
 def load_spec_throughput(filename):
     """
     Loads spectrograph*CCD throughputs from DESI-0334 text files.
-    
+
     Args:
         filename: input filename, e.g. blue-thru.txt from DESI-0334
-    
+
     Returns InterpolatedUnivariateSpline instance.    
     """
     #- Spectrograph throughputs from DESI-0334 have wavelength [nm] in the
