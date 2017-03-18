@@ -5,7 +5,11 @@ Components to the throughput calculation
 Introduction
 ============
 
-THIS DESCRIPTION IS OUT OF DATE.
+The DESI throughput model comes from the systems engineering throughput
+budget spreadsheet DESI-0347, augmented with higher resolution throughput
+data for the spectrographs + CCDs from DESI-0334.  These are combined with
+the KPNO extinction model ZenithExtinction-KPNO.fits and pre-calculated
+fiber input geometric loss in $DESIMODEL/data/throughput/fiberloss*.dat .
 
 The various contributions to the throughput are stored in a binary table
 following the throughput format used by Specter:
@@ -70,32 +74,14 @@ All other telescope, fiber, and instrument throughputs
 
 Affects all object types.
 
-From:
+From DESI-0347v11 row 112 (total throughput) divided by the low resolution
+spectrograph throughtput row 93, then multiplied by the high resolution
+spectrograph+CCD throughputs in DESI-0334 *-thru*.txt files.
 
-* DESI-0347v2
+TO DO
+=====
 
-  - row 6 "Telescope to fiber input"
-  - row 87 "Fiber System other"
-  - row 95 Fiber slit block
-  - row 100 VPHG: Substrate row 100
-  - but *not* the other Spectrograph entries in DESI-0347v2 that are
-    represented at higher resolution in DESI-0334v1 and DESI-0336v3
-
-* Spectrograph: DESI-0334v1
-
-  - DESI-0334-blue-thru.txt "total" column
-  - DESI-0334-red-thru.txt "total" column
-  - DESI-0334-NIR-thru.txt "total" column
-
-* CCD: DESI-0336v3
-
-  - Blue: e2vqe.txt
-  - Red: lbnl250qe.txt
-  - NIR: lbnl500qe.txt
-
-Example
-=======
-
-::
-
-    python $DESIMODEL/bin/combine_throughputs -o $DESIMODEL/data/throughput
+The spectrograph throughput numbers in DESI-0334 have been superseded by
+as-built measurements from a variety of DocDB entries for each component of
+the spectrographs, as listed in DESI-0347 rows 97-110.  These newer numbers
+are not yet included in desimodel.

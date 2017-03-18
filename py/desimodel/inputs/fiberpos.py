@@ -11,10 +11,16 @@ from ..io import datadir
 
 def update(outdir=None, seed=2):
     '''
-    TODO: document
+    Update positioner to fiber number mapping from DocDB
+    
+    Options:
+        outdir: string output directory, default $DESIMODEL/data/focalplane
+        seed: integer random number seed for randomization within a cartridge
+
+    Writes outdir/fiberpos*
     '''
     #- Download input files from DocDB
-    cassette_file = docdb.download(2721, 1, 'cassette_order.txt')
+    cassette_file = docdb.download(2721, 2, 'cassette_order.txt')
     xls_fp_layout = docdb.download(530, 10, 'DESI-0530-v10 (Focal Plane Layout).xlsx')
     
     #- Random but reproducible
@@ -131,8 +137,6 @@ def update(outdir=None, seed=2):
     P.xlabel('x [mm]')
     P.ylabel('y [mm]')
     P.savefig(pngout, dpi=80)
-
-    return 0
     
 def write_text_fiberpos(filename, fiberpos):
     '''
@@ -157,8 +161,7 @@ def write_text_fiberpos(filename, fiberpos):
             row['x'], row['y'], row['z'],
         ))
 
-    fx = open(filename, 'w')
-    fx.write('\n'.join(fxlines)+'\n')
-    fx.close()
+    with open(filename, 'w') as fx:
+        fx.write('\n'.join(fxlines)+'\n')
 
     

@@ -13,9 +13,15 @@ from . import docdb
 from ..io import datadir, findfile
 
 def update(outdir=None):
+    '''
+    Update thru-*.fits from DESI-0347 and DESI-0344
+    
+    Options:
+        outdir: string output directory, default $DESIMODEL/data/throughput
+    '''
     
     master_thru_file = docdb.download(347, 11, 'DESI-347-v11 Throughput Noise SNR Calcs.xlsx')
-    desi_yaml_file = docdb.download(347, 11, 'desi.yaml')
+    desi_yaml_file   = docdb.download(347, 11, 'desi.yaml')
     
     ccd_thru_file = dict()
     ccd_thru_file['b'] = docdb.download(334, 3, 'blue-thru.txt')
@@ -56,35 +62,39 @@ def update(outdir=None):
         ww = np.arange(wmin[channel], wmax[channel]+dw/2, dw)
         tt = thru(ww) * specthru[channel](ww)
 
-        data = dict(wavelength=ww, throughput=tt,
-                    extinction=extinction(ww),
-                    fiberinput=fiberinput['elg'](ww) )
-        hdr = list()
-        hdr.append(dict(name='EXPTIME', value=params['exptime_dark'], comment='default exposure time [sec]'))
-        hdr.append(dict(name='GEOMAREA', value=params['area']['geometric_area'], comment='geometric area of mirror - obscurations'))
-        hdr.append(dict(name='FIBERDIA', value=params['fibers']['diameter_arcsec'], comment='average fiber diameter [arcsec]'))
-        hdr.append(dict(name='WAVEMIN', value=wmin[channel], comment='Minimum wavelength [Angstroms]'))
-        hdr.append(dict(name='WAVEMAX', value=wmax[channel], comment='Maximum wavelength [Angstroms]'))
+        data = np.rec.fromarrays([ww, tt, extinction(ww), fiberinput['elg'](ww)],
+                                names='wavelength,throughput,extinction,fiberinput')
+
+        hdr = fits.Header()
+        hdr['EXPTIME']  = (params['exptime_dark'], 'default exposure time [sec]')
+        hdr['GEOMAREA'] = (params['area']['geometric_area'], 'geometric area of mirror - obscurations')
+        hdr['FIBERDIA'] = (params['fibers']['diameter_arcsec'], 'average fiber diameter [arcsec]')
+        hdr['WAVEMIN']  = (wmin[channel], 'Minimum wavelength [Angstroms]')
+        hdr['WAVEMAX']  = (wmax[channel], 'Maximum wavelength [Angstroms]')
+
+        fiberinput_data = np.rec.fromarrays([ww, fiberinput['elg'](ww), fiberinput['lrg'](ww),
+                                      fiberinput['star'](ww), fiberinput['sky'](ww)],
+                                names='wavelength,elg,lrg,star,sky')
 
         if outdir is None:
             outdir = os.path.join(datadir(), 'throughput')
 
-        import fitsio
         outfile = outdir + '/thru-{0}.fits'.format(channel)
-        fitsio.write(outfile, data, header=hdr, clobber=True, extname='THROUGHPUT')
 
-        #- Write another header with fiberinput for multiple object types
-        data = np.rec.fromarrays([ww, fiberinput['elg'](ww), fiberinput['lrg'](ww),
-                                      fiberinput['star'](ww), fiberinput['sky'](ww)],
-                                names='wavelength,elg,lrg,star,sky')
-        fitsio.write(outfile, data, extname='FIBERINPUT')
-
+        hdus = fits.HDUList()
+        hdus.append(fits.PrimaryHDU())
+        hdus.append(fits.BinTableHDU(data, hdr, name='THROUGHPUT'))
+        hdus.append(fits.BinTableHDU(fiberinput_data, name='FIBERINPUT'))
+        hdus.writeto(outfile, clobber=True)
 
 
 def load_throughput(filename):
     """
     Load throughputs from DESI-0347, removing the spectrograph contributions
     which will be loaded separately from higher resolution data.
+    
+    Args:
+        filename: DESI-0347 Excel file location
 
     Returns InterpolatedUnivariateSpline instance of thru vs. wave[Angstroms]
     """
@@ -101,6 +111,10 @@ def load_throughput(filename):
 def load_fiberinput(filename):
     """
     Load fiberinput as calculated by fiberloss.py
+    
+    Args:
+        filename: fiberloss input file,
+            e.g. $DESIMODEL/data/throughput/fiberloss-elg.dat
 
     Returns InterpolatedUnivariateSpline instance.
     """
@@ -112,11 +126,15 @@ def load_fiberinput(filename):
 
 def load_spec_throughput(filename):
     """
-    Spectrograph throughputs from DESI-0334 have wavelength [nm] in the
-    first column and total throughput in the last column.
-
-    Returns InterpolatedUnivariateSpline instance.
+    Loads spectrograph*CCD throughputs from DESI-0334 text files.
+    
+    Args:
+        filename: input filename, e.g. blue-thru.txt from DESI-0334
+    
+    Returns InterpolatedUnivariateSpline instance.    
     """
+    #- Spectrograph throughputs from DESI-0334 have wavelength [nm] in the
+    #- first column and total throughput in the last column
     tmp = np.loadtxt(filename)
     wavelength = tmp[:, 0] * 10  #- nm -> Angstroms
     throughput = tmp[:, -1]
@@ -124,7 +142,8 @@ def load_spec_throughput(filename):
 
 def get_waveminmax(psffile):
     """
-    return wmin, wmax as taken from the header of a PSF file
+    return wmin, wmax as taken from the header of a PSF file,
+    e.g. $DESIMODEL/data/specpsf/psf-b.fits
     """
     hdr = fits.getheader(psffile)
     return hdr['WAVEMIN'], hdr['WAVEMAX']

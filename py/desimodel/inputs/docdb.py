@@ -21,6 +21,24 @@ def _xls_col2int(col):
     return index-1
 
 def xls_read_row(filename, sheetname, rownum, firstcol, lastcol, dtype=None):
+    '''
+    Read Excel file row from firstcol to lastcol
+    
+    Args:
+        filename (str): Excel filename
+        sheetname (str): sheet name within the filename
+        rownum (int): 1-indexed row to read
+        firstcol (str): Excel-style column name, e.g. 'A', 'B', or 'AC'
+        lastcol (str): last column to include
+
+    Options:
+        dtype: convert output to this numpy dtype
+
+    Returns numpy array of data
+    
+    Example:
+        B5:D5 -> rownum=5, firstcol='B', lastcol='D' -> length 3 array
+    '''
     import xlrd
     icol = _xls_col2int(firstcol)
     jcol = _xls_col2int(lastcol)
@@ -31,7 +49,22 @@ def xls_read_row(filename, sheetname, rownum, firstcol, lastcol, dtype=None):
 
 def xls_read_col(filename, sheetname, column, firstrow, lastrow, dtype=None):
     '''
-    Read column from firstrow to lastrow, 1-indexed like an Excel sheet
+    Read Excel file column from firstrow to lastrow
+    
+    Args:
+        filename (str): Excel filename
+        sheetname (str): sheet name within the filename
+        column (str): Excel-style column string, e.g. 'A', 'B', or 'AC'
+        firstrow (int): 1-indexed first row to include
+        lastrow (int): 1-indexed last row to include
+
+    Options:
+        dtype: convert output to this numpy dtype
+
+    Returns numpy array of data
+    
+    Example:
+        B5:B10 -> column='B', firstrow=5, lastrow=10 -> length 6 array
     '''
     import xlrd
     icol = _xls_col2int(column)
@@ -43,28 +76,32 @@ def xls_read_col(filename, sheetname, column, firstrow, lastrow, dtype=None):
 
 def download(docnum, docver, filename, outdir=None, overwrite=False):
     '''
-    Downloads and writes outdir/docnum-docver-filename
+    Downloads and writes outdir/DESI-{docnum}v{docver}-{filename}
 
     Args:
         docnum: integer DocDB number
         docver: integer version number
-        filename: string filename
+        filename: string filename within that DocDB entry
 
     Options:
-        outdir: output directory, default $DESIMODEL/data/inputs/docdb/
+        outdir: output directory; default $DESIMODEL/data/inputs/docdb/
         overwrite: overwrite pre-existing file
+
+    Returns:
+        path to output file written
 
     Notes:
     
       * only supports python3
       * creates outdir if needed
-      
+      * prepends DESI-{docnum}v{docver} to {filename} even if filename
+        already starts with that (in DocDB, some do and some don't...)      
     '''
     import urllib
     import requests
     from desiutil.log import get_logger
     log = get_logger()
-    
+
     if outdir is None:
         outdir = os.path.join(datadir(), 'inputs', 'docdb')
 
@@ -73,7 +110,7 @@ def download(docnum, docver, filename, outdir=None, overwrite=False):
 
     outfile = 'DESI-{:04d}v{:d}-{}'.format(docnum, docver, filename)
     outfile = os.path.join(outdir, outfile)
-    
+
     if os.path.exists(outfile):
         if overwrite:
             log.info('Redownloading and overwriting {}'.format(outfile))
@@ -93,7 +130,7 @@ def download(docnum, docver, filename, outdir=None, overwrite=False):
     #- but just in case they do fix it in the future...
     if r.status_code != 200:
         raise IOError('Unable to download {}'.format(url))
-    
+
     #- Work around what should have been a 404 Not Found
     failmsg = bytes('{} does not exist.'.format(filename), encoding='ascii')
     if b'There was a problem.' in r.content and failmsg in r.content:
