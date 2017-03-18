@@ -110,13 +110,13 @@ class TestFootprint(unittest.TestCase):
             xyzc = footprint._embed_sphere(tiles['RA'][i], tiles['DEC'][i])
             diff = xyz - xyzc
             dist = np.einsum('ij, ij->i', diff, diff) ** 0.5
-            self.assertLess(dist.max(), 2 * np.sin(np.radians(1.605) * 0.5))
+            self.assertLess(dist.max(), 2 * np.sin(np.radians(1.6058) * 0.5))
 
         # tiles overlapped, so we must have duplicates
         full = np.concatenate(lists)
         self.assertLess(len(np.unique(full)), len(full))
 
-        list1 = footprint.find_points_in_tiles(tiles[0], ra, dec, radius=1.605)
+        list1 = footprint.find_points_in_tiles(tiles[0], ra, dec, radius=1.6058)
         self.assertEqual(sorted(list1), sorted(lists[0]))
 
     def test_find_tiles_over_point(self):

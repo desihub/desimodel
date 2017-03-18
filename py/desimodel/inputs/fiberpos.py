@@ -19,6 +19,9 @@ def update(outdir=None, seed=2):
 
     Writes outdir/fiberpos*
     '''
+    from desiutil.log import get_logger
+    log = get_logger()
+
     #- Download input files from DocDB
     cassette_file = docdb.download(2721, 2, 'cassette_order.txt')
     xls_fp_layout = docdb.download(530, 10, 'DESI-0530-v10 (Focal Plane Layout).xlsx')
@@ -49,7 +52,7 @@ def update(outdir=None, seed=2):
     for p in range(10):
         fiberpos = posloc.copy(copy_data=True)
         fiberpos['fiber'] = -1
-        fiberpos['spectro'] = p
+        fiberpos['spectrograph'] = p
         iipos = (fiberpos['postype'] == 'POS')
         fiberpos['positioner'] += p*len(fiberpos)
         for c in range(1,11):
@@ -83,9 +86,9 @@ def update(outdir=None, seed=2):
     assert len(np.unique(fp['fiber'])) == 5000
     assert min(fp['fiber']) == 0
     assert max(fp['fiber']) == 4999
-    assert len(set(fp['spectro'])) == 10
-    assert min(fp['spectro']) == 0
-    assert max(fp['spectro']) == 9
+    assert len(set(fp['spectrograph'])) == 10
+    assert min(fp['spectrograph']) == 0
+    assert max(fp['spectrograph']) == 9
     assert len(np.unique(fiberpos['positioner'])) == len(fiberpos)
 
     #- Pick filenames in output directory
@@ -100,7 +103,7 @@ def update(outdir=None, seed=2):
     fiberpos.remove_column('cassette')
 
     #- Update i8 -> i4 for integer columns
-    for colname in ['fiber', 'positioner', 'spectro']:
+    for colname in ['fiber', 'positioner', 'spectrograph']:
         fiberpos.replace_column(colname, fiberpos[colname].astype('i4'))
 
     #- Set units and descriptions
@@ -112,19 +115,25 @@ def update(outdir=None, seed=2):
     fiberpos['z'].description = 'focal surface location [mm]'
     fiberpos['fiber'].description = 'fiber number [0-4999]'
     fiberpos['positioner'].description = 'focal plane positioner hole number'
-    fiberpos['spectro'].description = 'spectrograph number [0-9]'
+    fiberpos['spectrograph'].description = 'spectrograph number [0-9]'
     fiberpos.meta['comments'] = ["Coordinates at zenith: +x = East = +RA; +y = South = -dec"]
 
     #- Write old text format with just fiber, positioner, spectro, x, y, z
     write_text_fiberpos(textout, fiberpos[ii])
-    cols = ['fiber', 'positioner', 'spectro', 'x', 'y', 'z']
+    log.info('Wrote {}'.format(textout))
+    cols = ['fiber', 'positioner', 'spectrograph', 'x', 'y', 'z']
     fiberpos[ii][cols].write(fitsout, format='fits', overwrite=True)
+    log.info('Wrote {}'.format(fitsout))
 
     #- Write ecsv and fits format with all columns and rows, including
     #- fiducials (postype='FIF') and sky monitor (postype='ETC')
     fiberpos.sort('positioner')
-    fiberpos.write(fitsout.replace('.fits', '-all.fits'), format='fits', overwrite=True)
+    fitsallout = fitsout.replace('.fits', '-all.fits')
+    textallout = textout.replace('.txt', '-all.fits')
+    fiberpos.write(fitsallout, format='fits', overwrite=True)
     fiberpos.write(textout.replace('.txt', '-all.ecsv'), format='ascii.ecsv')
+    log.info('Wrote {}'.format(fitsallout))
+    log.info('Wrote {}'.format(textallout))
 
     #- Visualize mapping
     ii = (fiberpos['postype'] == 'POS')
@@ -137,6 +146,7 @@ def update(outdir=None, seed=2):
     P.xlabel('x [mm]')
     P.ylabel('y [mm]')
     P.savefig(pngout, dpi=80)
+    log.info('Wrote {}'.format(pngout))
     
 def write_text_fiberpos(filename, fiberpos):
     '''
@@ -157,7 +167,7 @@ def write_text_fiberpos(filename, fiberpos):
         '#- fiber positioner spectro  x  y  z']
     for row in fiberpos:
         fxlines.append("{:4d}  {:4d}  {:2d}  {:12.6f}  {:12.6f}  {:12.6f}".format(
-            row['fiber'], row['positioner'], row['spectro'],
+            row['fiber'], row['positioner'], row['spectrograph'],
             row['x'], row['y'], row['z'],
         ))
 
