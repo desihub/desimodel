@@ -31,6 +31,9 @@ Inputs to update
 Positioner to Fiber Mapping
 ---------------------------
 
+This updates the mapping of device locations on the focal plane to
+spectrograph fiber numbers using DESI-0530 and DESI-2721.
+
 ::
 
     import desimodel.inputs.fiberpos
@@ -38,6 +41,8 @@ Positioner to Fiber Mapping
 
 Throughput
 ----------
+
+This updates the throughput model from DESI-0347 and DESI-0344.
 
 ::
 
