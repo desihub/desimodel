@@ -39,7 +39,7 @@ def update(outdir=None):
     extinction = InterpolatedUnivariateSpline(d['WAVELENGTH'], d['EXTINCTION'])
 
     #- Load pre-spectrograph throughputs
-    thru = load_throughput(master_thru_file)
+    thru, (xlswave, xlstotthru, xlsspecthru) = load_throughput(master_thru_file)
 
     #- Load pre-computed fiberloss for reference objects
     fiberinput = dict()
@@ -96,17 +96,32 @@ def load_throughput(filename):
     Args:
         filename: DESI-0347 Excel file location
 
-    Returns InterpolatedUnivariateSpline instance of thru vs. wave[Angstroms]
+    Returns (thruspine, xlsdata), where
+
+        thruspline: InterpolatedUnivariateSpline of thru vs. wave[Angstroms]
+        xlsdata: tuple of (wave, totalthru, specthru)
+
+    Notes:
+
+      * Alas, DESI-0347 doesn't fill in the final throughput for
+        3500 and 9950 Angstroms, even though the inputs are there.
     """
     wave = docdb.xls_read_row(filename, 'Throughput', 3, 'C', 'P')*10
     thru = docdb.xls_read_row(filename, 'Throughput', 112, 'C', 'P')
     specthru = docdb.xls_read_row(filename, 'Throughput', 93, 'C', 'P')
 
+    rowlabel = docdb.xls_read_row(filename, 'Throughput', 112, 'A', 'A')[0]
+    assert rowlabel == 'sky throughput:  just in front of telescope to detected photons (does not account for obscuration or seeing)'
+
     assert len(wave) == 14
     assert len(wave) == len(thru)
     assert len(wave) == len(specthru)
+    assert np.all(np.diff(wave)>0)
+    assert np.min(wave) == 3600 and np.max(wave) == 9800
+    assert 0 <= np.min(thru) and np.max(thru) <= 1
+    assert 0 <= np.min(specthru) and np.max(specthru) <= 1
 
-    return InterpolatedUnivariateSpline(wave, thru/specthru, k=3)
+    return InterpolatedUnivariateSpline(wave, thru/specthru, k=3), (wave, thru, specthru)
 
 def load_fiberinput(filename):
     """
@@ -138,6 +153,11 @@ def load_spec_throughput(filename):
     tmp = np.loadtxt(filename)
     wavelength = tmp[:, 0] * 10  #- nm -> Angstroms
     throughput = tmp[:, -1]
+
+    assert np.all(np.diff(wavelength)) > 0
+    assert 3500 <= np.min(wavelength) and np.max(wavelength) <= 9950
+    assert 0 <= np.min(throughput) and np.max(throughput) <= 1
+
     return InterpolatedUnivariateSpline(wavelength, throughput, k=3)
 
 def get_waveminmax(psffile):
