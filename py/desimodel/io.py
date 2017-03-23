@@ -87,16 +87,26 @@ def load_fiberpos():
     """Returns fiberpos table from desimodel/data/focalplane/fiberpos.fits.
     """
     global _fiberpos
+    from astropy.table import Table
     if _fiberpos is None:
         fiberposfile = os.path.join(os.environ['DESIMODEL'],'data','focalplane','fiberpos.fits')
-        with fits.open(fiberposfile) as hdulist:
-            _fiberpos = hdulist[1].data
-        if 'FIBER' not in _fiberpos.dtype.names:
-            #
-            # File contains lower-case column names, but we want upper-case.
-            #
-            for i, key in enumerate(_fiberpos.dtype.names):
-                _fiberpos.columns[i].name = key.upper()
+        _fiberpos = Table.read(fiberposfile)
+        #- Convert to upper case if needed
+        for col in _fiberpos.colnames.copy():
+            if col.islower():
+                _fiberpos.rename_column(col, col.upper())
+
+        #- Temporary backwards compatibility for renamed columns
+        if 'FPDEVICE' in _fiberpos.colnames:
+            _fiberpos['POSITIONER'] = _fiberpos['FPDEVICE']
+        else:
+            _fiberpos['FPDEVICE'] = _fiberpos['POSITIONER']
+
+        if 'SPECTRO' in _fiberpos.colnames:
+            _fiberpos['SPECTROGRAPH'] = _fiberpos['SPECTRO']
+        else:
+            _fiberpos['SPECTRO'] = _fiberpos['SPECTROGRAPH']
+
     return _fiberpos
 #
 #
