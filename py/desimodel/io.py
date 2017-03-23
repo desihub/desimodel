@@ -97,15 +97,20 @@ def load_fiberpos():
                 _fiberpos.rename_column(col, col.upper())
 
         #- Temporary backwards compatibility for renamed columns
-        if 'FPDEVICE' in _fiberpos.colnames:
-            _fiberpos['POSITIONER'] = _fiberpos['FPDEVICE']
-        else:
+        if 'POSITIONER' in _fiberpos.colnames:
+            import warnings
+            warnings.warn('old fiberpos.fits with POSITIONER column instead of FPDEVICE; please update your $DESIMODEL checkout', DeprecationWarning)
             _fiberpos['FPDEVICE'] = _fiberpos['POSITIONER']
-
-        if 'SPECTRO' in _fiberpos.colnames:
-            _fiberpos['SPECTROGRAPH'] = _fiberpos['SPECTRO']
         else:
+            _fiberpos['POSITIONER'] = _fiberpos['FPDEVICE']
+
+
+        if 'SPECTROGRAPH' in _fiberpos.colnames:
+            import warnings
+            warnings.warn('old fiberpos.fits with SPECTROGRAPH column instead of SPECTRO; please update your $DESIMODEL checkout', DeprecationWarning)
             _fiberpos['SPECTRO'] = _fiberpos['SPECTROGRAPH']
+        else:
+            _fiberpos['SPECTROGRAPH'] = _fiberpos['SPECTRO']
 
     return _fiberpos
 #
