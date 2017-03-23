@@ -2,6 +2,7 @@
 Utilities for updating throughput model
 '''
 import os
+import shutil
 
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
@@ -12,13 +13,16 @@ import yaml
 from . import docdb
 from ..io import datadir, findfile
 
-def update(outdir=None):
+def update(testdir=None):
     '''
     Update thru-*.fits from DESI-0347 and DESI-0344
 
     Options:
-        outdir: string output directory, default $DESIMODEL/data/throughput
+        testdir: if not None, write files here instead of standard locations
+            under $DESIMODEL/data/
     '''
+    from desiutil.log import get_logger
+    log = get_logger()
 
     master_thru_file = docdb.download(347, 11, 'DESI-347-v11 Throughput Noise SNR Calcs.xlsx')
     desi_yaml_file   = docdb.download(347, 11, 'desi.yaml')
@@ -30,6 +34,18 @@ def update(outdir=None):
 
     with open(desi_yaml_file) as fx:
         params = yaml.load(fx)
+
+    if testdir is None:
+        outfile_desiyaml = os.path.join(datadir(), 'desi.yaml')
+        thrudir = os.path.join(datadir(), 'throughput')
+    elif os.path.isdir(testdir):
+        outfile_desiyaml = os.path.join(testdir, 'desi.yaml')
+        thrudir = testdir
+    else:
+        raise ValueError("Missing directory {}".format(testdir))
+
+    shutil.copy(desi_yaml_file, outfile_desiyaml)
+    log.info('Wrote {}'.format(outfile_desiyaml))
 
     #- Telescope geometric area m^2 -> cm^2
     params['area']['geometric_area'] *= 100**2
@@ -76,17 +92,14 @@ def update(outdir=None):
                                       fiberinput['star'](ww), fiberinput['sky'](ww)],
                                 names='wavelength,elg,lrg,star,sky')
 
-        if outdir is None:
-            outdir = os.path.join(datadir(), 'throughput')
-
-        outfile = outdir + '/thru-{0}.fits'.format(channel)
+        outfile = thrudir + '/thru-{0}.fits'.format(channel)
 
         hdus = fits.HDUList()
         hdus.append(fits.PrimaryHDU())
         hdus.append(fits.BinTableHDU(data, hdr, name='THROUGHPUT'))
         hdus.append(fits.BinTableHDU(fiberinput_data, name='FIBERINPUT'))
         hdus.writeto(outfile, clobber=True)
-
+        log.info('Wrote {}'.format(outfile))
 
 def load_throughput(filename):
     """

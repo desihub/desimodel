@@ -42,6 +42,9 @@ The desimodel package/API
 .. automodule:: desimodel.trim
     :members:
 
+.. automodule:: desimodel.inputs
+    :members:
+
 Indices and tables
 ==================
 

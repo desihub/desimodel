@@ -2,6 +2,7 @@
 Utilities for updating positioner to fiber mapping
 '''
 import os
+import shutil
 
 import numpy as np
 from astropy.table import Table, vstack
@@ -9,15 +10,16 @@ from astropy.table import Table, vstack
 from . import docdb
 from ..io import datadir
 
-def update(outdir=None, seed=2):
+def update(testdir=None, seed=2):
     '''
     Update positioner to fiber number mapping from DocDB
 
     Options:
-        outdir: string output directory, default $DESIMODEL/data/focalplane
+        testdir: if not None, write files here instead of
+            $DESIMODEL/data/footprint/fiberpos*
         seed: integer random number seed for randomization within a cartridge
 
-    Writes outdir/fiberpos*
+    Writes testdir/fiberpos* or $DESIMODEL/data/focalplane/fiberpos*
     '''
     from desiutil.log import get_logger
     log = get_logger()
@@ -26,6 +28,20 @@ def update(outdir=None, seed=2):
     cassette_file = docdb.download(2721, 2, 'cassette_order.txt')
     xls_fp_layout = docdb.download(530, 11, 'DESI-0530-v11 (Focal Plane Layout).xlsx')
     platescale_file = docdb.download(329, 15, 'Echo22Platescale.txt')
+
+    #- Pick filenames in output directory
+    if testdir is None:
+        outdir = os.path.join(datadir(), 'focalplane')
+    else:
+        outdir = testdir
+
+    if not os.path.isdir(outdir):
+        raise ValueError("Missing directory {}".format(testdir))
+
+    #- copy platescale file
+    outpsfile = os.path.join(outdir, 'platescale.txt')
+    shutil.copy(platescale_file, outpsfile)
+    log.info('Wrote {}'.format(outpsfile))
 
     #- Random but reproducible
     np.random.seed(seed)
@@ -137,10 +153,6 @@ def update(outdir=None, seed=2):
     assert max(fp['SPECTRO']) == 9
     assert len(np.unique(fiberpos['DEVICE'])) == ndevice
     assert len(np.unique(fiberpos['FPDEVICE'])) == len(fiberpos)
-
-    #- Pick filenames in output directory
-    if outdir is None:
-        outdir = os.path.join(datadir(), 'focalplane')
 
     #- Drop some columns we don't need
     fiberpos.remove_column('CASSETTE')
