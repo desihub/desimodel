@@ -92,7 +92,8 @@ def load_fiberpos():
         fiberposfile = os.path.join(os.environ['DESIMODEL'],'data','focalplane','fiberpos.fits')
         _fiberpos = Table.read(fiberposfile)
         #- Convert to upper case if needed
-        for col in _fiberpos.colnames.copy():
+        #- Make copy of colnames b/c they are updated during iteration
+        for col in list(_fiberpos.colnames):
             if col.islower():
                 _fiberpos.rename_column(col, col.upper())
 
