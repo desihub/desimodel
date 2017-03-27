@@ -123,7 +123,7 @@ def update(testdir=None, seed=2):
         #- Additional columns
         fiberpos['SLITBLOCK'] = (fiberpos['FIBER'] % 500) // 25
         fiberpos['BLOCKFIBER'] = (fiberpos['FIBER'] % 500) % 25
-        fiberpos['FPDEVICE'] = p*1000 + fiberpos['DEVICE']
+        fiberpos['LOCATION'] = p*1000 + fiberpos['DEVICE']
 
         #- Petal 0 is at the "bottom"; See DESI-0530
         phi = np.radians((7*36 + 36*p)%360)
@@ -152,7 +152,7 @@ def update(testdir=None, seed=2):
     assert min(fp['SPECTRO']) == 0
     assert max(fp['SPECTRO']) == 9
     assert len(np.unique(fiberpos['DEVICE'])) == ndevice
-    assert len(np.unique(fiberpos['FPDEVICE'])) == len(fiberpos)
+    assert len(np.unique(fiberpos['LOCATION'])) == len(fiberpos)
 
     #- Drop some columns we don't need
     fiberpos.remove_column('CASSETTE')
@@ -162,8 +162,8 @@ def update(testdir=None, seed=2):
         fiberpos.replace_column(colname, fiberpos[colname].astype('i4'))
 
     #- Reorder columns
-    assert set(fiberpos.colnames) == set('DEVICE DEVICE_TYPE X Y Z Q S FIBER PETAL SLIT SPECTRO SLITBLOCK BLOCKFIBER FPDEVICE'.split())
-    colnames = 'PETAL DEVICE DEVICE_TYPE FPDEVICE FIBER X Y Z Q S  SPECTRO SLIT SLITBLOCK BLOCKFIBER'.split()
+    assert set(fiberpos.colnames) == set('DEVICE DEVICE_TYPE X Y Z Q S FIBER PETAL SLIT SPECTRO SLITBLOCK BLOCKFIBER LOCATION'.split())
+    colnames = 'PETAL DEVICE DEVICE_TYPE LOCATION FIBER X Y Z Q S  SPECTRO SLIT SLITBLOCK BLOCKFIBER'.split()
     fiberpos = fiberpos[colnames]
     assert fiberpos.colnames == colnames
 
@@ -179,23 +179,24 @@ def update(testdir=None, seed=2):
     fiberpos['Q'].description = 'azimuthal angle on focal surface [deg]'
     fiberpos['S'].description = 'radial distance along focal surface [mm]'
     fiberpos['FIBER'].description = 'fiber number [0-4999]'
-    fiberpos['DEVICE'].description = 'focal plane device number [0-542]'
+    fiberpos['DEVICE'].description = 'focal plane device_loc number [0-542]'
     fiberpos['SPECTRO'].description = 'spectrograph number [0-9]'
-    fiberpos['PETAL'].description = 'focal plane petal number [0-9]'
+    fiberpos['PETAL'].description = 'focal plane petal_loc number [0-9]'
     fiberpos['SLIT'].description = 'spectrograph slit number [0-9]'
     fiberpos['SLITBLOCK'].description = 'id of the slitblock on the slit [0-19]'
     fiberpos['BLOCKFIBER'].description = 'id of the fiber on the slitblock [0-24]'
-    fiberpos['FPDEVICE'].description = 'unique device id across entire focal plane [0-9543] with gaps in sequence'
+    fiberpos['LOCATION'].description = 'global location id across entire focal plane [0-9543]; has gaps in sequence'
     fiberpos.meta['comments'] = [
         "Coordinates at zenith: +x = East = +RA; +y = South = -dec",
+        "PETAL and DEVICE refer to locations, not hardware serial numbers"
         "Differences from DESI-2724 naming:",
-        '  - Drops "_ID" from all column names',
+        '  - Drops "_ID" from column names,'
+        '  - Drops "_LOC" from "DEVICE_LOC" and "PETAL_LOC"',
         "  - SLITBLOCK as int [0-19] instead of string [B0-B19]",
         "  - BLOCKFIBER as int [0-24] instead of string [F0-F24]",
         "Convenience columns:",
         "  - FIBER = PETAL*500 + SLITBLOCK*25 + BLOCKFIBER",
-        "  - DEPRECATED: FPDEVICE = PETAL*1000 + DEVICE",
-        "    please use PETAL,DEVICE instead of FPDEVICE",
+        "  - LOCATION = PETAL*1000 + DEVICE",
     ]
 
     ecsvout = os.path.join(outdir, 'fiberpos.ecsv')
@@ -216,7 +217,7 @@ def update(testdir=None, seed=2):
 
     #- Write all columns and all rows, including
     #- fiducials (device_type='FIF') and sky monitor (device_type='ETC')
-    fiberpos.sort('FPDEVICE')
+    fiberpos.sort('LOCATION')
     fitsallout = fitsout.replace('.fits', '-all.fits')
     ecsvallout = textout.replace('.txt', '-all.ecsv')
     fiberpos.write(fitsallout, format='fits', overwrite=True)
@@ -265,10 +266,10 @@ def write_text_fiberpos(filename, fiberpos):
         "",
         "#- fiber=at spectrograph; fpdevice=numbering on focal plane",
         "",
-        '#- fiber fpdevice spectro  x  y  z']
+        '#- fiber location spectro  x  y  z']
     for row in fiberpos:
         fxlines.append("{:4d}  {:4d}  {:2d}  {:12.6f}  {:12.6f}  {:12.6f}".format(
-            row['FIBER'], row['FPDEVICE'], row['SPECTRO'],
+            row['FIBER'], row['LOCATION'], row['SPECTRO'],
             row['X'], row['Y'], row['Z'],
         ))
 

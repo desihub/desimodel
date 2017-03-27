@@ -100,10 +100,10 @@ def load_fiberpos():
         #- Temporary backwards compatibility for renamed columns
         if 'POSITIONER' in _fiberpos.colnames:
             import warnings
-            warnings.warn('old fiberpos.fits with POSITIONER column instead of FPDEVICE; please update your $DESIMODEL checkout', DeprecationWarning)
-            _fiberpos['FPDEVICE'] = _fiberpos['POSITIONER']
+            warnings.warn('old fiberpos.fits with POSITIONER column instead of LOCATION; please update your $DESIMODEL checkout', DeprecationWarning)
+            _fiberpos['LOCATION'] = _fiberpos['POSITIONER']
         else:
-            _fiberpos['POSITIONER'] = _fiberpos['FPDEVICE']
+            _fiberpos['POSITIONER'] = _fiberpos['LOCATION']
 
 
         if 'SPECTROGRAPH' in _fiberpos.colnames:
