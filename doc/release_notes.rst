@@ -5,6 +5,11 @@ desimodel Release Notes
 0.6.0 (unreleased)
 ------------------
 
+* No changes yet
+
+0.6.0 (2017-03-27)
+------------------
+
 * Add desimodel.seeing module with functions that model the expected DESI
   zenith seeing at 6355A, with an accompanying jupyter notebook.
 * Altered xy offset RMS calculation in focalplane.py to scale the distribution
