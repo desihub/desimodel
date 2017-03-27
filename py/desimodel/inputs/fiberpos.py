@@ -188,9 +188,9 @@ def update(testdir=None, seed=2):
     fiberpos['LOCATION'].description = 'global location id across entire focal plane [0-9543]; has gaps in sequence'
     fiberpos.meta['comments'] = [
         "Coordinates at zenith: +x = East = +RA; +y = South = -dec",
-        "PETAL and DEVICE refer to locations, not hardware serial numbers"
+        "PETAL and DEVICE refer to locations, not hardware serial numbers",
         "Differences from DESI-2724 naming:",
-        '  - Drops "_ID" from column names,'
+        '  - Drops "_ID" from column names',
         '  - Drops "_LOC" from "DEVICE_LOC" and "PETAL_LOC"',
         "  - SLITBLOCK as int [0-19] instead of string [B0-B19]",
         "  - BLOCKFIBER as int [0-24] instead of string [F0-F24]",
