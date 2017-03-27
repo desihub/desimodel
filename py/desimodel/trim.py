@@ -7,6 +7,7 @@ desimodel.trim
 Code for trimming desimodel/data into smaller files.
 """
 from astropy.io.fits import HDUList, PrimaryHDU, ImageHDU, BinTableHDU
+from astropy.table import Table
 from astropy.io import fits
 import numpy as np
 import os.path
@@ -54,15 +55,17 @@ def trim_focalplane(indir, outdir):
     shutil.copytree(indir, outdir)
 
 def trim_footprint(indir, outdir):
-    '''Copies subset of desi-tiles.fits but not desi-tiles.par'''
+    '''Copies subset of desi-tiles.fits and .ecsv but not .par'''
     assert os.path.basename(indir) == 'footprint'
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     infile, outfile = inout(indir, outdir, 'desi-tiles.fits')
     with fits.open(infile) as hdulist:
-        t = hdulist[1].data
-    ii = (110 < t.RA) & (t.RA < 140) & (-10 < t.DEC) & (t.DEC < 20)
-    fits.writeto(outfile, t[ii])
+        t = Table(hdulist[1].data)
+    ii = (110 < t['RA']) & (t['RA'] < 140) & (-10 < t['DEC']) & (t['DEC'] < 20)
+    tx = t[ii]
+    tx.write(outfile, format='fits')
+    tx.write(outfile.replace('.fits', '.ecsv'), format='ascii.ecsv')
 
 def trim_inputs(indir, outdir):
     '''Don't copy any inputs'''
