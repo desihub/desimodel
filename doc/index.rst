@@ -14,6 +14,7 @@ Contents
     :maxdepth: 1
 
     release_notes.rst
+    update_inputs.rst
     testing.rst
     fiberpos.rst
     footprint.rst
@@ -39,6 +40,9 @@ The desimodel package/API
     :members:
 
 .. automodule:: desimodel.trim
+    :members:
+
+.. automodule:: desimodel.inputs
     :members:
 
 Indices and tables

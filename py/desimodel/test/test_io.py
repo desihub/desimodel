@@ -87,7 +87,7 @@ class TestIO(unittest.TestCase):
         fiberpos = io.load_fiberpos()
         self.assertEqual(len(fiberpos), 5000)
         # Check workaround for astropy 1.0.x bug for lower -> upper col names.
-        for key in ('FIBER', 'POSITIONER', 'SPECTROGRAPH', 'X', 'Y', 'Z'):
+        for key in ('FIBER', 'LOCATION', 'SPECTRO', 'X', 'Y', 'Z'):
             self.assertIn(key, fiberpos.dtype.names)
             x = fiberpos[key]
 

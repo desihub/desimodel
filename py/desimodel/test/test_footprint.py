@@ -98,7 +98,7 @@ class TestFootprint(unittest.TestCase):
 
         ra = rng.uniform(-10, 10, 100000)
         dec = np.degrees(np.arcsin(rng.uniform(-0.1, 0.1, 100000)))
-        lists = footprint.find_points_in_tiles(tiles, ra, dec)
+        lists = footprint.find_points_in_tiles(tiles, ra, dec, radius=1.6058)
 
         # assert we've found roughly same number of objects per tile
         counts = np.array([len(i) for i in lists])
@@ -110,13 +110,13 @@ class TestFootprint(unittest.TestCase):
             xyzc = footprint._embed_sphere(tiles['RA'][i], tiles['DEC'][i])
             diff = xyz - xyzc
             dist = np.einsum('ij, ij->i', diff, diff) ** 0.5
-            self.assertLess(dist.max(), 2 * np.sin(np.radians(1.605) * 0.5))
+            self.assertLess(dist.max(), 2 * np.sin(np.radians(1.6058) * 0.5))
 
         # tiles overlapped, so we must have duplicates
         full = np.concatenate(lists)
         self.assertLess(len(np.unique(full)), len(full))
 
-        list1 = footprint.find_points_in_tiles(tiles[0], ra, dec, radius=1.605)
+        list1 = footprint.find_points_in_tiles(tiles[0], ra, dec, radius=1.6058)
         self.assertEqual(sorted(list1), sorted(lists[0]))
 
     def test_find_tiles_over_point(self):
@@ -169,7 +169,7 @@ class TestFootprint(unittest.TestCase):
         self.assertEqual(list(indesi), indesi2)
 
         # Just interesting to see how many tiles overlap a random point?
-        print(np.bincount([len(i) for i in ret]))
+        ### print(np.bincount([len(i) for i in ret]))
                 
 def test_suite():
     """Allows testing of only this module with the command::

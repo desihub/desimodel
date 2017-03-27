@@ -87,16 +87,32 @@ def load_fiberpos():
     """Returns fiberpos table from desimodel/data/focalplane/fiberpos.fits.
     """
     global _fiberpos
+    from astropy.table import Table
     if _fiberpos is None:
         fiberposfile = os.path.join(os.environ['DESIMODEL'],'data','focalplane','fiberpos.fits')
-        with fits.open(fiberposfile) as hdulist:
-            _fiberpos = hdulist[1].data
-        if 'FIBER' not in _fiberpos.dtype.names:
-            #
-            # File contains lower-case column names, but we want upper-case.
-            #
-            for i, key in enumerate(_fiberpos.dtype.names):
-                _fiberpos.columns[i].name = key.upper()
+        _fiberpos = Table.read(fiberposfile)
+        #- Convert to upper case if needed
+        #- Make copy of colnames b/c they are updated during iteration
+        for col in list(_fiberpos.colnames):
+            if col.islower():
+                _fiberpos.rename_column(col, col.upper())
+
+        #- Temporary backwards compatibility for renamed columns
+        if 'POSITIONER' in _fiberpos.colnames:
+            import warnings
+            warnings.warn('old fiberpos.fits with POSITIONER column instead of LOCATION; please update your $DESIMODEL checkout', DeprecationWarning)
+            _fiberpos['LOCATION'] = _fiberpos['POSITIONER']
+        else:
+            _fiberpos['POSITIONER'] = _fiberpos['LOCATION']
+
+
+        if 'SPECTROGRAPH' in _fiberpos.colnames:
+            import warnings
+            warnings.warn('old fiberpos.fits with SPECTROGRAPH column instead of SPECTRO; please update your $DESIMODEL checkout', DeprecationWarning)
+            _fiberpos['SPECTRO'] = _fiberpos['SPECTROGRAPH']
+        else:
+            _fiberpos['SPECTROGRAPH'] = _fiberpos['SPECTRO']
+
     return _fiberpos
 #
 #
@@ -175,4 +191,16 @@ def findfile(filename):
     desimodel data would be installed with the package and $DESIMODEL
     would become an optional override.
     '''
-    return os.path.join(os.getenv('DESIMODEL'), 'data', filename)
+    return os.path.join(datadir(), filename)
+
+def datadir():
+    '''
+    Returns location to desimodel data
+
+    if set, $DESIMODEL overrides data installed with the package
+    '''
+    if 'DESIMODEL' in os.environ:
+        return os.path.abspath(os.path.join(os.environ['DESIMODEL'], 'data'))
+    else:
+        import pkg_resources
+        return pkg_resources.resource_filename('desimodel', 'data')
