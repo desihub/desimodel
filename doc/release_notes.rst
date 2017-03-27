@@ -2,7 +2,7 @@
 desimodel Release Notes
 =======================
 
-0.6.0 (unreleased)
+0.6.1 (unreleased)
 ------------------
 
 * No changes yet
