@@ -139,6 +139,12 @@ def trim_throughput(indir, outdir):
         hdus.writeto(outdir+'/'+filename)
         fx.close()
 
+    for filename in [
+        'DESI-0347_blur.ecsv', 'DESI-0347_offset.ecsv',
+        'DESI-0347_random_offset_1.fits']:
+        shutil.copy(os.path.join(indir, filename), os.path.join(outdir, filename))
+
+
 #-------------------------------------------------------------------------
 #- Triming PSF files
 
