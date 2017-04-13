@@ -123,9 +123,9 @@ def load_tiles(onlydesi=True, extra=False):
 
     Parameters
     ----------
-    onlydesi : :class:`bool` (default False)
+    onlydesi : :class:`bool` (default True)
         If ``True``, trim to just the tiles in the DESI footprint.
-    extra : :class:`bool`, (default True)
+    extra : :class:`bool`, (default False)
         If ``True``, include extra layers with PROGRAM='EXTRA'.
     """
     global _tiles
