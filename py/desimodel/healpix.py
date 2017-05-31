@@ -37,4 +37,5 @@ def tiles2pix(nside, tiles=None, radius=None):
     theta, phi = np.radians(90-tiles['DEC']), np.radians(tiles['RA'])
     vec = hp.ang2vec(theta, phi)
     ipix = [hp.query_disc(nside, vec[i], radius=np.radians(radius), inclusive=True, nest=True) for i in range(len(tiles))]
+
     return np.sort(np.unique(np.concatenate(ipix)))

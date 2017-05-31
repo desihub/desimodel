@@ -18,9 +18,11 @@ class TestHealpix(unittest.TestCase):
         tiles = desimodel.io.load_tiles()
 
         pix = tiles2pix(nside=8, tiles=tiles[:3], radius=1.6)
+        print(pix)
         self.assertTrue( np.all(pix==[196,197,208,302,303]) )
 
         pix = tiles2pix(nside=16, tiles=tiles[:3], radius=1.6)
+        print(pix)
         self.assertTrue( np.all(pix==[785,788,789,791,832,1209,1211,1214,1215]) )
 
 def test_suite():
