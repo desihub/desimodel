@@ -8,9 +8,16 @@ import unittest
 import numpy as np
 from ..footprint import tiles2pix, tileids2pix, pix2tiles, radec2pix
 
+try:
+    import healpy
+    nohealpy = False
+except ImportError:
+    nohealpy = True
+
 class TestHealpix(unittest.TestCase):
     """Test healpix related routines in desimodel.footprint
     """
+    @unittest.skipIf(nohealpy, 'healpy not installed')
     def test_tiles2pix_interface(self):
         """Test interface options for tiles2pix"""
 
@@ -36,6 +43,7 @@ class TestHealpix(unittest.TestCase):
         self.assertListEqual(list(pix1), list(pix2))
         self.assertListEqual(list(pix1), list(pix3))
 
+    @unittest.skipIf(nohealpy, 'healpy not installed')
     def test_tiles2pix(self):
         """Test that the correct healpix tiles are returned for a couple values of nside.
         """
@@ -49,6 +57,7 @@ class TestHealpix(unittest.TestCase):
         pix = tiles2pix(nside=16, tiles=tiles, radius=1.6)
         self.assertTrue( np.all(pix == np.array([785,788,789,791,832,1209,1211,1214,1215])) )
 
+    @unittest.skipIf(nohealpy, 'healpy not installed')
     def test_radec2pix(self):
         """test radec2pix"""
         import healpy as hp
@@ -56,6 +65,7 @@ class TestHealpix(unittest.TestCase):
         self.assertEqual(radec2pix(32, 90, 0), hp.ang2pix(32, np.pi/2, np.pi/2, nest=True))
         self.assertEqual(radec2pix(32, 45, 45), hp.ang2pix(32, np.pi/4, np.pi/4, nest=True))
 
+    @unittest.skipIf(nohealpy, 'healpy not installed')
     def test_pix2tiles(self):
         """test roundtrip of tiles2pix -> pix2tiles"""
         import desimodel.io
