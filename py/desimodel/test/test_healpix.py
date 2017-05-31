@@ -14,15 +14,17 @@ class TestHealpix(unittest.TestCase):
     def test_tiles2pix(self):
         """Test that the correct healpix tiles are returned for a couple values of nside.
         """
-        import desimodel.io
-        tiles = desimodel.io.load_tiles()
+        tiles = np.zeros(3, dtype=[('RA', float), ('DEC', float)])
+        tiles['RA'] = [ 335.03,  333.22,  332.35]
+        tiles['DEC'] = [ 19.88,  14.84,  12.32]
 
         pix = tiles2pix(nside=8, tiles=tiles[:3], radius=1.6)
-        print('nside 8 pix', type(pix), pix)
+        print('\n--- nside 8 pix', pix)
+        print('--- compare', pix == np.array([196,197,208,302,303]))
+        print('--- all', np.all(pix == np.array([196,197,208,302,303])))
         self.assertTrue( np.all(pix == np.array([196,197,208,302,303])) )
 
         pix = tiles2pix(nside=16, tiles=tiles[:3], radius=1.6)
-        print('nside 16 pix', type(pix), pix)
         self.assertTrue( np.all(pix == np.array([785,788,789,791,832,1209,1211,1214,1215])) )
 
 def test_suite():
