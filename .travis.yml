@@ -42,7 +42,7 @@ env:
         - DESIMODEL_VERSION=branches/test-0.6.0
         - MAIN_CMD='python setup.py'
         # These packages will always be installed.
-        - CONDA_DEPENDENCIES='pyyaml scipy astropy'
+        - CONDA_DEPENDENCIES='pyyaml scipy astropy healpy'
         # These packages will only be installed if we really need them.
         - CONDA_ALL_DEPENDENCIES=''
         # These packages will always be installed.
