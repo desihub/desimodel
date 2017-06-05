@@ -183,6 +183,20 @@ def load_platescale():
     _platescale = np.loadtxt(infile, usecols=[0,1,6,7], dtype=columns)
     return _platescale
 
+def load_target_info():
+    '''
+    Loads data/targets/targets.yaml and returns the nested dictionary
+
+    This is primarily syntactic sugar to avoid end users constructing
+    paths and filenames by hand (which e.g. broke when targets.dat was
+    renamed to targets.yaml)
+    '''
+    targetsfile = os.path.join(datadir(),'targets','targets.yaml')
+    with open(targetsfile) as fx:
+        data = yaml.load(fx)
+
+    return data
+
 def findfile(filename):
     '''
     Return full path to data file $DESIMODEL/data/filename

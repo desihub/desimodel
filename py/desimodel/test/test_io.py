@@ -100,6 +100,16 @@ class TestIO(unittest.TestCase):
         self.assertTrue(p1 is p2)  #- caching worked
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
+    def test_load_targets(self):
+        """Test loading of tile files.
+        """
+        data = io.load_target_info()
+        #- Test a few keys, but not everything
+        self.assertIn('ntarget_lrg', data.keys())
+        self.assertIn('nobs_elg', data.keys())
+        self.assertIn('success_qso', data.keys())
+
+    @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_load_tiles(self):
         """Test loading of tile files.
         """
