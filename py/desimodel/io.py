@@ -192,6 +192,9 @@ def load_target_info():
     renamed to targets.yaml)
     '''
     targetsfile = os.path.join(datadir(),'targets','targets.yaml')
+    if not os.path.exists(targetsfile):
+        targetsfile = os.path.join(datadir(),'targets','targets.dat')
+
     with open(targetsfile) as fx:
         data = yaml.load(fx)
 
