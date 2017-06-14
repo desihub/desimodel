@@ -7,6 +7,8 @@ desimodel Release Notes
 
 * Added desimodel.footprint.tiles2pix and .pix2tiles for mapping healpix
   to DESI tiles.
+* fixed psf-quicksim.fits units to be astropy-friendly
+* added `desimodel.io.load_target_info()`
 
 0.6.0 (2017-03-27)
 ------------------

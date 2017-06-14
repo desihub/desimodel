@@ -55,7 +55,7 @@ def quicksim_input_data(psffile, ww, ifiber=100):
     npos = len(spotpos)
     nfiber = len(fiberpos)
 
-    pixsize = float(hdr['CCDPIXSZ']) / hdr['CDELT1']
+    pixsize = int(round(float(hdr['CCDPIXSZ']) / hdr['CDELT1']))
 
     #- Measure the FWHM of the spots in x and y
     spot_fwhm_x = N.zeros((npos, nwave))
@@ -119,7 +119,7 @@ desi = yaml.load(open(os.getenv('DESIMODEL')+'/data/desi.yaml'))
 import argparse
 
 parser = argparse.ArgumentParser(usage = "%prog [options]")
-parser.add_option("-o", "--output", action='store',  help="output fits file")
+parser.add_argument("-o", "--output", action='store',  help="output fits file")
 opts = parser.parse_args()
 
 if opts.output is None:
@@ -128,7 +128,7 @@ if opts.output is None:
 clobber = True
 for camera in ('b', 'r', 'z'):
     psffile = '{}/data/specpsf/psf-{}.fits'.format(os.getenv('DESIMODEL'), camera)
-    psfsha1 = hashlib.sha1(open(psffile).read()).hexdigest()
+    psfsha1 = hashlib.sha1(open(psffile, mode='rb').read()).hexdigest()
     psfhdr = fitsio.read_header(psffile)
 
     wavemin = psfhdr['WMIN_ALL']
@@ -153,7 +153,7 @@ for camera in ('b', 'r', 'z'):
     hdr.append(dict(name='TUNIT2', value='Angstrom', comment='Wavelength dispersion FWHM [Angstrom]'))
     hdr.append(dict(name='TUNIT3', value='pixel', comment='Cross dispersion FWHM [pixel]'))
     hdr.append(dict(name='TUNIT4', value='pixel', comment='Effective number of cross-dispersion pixels'))
-    hdr.append(dict(name='TUNIT5', value='Angstrom/row', comment='Angstroms per row'))
+    hdr.append(dict(name='TUNIT5', value='Angstrom/pixel', comment='Angstroms per CCD pixel row'))
 
     extname = 'QUICKSIM-'+camera.upper()
     fitsio.write(opts.output, data, header=hdr, clobber=clobber, extname=extname)
