@@ -2,7 +2,7 @@
 desimodel Release Notes
 =======================
 
-0.6.1 (unreleased)
+0.7.0 (2017-06-15)
 ------------------
 
 * Added desimodel.footprint.tiles2pix and .pix2tiles for mapping healpix
