@@ -2,6 +2,8 @@
 desimodel Release Notes
 =======================
 
+* Modified path to Lya SNR spectra files used in desi_quicklya.py, used in Lya Fisher forecast.
+
 0.7.0 (2017-06-15)
 ------------------
 
