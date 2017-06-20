@@ -5,7 +5,7 @@ desimodel Release Notes
 0.7.1 (unreleased)
 ------------------
 
-* No changes yet.
+* Modified path to Lya SNR spectra files used in desi_quicklya.py, used in Lya Fisher forecast.
 
 0.7.0 (2017-06-15)
 ------------------

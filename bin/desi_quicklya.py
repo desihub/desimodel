@@ -143,7 +143,7 @@ def main():
                 print(snrSummary)
 
         # Save the results to file
-        fname = os.environ['DESIMODEL']+'/data/spectra/LyaSNR/sn-spec-lya-'
+        fname = os.environ['DESIMODEL']+'/data/spectra/sn-spec-lya-'
         fname += band+str(mag)+'-t'+str(int(args.exptime))+'.dat'
         if args.verbose: print('Saving results to %s' % fname)
         # Try opening the requested output file.
