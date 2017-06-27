@@ -6,6 +6,7 @@ desimodel Release Notes
 ------------------
 
 * Modified path to Lya SNR spectra files used in desi_quicklya.py, used in Lya Fisher forecast.
+* don't print warnings in desimodel.io if specter isn't installed
 
 0.7.0 (2017-06-15)
 ------------------
