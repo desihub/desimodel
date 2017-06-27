@@ -21,12 +21,12 @@ def load_throughput(channel):
     channel : {'b', 'r', 'z'}
         Spectrograph channel.
     """
-    from specter.throughput import load_throughput as specter_load_throughput    
+    import specter.throughput   
     channel = channel.lower()
     global _thru
     if channel not in _thru:
         thrufile = os.path.join(os.environ['DESIMODEL'],'data','throughput','thru-{0}.fits'.format(channel))
-        _thru[channel] = specter_load_throughput(thrufile)
+        _thru[channel] = specter.throughput.load_throughput(thrufile)
     return _thru[channel]
 #
 #
@@ -40,12 +40,12 @@ def load_psf(channel):
     channel : {'b', 'r', 'z'}
         Spectrograph channel.
     """
-    from specter.psf import load_psf as specter_load_psf
+    import specter.psf
     channel = channel.lower()
     global _psf
     if channel not in _psf:
         psffile = os.path.join(os.environ['DESIMODEL'],'data','specpsf','psf-{0}.fits'.format(channel))
-        _psf[channel] = specter_load_psf(psffile)
+        _psf[channel] = specter.psf.load_psf(psffile)
     return _psf[channel]
 #
 #
