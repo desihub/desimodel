@@ -21,7 +21,7 @@ def load_throughput(channel):
     channel : {'b', 'r', 'z'}
         Spectrograph channel.
     """
-    import specter.throughput   
+    import specter.throughput
     channel = channel.lower()
     global _thru
     if channel not in _thru:
