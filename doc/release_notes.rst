@@ -7,6 +7,7 @@ desimodel Release Notes
 
 * Added desimodel.footprint.tiles2pix and .pix2tiles for mapping healpix
   to DESI tiles.
+* don't print warnings in desimodel.io if specter isn't installed
 
 0.6.0 (2017-03-27)
 ------------------
