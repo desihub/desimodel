@@ -82,6 +82,21 @@ def load_desiparams():
 #
 #
 #
+# Added and still needs to be committed and pushed to desihub
+_gfa = None
+def load_gfa():
+    """Returns GFA table from desimodel/data/focalplane/gfa.ecsv"""
+    global _gfa
+    from astropy.table import Table
+    # os is imported already in the desimodel io.py
+    import os
+    if _gfa is None:
+        gfaFile = os.path.join(os.environ['DESIMODEL'], 'data', 'focalplane', 'gfa1.ecsv')
+        _gfa = Table.read(gfaFile, format = 'ascii.ecsv')
+    return _gfa
+#
+#
+#
 _fiberpos = None
 def load_fiberpos():
     """Returns fiberpos table from desimodel/data/focalplane/fiberpos.fits.
