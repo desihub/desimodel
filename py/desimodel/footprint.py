@@ -75,6 +75,69 @@ def tileids2pix(nside, tileids, radius=None, per_tile=False):
     else:
         raise ValueError('TILEID(s) {} not in DESI footprint'.format(tileids))
 
+def tiles2fracpix(nside=64, step=1, tiles=None, radius=None, returnbound=False):
+    '''
+    Returns sorted array of *fractional* pixels that overlap the tiles
+
+    Optional Args:
+        nside: integer healpix nside, 2**k where 0 < k < 30
+        step: The number of integration steps around the edges of 
+              a HEALPix pixel. step=1 means just the pixel vertices (e.g., see
+              http://healpy.readthedocs.io/en/latest/generated/healpy.boundaries.html)
+              step=2 means the vertices and the corners and the points halfway 
+              between the vertices.
+        tiles:
+            Table-like with RA,DEC columns; or
+            None to use all DESI tiles from desimodel.io.load_tiles()
+        radius: tile radius in degrees;
+            if None use desimodel.focalplane.get_tile_radius_deg()
+        returnbound: Instead of the list of pixel integers, return the boundary
+
+    Returns fracpix:
+        integer array of pixel numbers that cover these tiles, *excluding
+        pixels that fully overlap the tiles* (i.e., just pixels that
+        *partially* overlap the tiles). The integers are sorted.
+
+    Notes:
+        there are potentially malicious cases where a pixel just brushes
+        a tile, such that there is a very small area where the pixel overlaps
+        the tile. To guard against these case, call this function with
+        progressively larger step values until it converges.
+    '''
+    #ADM set up healpy and set default tiles and radius
+    import healpy as hp
+    import desimodel
+    if tiles is None:
+        tiles = desimodel.io.load_tiles()
+
+    if radius is None:
+        radius = desimodel.focalplane.get_tile_radius_deg()
+
+    #ADM obtain ALL pixels that overlap the tiles
+    pix = desimodel.footprint.tiles2pix(nside, tiles=tiles, radius=radius) 
+
+    #ADM the recovered number of pixels, and the total number of points
+    #ADM that will be integrated around the boundary of the pixel
+    npix = len(pix)
+    nvertsperpix = 4*step
+
+    #ADM find points around the boundary of all pixels in Cartesian coordinates
+    xyzverts = hp.boundaries(nside,pix,step=step,nest=True)
+    #ADM convert to RA/Dec
+    theta, phi = hp.vec2ang(np.hstack(xyzverts).T) 
+    ra, dec = np.degrees(phi), 90-np.degrees(theta) 
+
+    #ADM calculate which boundary points are in the tiles
+    verts_in = desimodel.footprint.is_point_in_desi(tiles,ra,dec,radius=radius) 
+
+    #ADM reshape this into an array with nvertsperpix columns
+    pix_verts_in = np.reshape(verts_in,(npix,nvertsperpix))
+    #ADM any row with a column not in the tiles must be a fractional pixel
+    isfracpix = ~np.all(pix_verts_in,axis=1)
+
+    #ADM the pixel integers where pixels are fractional
+    return pix[np.where(isfracpix)]
+
 
 def pix2tiles(nside, pixels, tiles=None, radius=None):
     '''
