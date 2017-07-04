@@ -1,6 +1,7 @@
 #- Utility functions for working with the DESI footprint
 
 import numpy as np
+import os
 from . import focalplane
 from . import io
 
@@ -75,9 +76,9 @@ def tileids2pix(nside, tileids, radius=None, per_tile=False):
     else:
         raise ValueError('TILEID(s) {} not in DESI footprint'.format(tileids))
 
-def tiles2fracpix(nside=64, step=1, tiles=None, radius=None, returnbound=False):
+def tiles2fracpix(nside=64, step=1, tiles=None, radius=None):
     '''
-    Returns sorted array of *fractional* pixels that overlap the tiles
+    Returns a sorted array of just the *fractional* pixels that overlap the tiles
 
     Optional Args:
         nside: integer healpix nside, 2**k where 0 < k < 30
@@ -91,7 +92,6 @@ def tiles2fracpix(nside=64, step=1, tiles=None, radius=None, returnbound=False):
             None to use all DESI tiles from desimodel.io.load_tiles()
         radius: tile radius in degrees;
             if None use desimodel.focalplane.get_tile_radius_deg()
-        returnbound: Instead of the list of pixel integers, return the boundary
 
     Returns fracpix:
         integer array of pixel numbers that cover these tiles, *excluding
@@ -137,6 +137,57 @@ def tiles2fracpix(nside=64, step=1, tiles=None, radius=None, returnbound=False):
 
     #ADM the pixel integers where pixels are fractional
     return pix[np.where(isfracpix)]
+
+
+def pixweight(nside=256, tiles=None, radius=None, write=True):
+    '''
+    Create a rec array of the fraction of each pixel that overlaps the passed tiles
+
+    Optional Args:
+        nside: integer healpix nside, 2**k where 0 < k < 30
+        tiles:
+            Table-like with RA,DEC columns; or
+            None to use all DESI tiles from desimodel.io.load_tiles()
+        radius: tile radius in degrees;
+            if None use desimodel.focalplane.get_tile_radius_deg()
+        write: if True, then write the pixel->weight array to file in the
+
+    Returns pixweight:
+        a `~numpy.ndarray` where the first column is all possible pixels at the
+        passed nside (called `HPXPIXEL`) and the second column (called `WEIGHT`)
+        is the fracion of the pixel that overlaps the passed tiles:
+        `WEIGHT=1` for the pixel is entirely contained in the tiles
+        `WEIGHT=0` for the pixel is entirely outside of the tiles
+        `0 < WEIGHT < 1` for a pixel that overlaps the tiles
+
+    Notes:
+        it's sufficient to create the weights at a suitably high nside, say
+        nside=256 (0.052456 sq. deg. per pixel) as pixel numbers at
+        lower nsides can be obtained by integer division by powers of 4, e.g.
+        pix_@_nside_128 = pix@nside_256//4 and fractional weights at lower
+        nsides are the mean of the 4 pixels at the higher nside
+    '''
+
+    
+    if write:
+        #ADM get path to DESIMODEL footprint directory, create output file name
+        import desimodel.io
+        outfile = os.path.join(desimodel.io.datadir(),
+                               'footprint','desi-healpix-weights.fits')
+
+        #ADM create rec array of pixels and weights and populate it
+        outdata = np.empty(npix, dtype=[('HPXPIXEL', '>i8'), ('WEIGHT', '>f4')])
+        outdata["HPXPIXEL"] = pix
+        outdata["WEIGHT"] = weight
+
+        #ADM write information indicating HEALPix setup to file header
+        from desiutil import depend
+        import fitsio
+        hdr = fitsio.FITSHDR()
+        depend.setdep(hdr, 'HPXNSIDE', nside)
+        depend.setdep(hdr, 'HPXNEST', True)
+
+        fitsio.write(outfile, outdata, extname='PIXWEIGHTS', header=hdr, clobber=True)
 
 
 def pix2tiles(nside, pixels, tiles=None, radius=None):
