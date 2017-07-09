@@ -2,8 +2,12 @@
 
 import numpy as np
 import os
+from time import time
 from . import focalplane
 from . import io
+
+from desiutil.log import get_logger, DEBUG
+log = get_logger(DEBUG)
 
 def radec2pix(nside, ra, dec):
     '''Convert ra,dec to nested pixel number
@@ -23,7 +27,7 @@ def radec2pix(nside, ra, dec):
     theta, phi = np.radians(90-dec), np.radians(ra)
     return hp.ang2pix(nside, theta, phi, nest=True)
 
-def tiles2pix(nside, tiles=None, radius=None, per_tile=False):
+def tiles2pix(nside, tiles=None, radius=None, per_tile=False, fact=4):
     '''
     Returns sorted array of pixels that overlap the tiles
 
@@ -39,6 +43,9 @@ def tiles2pix(nside, tiles=None, radius=None, per_tile=False):
         radius: tile radius in degrees;
             if None use desimodel.focalplane.get_tile_radius_deg()
         per_tile: if True, return a list of arrays of pixels per tile
+        fact: factor healpy uses to resolve pixel overlaps. When this is
+            large there are fewer false positives at the expense of run
+            time (although fact=2**8 seems fast). Must be a power of 2
 
     Returns pixels:
         integer array of pixel numbers that cover these tiles; or
@@ -57,7 +64,7 @@ def tiles2pix(nside, tiles=None, radius=None, per_tile=False):
     theta, phi = np.radians(90-tiles['DEC']), np.radians(tiles['RA'])
     vec = hp.ang2vec(theta, phi)
     ipix = [hp.query_disc(nside, vec[i], radius=np.radians(radius),
-                inclusive=True, nest=True) for i in range(len(tiles))]
+                inclusive=True, nest=True, fact=fact) for i in range(len(tiles))]
     if per_tile:
         return ipix
     else:
@@ -76,7 +83,7 @@ def tileids2pix(nside, tileids, radius=None, per_tile=False):
     else:
         raise ValueError('TILEID(s) {} not in DESI footprint'.format(tileids))
 
-def tiles2fracpix(nside=64, step=1, tiles=None, radius=None):
+def tiles2fracpix(nside, step=1, tiles=None, radius=None, fact=4):
     '''
     Returns a sorted array of just the *fractional* pixels that overlap the tiles
 
@@ -92,6 +99,9 @@ def tiles2fracpix(nside=64, step=1, tiles=None, radius=None):
             None to use all DESI tiles from desimodel.io.load_tiles()
         radius: tile radius in degrees;
             if None use desimodel.focalplane.get_tile_radius_deg()
+        fact: factor healpy uses to resolve pixel overlaps. When this is
+            large there are fewer false positives at the expense of run
+            time (although fact=2**8 seems fast). Must be a power of 2
 
     Returns fracpix:
         integer array of pixel numbers that cover these tiles, *excluding
@@ -113,8 +123,9 @@ def tiles2fracpix(nside=64, step=1, tiles=None, radius=None):
     if radius is None:
         radius = desimodel.focalplane.get_tile_radius_deg()
 
-    #ADM obtain ALL pixels that overlap the tiles
-    pix = desimodel.footprint.tiles2pix(nside, tiles=tiles, radius=radius) 
+    #ADM obtain ALL pixels that overlap the tiles (and perhaps a
+    #ADM few more if fact is a small number
+    pix = desimodel.footprint.tiles2pix(nside, tiles=tiles, radius=radius, fact=fact)
 
     #ADM the recovered number of pixels, and the total number of points
     #ADM that will be integrated around the boundary of the pixel
@@ -128,7 +139,7 @@ def tiles2fracpix(nside=64, step=1, tiles=None, radius=None):
     ra, dec = np.degrees(phi), 90-np.degrees(theta) 
 
     #ADM calculate which boundary points are in the tiles
-    verts_in = desimodel.footprint.is_point_in_desi(tiles,ra,dec,radius=radius) 
+    verts_in = desimodel.footprint.is_point_in_desi(tiles, ra, dec, radius=radius) 
 
     #ADM reshape this into an array with nvertsperpix columns
     pix_verts_in = np.reshape(verts_in,(npix,nvertsperpix))
@@ -139,7 +150,8 @@ def tiles2fracpix(nside=64, step=1, tiles=None, radius=None):
     return pix[np.where(isfracpix)]
 
 
-def pixweight(nside=256, tiles=None, radius=None, write=True):
+def pixweight(nside, tiles=None, radius=None, precision=0.01, decmin=-20., decmax=77., 
+              write=True, verbose=True):
     '''
     Create a rec array of the fraction of each pixel that overlaps the passed tiles
 
@@ -150,7 +162,15 @@ def pixweight(nside=256, tiles=None, radius=None, write=True):
             None to use all DESI tiles from desimodel.io.load_tiles()
         radius: tile radius in degrees;
             if None use desimodel.focalplane.get_tile_radius_deg()
-        write: if True, then write the pixel->weight array to file in the
+        precision: approximate precision at which to calculate the area of pixels
+            that partially overlap the footprint (e.g. 0.01 means "1% precision")
+        decmin: For speed-up; a minuimum declination that is outside of the 
+            DESI footprint (degrees)
+        decmax: For speed-up; a maximum declination that is outside of the 
+            DESI footprint (degrees)
+        write: if True, then write the pixel->weight array to the file
+           $DESIMODEL/data/footprint/desi-healpix-weights.fits
+        verbose: if True, write messages to the :mod:`desiutil.log` logger
 
     Returns pixweight:
         a `~numpy.ndarray` where the first column is all possible pixels at the
@@ -168,17 +188,105 @@ def pixweight(nside=256, tiles=None, radius=None, write=True):
         nsides are the mean of the 4 pixels at the higher nside
     '''
 
+    t0 = time()
+
+    #ADM create an array that is zero for each integer pixel at this nside
+    import healpy as hp
+    npix = hp.nside2npix(nside)
+    weight = np.zeros(npix,float)
+
+    #ADM recover pixels that are likely to be in the DESI footprint and
+    #ADM set their weight to one (it's the case, then, that anything that
+    #ADM is *definitely outside of* the footprint has a weight of zero)
+    import desimodel.footprint
+    pix = desimodel.footprint.tiles2pix(nside, tiles=tiles, radius=radius, fact=2**8)
+    weight[pix] = 1.
+
+    #ADM loop through to find the "edge" (fractional) pixels, until convergence
+    setfracpix = set([-1])
+    #ADM only have a limited range, to prevent this running forever
+    for i in range(20):
+        if verbose:
+            log.info('Start integration around partial pixels...')
+            log.info('Trying {} pixel boundary points (step={})...t={:.1f}s'
+                     .format(4*2**i,2**i,time()-t0))
+        #ADM find the fractional pixels at this step
+        fracpix = desimodel.footprint.tiles2fracpix(
+            nside, step=2**i, tiles=tiles, radius=radius, fact=2**8)
+        if verbose:
+            log.info('...found {} fractional pixels'.format(len(fracpix)))
+        if set(fracpix) == setfracpix:
+            break
+        #ADM if we didn't converge, loop through again with the new
+        #ADM set of fractional pixels
+        setfracpix = set(fracpix)
     
+    #ADM warn the user if the integration didn't converge at 4*2**20 boundary points
+    if i == 20:
+        log.warning('Integration around pixel boundaries did NOT converge!')
+
+    #ADM create a mask that is True for fractional pixels, false for all other pixels
+    mask = np.zeros(npix,bool)
+    mask[fracpix] = True
+
+    #ADM the extent of the sphere to populate in sin of dec-space and its area
+    sindecmin, sindecmax = np.sin(np.radians(decmin)), np.sin(np.radians(decmax))
+    area = 360.*np.degrees(sindecmax-sindecmin)
+    if verbose:
+        log.info('Populating randoms between {:.1f} and {:.1f} degrees, an area of {:.1f} sq. deg....t={:.1f}s'
+                 .format(decmin,decmax,area,time()-t0))
+
+    #ADM determine the required precision for the area of interest
+    nptperpix = int((1./precision)**2)
+    pixarea = hp.nside2pixarea(nside, degrees=True)
+    npt = int(nptperpix * area / pixarea)
+    if verbose:
+        log.info('Generating {} random points...t={:.1f}s'.format(npt,time()-t0))
+
+    #ADM populate the portion of the sphere of interest with random points
+    ra = np.random.uniform(0.,360.,npt)
+    dec = np.degrees(np.arcsin(1.-np.random.uniform(1-sindecmax,1-sindecmin,npt)))
+
+    #ADM convert the random points to pixel number
+    pix = desimodel.footprint.radec2pix(nside,ra,dec)
+
+    #ADM retain random points for which the mask is True (i.e. just the fractional pixels)
+    inmask = np.where(mask[pix])[0]
+    pixinmask = pix[inmask]
+    if verbose:
+        log.info('{} of the random points are in fractional pixels...t={:.1f}s'
+                 .format(len(inmask),time()-t0))
+
+    #ADM find which random points in the fraction pixels are in the DESI footprint
+    log.info('Start integration over fractional pixels at edges of DESI footprint...')
+    indesi = desimodel.footprint.is_point_in_desi(desimodel.io.load_tiles(),ra[inmask],dec[inmask])
+    log.info('...{} of the random points in fractional pixels are in DESI...t={:.1f}s'
+             .format(np.sum(indesi),time()-t0))
+
+    #ADM assign the weights of the fractional pixels as the fraction of random points
+    #ADM in the fractional pixels that are in the DESI footprint
+    allinfracpix = np.histogram(pixinmask,bins=np.arange(npix))[0][fracpix]
+    if np.min(allinfracpix) == 0:
+        w = np.where(allinfracpix == 0)
+        theta, phi = hp.pix2ang(nside,allinfracpix[w],nest=True)
+        raout, decout = np.degrees(phi), 90 - np.degrees(theta)
+        coords = [ i for i in zip(raout,decout) ]
+        log.fatal('There are points in DESI outside of the range {} to {} degrees:'
+                  .format(decmin,decmax))
+        log.fatal('{}'.format(coords))
+    desiinfracpix = np.histogram(pixinmask[np.where(indesi)],bins=np.arange(npix))[0][fracpix]
+    weight[fracpix] = desiinfracpix/allinfracpix
+
+    #ADM create rec array of pixels and weights and populate it
+    outdata = np.empty(npix, dtype=[('HPXPIXEL', '>i8'), ('WEIGHT', '>f4')])
+    outdata["HPXPIXEL"] = np.arange(npix)
+    outdata["WEIGHT"] = weight
+
     if write:
         #ADM get path to DESIMODEL footprint directory, create output file name
         import desimodel.io
         outfile = os.path.join(desimodel.io.datadir(),
                                'footprint','desi-healpix-weights.fits')
-
-        #ADM create rec array of pixels and weights and populate it
-        outdata = np.empty(npix, dtype=[('HPXPIXEL', '>i8'), ('WEIGHT', '>f4')])
-        outdata["HPXPIXEL"] = pix
-        outdata["WEIGHT"] = weight
 
         #ADM write information indicating HEALPix setup to file header
         from desiutil import depend
@@ -188,6 +296,10 @@ def pixweight(nside=256, tiles=None, radius=None, write=True):
         depend.setdep(hdr, 'HPXNEST', True)
 
         fitsio.write(outfile, outdata, extname='PIXWEIGHTS', header=hdr, clobber=True)
+
+    log.info('Done...t={:.1f}s'.format(time()-t0))
+
+    return outdata
 
 
 def pix2tiles(nside, pixels, tiles=None, radius=None):
