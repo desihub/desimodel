@@ -149,9 +149,8 @@ def tiles2fracpix(nside, step=1, tiles=None, radius=None, fact=4):
     #ADM the pixel integers where pixels are fractional
     return pix[np.where(isfracpix)]
 
-
 def pixweight(nside, tiles=None, radius=None, precision=0.01, decmin=-20., decmax=77., 
-              write=True, verbose=True):
+              write=True, outplot=None, verbose=True):
     '''
     Create a rec array of the fraction of each pixel that overlaps the passed tiles
 
@@ -163,13 +162,18 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, decmin=-20., decma
         radius: tile radius in degrees;
             if None use desimodel.focalplane.get_tile_radius_deg()
         precision: approximate precision at which to calculate the area of pixels
-            that partially overlap the footprint (e.g. 0.01 means "1% precision")
+            that partially overlap the footprint in SQUARE DEGREES
+            (e.g. 0.01 means precise to 0.01 sq. deg., or 36 sq. arcmin.)
         decmin: For speed-up; a minuimum declination that is outside of the 
             DESI footprint (degrees)
         decmax: For speed-up; a maximum declination that is outside of the 
             DESI footprint (degrees)
         write: if True, then write the pixel->weight array to the file
            $DESIMODEL/data/footprint/desi-healpix-weights.fits
+        outplot: if a string is passed, create a plot named that string
+           (pass a *name* for a plot in the current directory, a *full path*
+           for a plot in a different directory). This is passed to
+           matplotlib.pyplot's savefig routine
         verbose: if True, write messages to the :mod:`desiutil.log` logger
 
     Returns pixweight:
@@ -187,7 +191,6 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, decmin=-20., decma
         pix_@_nside_128 = pix@nside_256//4 and fractional weights at lower
         nsides are the mean of the 4 pixels at the higher nside
     '''
-
     t0 = time()
 
     #ADM create an array that is zero for each integer pixel at this nside
@@ -237,9 +240,8 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, decmin=-20., decma
                  .format(decmin,decmax,area,time()-t0))
 
     #ADM determine the required precision for the area of interest
-    nptperpix = int((1./precision)**2)
-    pixarea = hp.nside2pixarea(nside, degrees=True)
-    npt = int(nptperpix * area / pixarea)
+    nptpersqdeg = int((1./precision)**2)
+    npt = int(nptpersqdeg * area)
     if verbose:
         log.info('Generating {} random points...t={:.1f}s'.format(npt,time()-t0))
 
@@ -297,10 +299,15 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, decmin=-20., decma
 
         fitsio.write(outfile, outdata, extname='PIXWEIGHTS', header=hdr, clobber=True)
 
+    #ADM if outplot was passed, make a plot of the final mask in Mollweide projection
+    if outplot is not None:
+        import matplotlib.pyplot as plt
+        hp.mollview(outdata["WEIGHT"], nest=True)
+        plt.savefig(outplot)
+
     log.info('Done...t={:.1f}s'.format(time()-t0))
 
     return outdata
-
 
 def pix2tiles(nside, pixels, tiles=None, radius=None):
     '''
