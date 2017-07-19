@@ -9,6 +9,7 @@ desimodel Release Notes
 * Added desimodel.inputs.build_gfa_table and its helper functions to write a .ecsv file for GFA data
 * Added desimodel.io.load_gfa to return the GFA data table
 * Added desimodel.focalplane.xy2radec, which converts x,y coordinates on the focal plane to RA, Dec coordinates
+* don't print warnings in desimodel.io if specter isn't installed
 
 0.7.0 (2017-06-15)
 ------------------
