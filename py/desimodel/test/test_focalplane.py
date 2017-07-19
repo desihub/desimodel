@@ -4,7 +4,7 @@
 """
 import unittest
 import numpy as np
-from ..focalplane import FocalPlane, generate_random_centroid_offsets
+from ..focalplane import FocalPlane, generate_random_centroid_offsets, xy2radec, get_radius_mm, get_radius_deg
 
 
 class TestFocalplane(unittest.TestCase):
@@ -38,6 +38,28 @@ class TestFocalplane(unittest.TestCase):
         F.set_tele_pointing(180.0, 45.0)
         self.assertEqual(F.ra, 180.0)
         self.assertEqual(F.dec, 45.0)
+    
+    def test_get_radius(self):
+        """Tests converting x, y coordinates on the focal plane to a radius in degrees and mm
+        """
+        degree = get_radius_deg(333.738, 217.766)
+        truedegree = 1.5731300326614939
+        radius = get_radius_mm(1.5731300326614939)
+        trueradius = 398.5010456698936
+        self.assertEqual(truedegree, degree)
+        self.assertEqual(trueradius, radius)
+    
+    def new_test_xy2radec(self):
+        """Should test the consistency between the conversion functions
+        radec2xy and xy2radec. Right now tests the accuracy of the xy2radec 
+        on particular cases.
+        """
+        truera = 8.927313423598427
+        truedec = -9.324956250231294
+        newra, newdec = xy2radec(8.37, -10.65, -138.345, -333.179)
+        self.assertEqual(truera, newra)
+        self.assertEqual(truedec, newdec)
+    
 
     def test_xy2radec(self):
         """Test the consistency between the conversion functions

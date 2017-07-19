@@ -53,6 +53,7 @@ class TestIO(unittest.TestCase):
         io._thru = dict()
         io._psf = dict()
         io._params = None
+        io._gfa = None
         io._fiberpos = None
         io._tiles = None
 
@@ -79,7 +80,17 @@ class TestIO(unittest.TestCase):
         """
         p = io.load_desiparams()
         self.assertTrue(isinstance(p, dict))
-
+    
+    @unittest.skipUnless(desimodel_available, desimodel_message)
+    def test_load_gfa(self):
+        """Test loading of gfa location data.
+            """
+        gfa = io.load_gfa()
+        # length of the GFA table should be 40 since there are each corner of the 10 GFAs are included
+        self.assertEqual(len(gfa), 40)
+        for key in ('PETAL', 'X', 'Y', 'Z', 'Q', 'RADIUS_DEG', 'RADIUS_MM'):
+            self.assertIn(key, gfa.dtype.names)
+        
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_load_fiberpos(self):
         """Test loading of fiber positioner data.

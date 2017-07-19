@@ -6,6 +6,9 @@ desimodel Release Notes
 ------------------
 
 * Modified path to Lya SNR spectra files used in desi_quicklya.py, used in Lya Fisher forecast.
+* Added desimodel.inputs.build_gfa_table and its helper functions to write a .ecsv file for GFA data
+* Added desimodel.io.load_gfa to return the GFA data table
+* Added desimodel.focalplane.xy2radec, which converts x,y coordinates on the focal plane to RA, Dec coordinates
 
 0.7.0 (2017-06-15)
 ------------------

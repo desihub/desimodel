@@ -91,7 +91,7 @@ def load_gfa():
     # os is imported already in the desimodel io.py
     import os
     if _gfa is None:
-        gfaFile = os.path.join(os.environ['DESIMODEL'], 'data', 'focalplane', 'gfa1.ecsv')
+        gfaFile = os.path.join(os.environ['DESIMODEL'], 'data', 'focalplane', 'gfa.ecsv')
         _gfa = Table.read(gfaFile, format = 'ascii.ecsv')
     return _gfa
 #
