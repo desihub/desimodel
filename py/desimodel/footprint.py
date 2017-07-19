@@ -1,4 +1,4 @@
-#- Utility functions for working with the DESI footprint
+B#- Utility functions for working with the DESI footprint
 
 import numpy as np
 import os
@@ -150,7 +150,7 @@ def tiles2fracpix(nside, step=1, tiles=None, radius=None, fact=4):
     return pix[np.where(isfracpix)]
 
 def pixweight(nside, tiles=None, radius=None, precision=0.01, decmin=-20., decmax=77., 
-              write=True, outplot=None, verbose=True):
+              write=False, outplot=None, verbose=True):
     '''
     Create a rec array of the fraction of each pixel that overlaps the passed tiles
 
