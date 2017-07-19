@@ -260,10 +260,12 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, decmin=-20., decma
                  .format(len(inmask),time()-t0))
 
     #ADM find which random points in the fraction pixels are in the DESI footprint
-    log.info('Start integration over fractional pixels at edges of DESI footprint...')
+    if verbose:
+        log.info('Start integration over fractional pixels at edges of DESI footprint...')
     indesi = desimodel.footprint.is_point_in_desi(desimodel.io.load_tiles(),ra[inmask],dec[inmask])
-    log.info('...{} of the random points in fractional pixels are in DESI...t={:.1f}s'
-             .format(np.sum(indesi),time()-t0))
+    if verbose:
+        log.info('...{} of the random points in fractional pixels are in DESI...t={:.1f}s'
+                 .format(np.sum(indesi),time()-t0))
 
     #ADM assign the weights of the fractional pixels as the fraction of random points
     #ADM in the fractional pixels that are in the DESI footprint
@@ -305,7 +307,8 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, decmin=-20., decma
         hp.mollview(outdata["WEIGHT"], nest=True)
         plt.savefig(outplot)
 
-    log.info('Done...t={:.1f}s'.format(time()-t0))
+    if verbose:
+        log.info('Done...t={:.1f}s'.format(time()-t0))
 
     return outdata
 

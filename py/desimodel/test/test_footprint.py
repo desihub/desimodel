@@ -148,6 +148,61 @@ class TestFootprint(unittest.TestCase):
         self.assertEqual(len(ret), 1)
         self.assertEqual(ret[0], [])
 
+    def test_partial_pixels(self):
+        """check weights assigned to HEALPixels that partially overlap tiles"""
+        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
+                                      ('RA', 'f8'),
+                                      ('DEC', 'f8'),
+                                      ('IN_DESI', 'i2'),
+                                      ('PROGRAM', (str, 6)),
+                                  ])
+
+        #ADM I found a full (180) partial (406) and empty (1000) HEALPixel at nside=256
+        fullpix256 = np.array([180])
+        partpix256 = np.array([406])
+        emptypix256 = np.array([1000])
+        #ADM In the nested scheme you can traverse from 256 to 64 by integer division
+        #ADM by (256/64)**2 = 16
+        fullpix64 = fullpix256//16
+        partpix64 = partpix256//16
+        emptypix64 = emptypix256//16
+
+        #ADM I then used:
+        #ADM full = footprint.pix2tiles(256,[180])
+        #ADM part = footprint.pix2tiles(256,[406])
+        #ADM empty = footprint.pix2tiles(256,[20])
+        #ADM to determine the tile coordinates for these pixels 
+        #ADM (the first tile in  the array is full and the last tile is empty)
+        tiles['TILEID'] = np.arange(4) + 1
+        tiles['RA'] = [43.05, 47.41, 47.08, 45.38]
+        tiles['DEC'] = [1.54, 3.12, 3.17, 0.0]
+        tiles['IN_DESI'] = [1, 1, 1, 1]
+        tiles['PROGRAM'] = 'DARK'
+        
+        #ADM The approximate radius of DESI tiles
+        radius = 1.605
+
+        #ADM determine the weight array for pixels at nsides of 64 and 256
+        pixweight64 = footprint.pixweight(64,tiles=tiles,radius=radius,precision=0.04,verbose=False)
+        pixweight256 = footprint.pixweight(256,tiles=tiles,radius=radius,precision=0.04,verbose=False)
+        
+        #ADM check that the full pixel is assigned a weight of 1 at each nside
+        self.assertTrue(np.all(pixweight64[fullpix64]["WEIGHT"]==1))
+        self.assertTrue(np.all(pixweight256[fullpix256]["WEIGHT"]==1))
+
+        #ADM check that the empty pixel is assigned a weight of 0 at each nside
+        self.assertTrue(np.all(pixweight64[emptypix64]["WEIGHT"]==0))
+        self.assertTrue(np.all(pixweight256[emptypix256]["WEIGHT"]==0))
+
+        #ADM check weights of partial pixels agree reasonably at different nsides
+        hirespixels = partpix64*16+np.arange(16)
+        hiresweight = np.mean(pixweight256[hirespixels]["WEIGHT"])
+        loresweight = pixweight64[partpix64]["WEIGHT"]
+        #ADM really they should agree to much better than 10%. As "precision" is not set to be
+        #ADM very high, this is just to check for catastrophic differences
+        #ADM I checked that at precision = 0.04 this doesn't fail after 10000 attempts
+        self.assertTrue(np.abs(hiresweight-loresweight) < 0.1)
+
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_spatial_real_tiles(self):
         tiles = io.load_tiles()
