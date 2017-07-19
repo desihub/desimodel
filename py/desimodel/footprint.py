@@ -1,4 +1,4 @@
-B#- Utility functions for working with the DESI footprint
+#- Utility functions for working with the DESI footprint
 
 import numpy as np
 import os
