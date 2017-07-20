@@ -200,7 +200,7 @@ class TestFootprint(unittest.TestCase):
         loresweight = pixweight64[partpix64]["WEIGHT"]
         #ADM really they should agree to much better than 10%. As "precision" is not set to be
         #ADM very high, this is just to check for catastrophic differences
-        #ADM I checked that at precision = 0.04 this doesn't fail after 10000 attempts
+        #ADM I checked that at precision = 0.04 this doesn't fail after 200 attempts
         self.assertTrue(np.abs(hiresweight-loresweight) < 0.1)
 
     @unittest.skipUnless(desimodel_available, desimodel_message)

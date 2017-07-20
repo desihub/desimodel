@@ -149,8 +149,7 @@ def tiles2fracpix(nside, step=1, tiles=None, radius=None, fact=4):
     #ADM the pixel integers where pixels are fractional
     return pix[np.where(isfracpix)]
 
-def pixweight(nside, tiles=None, radius=None, precision=0.01, decmin=-20., decmax=77., 
-              write=False, outplot=None, verbose=True):
+def pixweight(nside, tiles=None, radius=None, precision=0.01, write=False, outplot=None, verbose=True):
     '''
     Create a rec array of the fraction of each pixel that overlaps the passed tiles
 
@@ -228,6 +227,23 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, decmin=-20., decma
     if i == 20:
         log.warning('Integration around pixel boundaries did NOT converge!')
 
+    #ADM find the minimum and maximum dec of interest (there's no need to populate
+    #ADM declinations that lie beyond the fractional pixels with random points)
+    xyzverts = hp.boundaries(nside,fracpix,nest=True)
+    theta, phi = hp.vec2ang(np.hstack(xyzverts).T)
+    ra, dec = np.degrees(phi), 90-np.degrees(theta)
+    decmin, decmax = np.min(dec), np.max(dec)
+
+    if np.min(allinfracpix) == 0:
+        w = np.where(allinfracpix == 0)
+        theta, phi = hp.pix2ang(nside,allinfracpix[w],nest=True)
+        raout, decout = np.degrees(phi), 90 - np.degrees(theta)
+        coords = [ i for i in zip(raout,decout) ]
+        log.fatal('There are points in DESI outside of the range {} to {} degrees:'
+                  .format(decmin,decmax))
+        log.fatal('{}'.format(coords))
+
+
     #ADM create a mask that is True for fractional pixels, false for all other pixels
     mask = np.zeros(npix,bool)
     mask[fracpix] = True
@@ -292,14 +308,6 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, decmin=-20., decma
     #ADM assign the weights of the fractional pixels as the fraction of random points
     #ADM in the fractional pixels that are in the DESI footprint
     allinfracpix = np.histogram(pixinmask,bins=np.arange(npix))[0][fracpix]
-    if np.min(allinfracpix) == 0:
-        w = np.where(allinfracpix == 0)
-        theta, phi = hp.pix2ang(nside,allinfracpix[w],nest=True)
-        raout, decout = np.degrees(phi), 90 - np.degrees(theta)
-        coords = [ i for i in zip(raout,decout) ]
-        log.fatal('There are points in DESI outside of the range {} to {} degrees:'
-                  .format(decmin,decmax))
-        log.fatal('{}'.format(coords))
     desiinfracpix = np.histogram(pixinmask[np.where(indesi)],bins=np.arange(npix))[0][fracpix]
     weight[fracpix] = desiinfracpix/allinfracpix
 
