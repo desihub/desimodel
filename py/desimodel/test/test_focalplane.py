@@ -46,7 +46,7 @@ class TestFocalplane(unittest.TestCase):
         truedegree = 1.5731300326614939
         radius = get_radius_mm(1.5731300326614939)
         trueradius = 398.5010456698936
-        self.assertEqual(truedegree, degree)
+        self.assertAlmostEqual(truedegree, degree)
         self.assertEqual(trueradius, radius)
     
     def new_test_xy2radec(self):
