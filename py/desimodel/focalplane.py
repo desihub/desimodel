@@ -173,23 +173,8 @@ def cartesian_to_polar_angle(x, y):
     x: The x coordinate in mm of a location on the focal plane
     y: The y coordinate in mm of a location on the focal plane
     """
-    # Prevents division by 0
-    if(x == 0):
-        if(y > 0):
-            return 90
-        else:
-            return 270
-    # Case for quadrant 1
-    elif(x > 0 and y >= 0):
-        return np.arctan(y / x) * 180 / np.pi
-    # Case for quadrants 2 and 3
-    elif(x < 0):
-        return (np.arctan(y / x) * 180 / np.pi) + 180
-    # Case for quadrant 4
-    elif(x > 0 and y <= 0):
-        return (np.arctan(y / x) * 180 / np.pi) + 360
-    else:
-        raise ValueError
+    return np.degrees(np.arctan2(y, x))
+
 
 def xy2radec(telra, teldec, x, y):
     """
