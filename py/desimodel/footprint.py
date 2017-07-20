@@ -245,24 +245,46 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, decmin=-20., decma
     if verbose:
         log.info('Generating {} random points...t={:.1f}s'.format(npt,time()-t0))
 
-    #ADM populate the portion of the sphere of interest with random points
-    ra = np.random.uniform(0.,360.,npt)
-    dec = np.degrees(np.arcsin(1.-np.random.uniform(1-sindecmax,1-sindecmin,npt)))
+    #ADM loop over chunks (if npt > 1e7) to reach npt points while avoiding memory issues
+    nchunk = int(1e7)
+    pixinmask = []
+    rainmask = []
+    decinmask = []
+    cnt = 0
+    while cnt < npt:
+        #ADM if a chunk would pass too many points (> npt), revert to the remaining number
+        #ADM of points instead of creating a full chunk
+        if nchunk + cnt > npt:
+            nchunk = npt - cnt
+        #ADM populate the portion of the sphere of interest with random points
+        ra = np.random.uniform(0.,360.,nchunk)
+        dec = np.degrees(np.arcsin(1.-np.random.uniform(1-sindecmax,1-sindecmin,nchunk)))
+        #ADM convert the random points to pixel number
+        pix = desimodel.footprint.radec2pix(nside,ra,dec)
+        #ADM retain random points for which the mask is True (i.e. just the fractional pixels)
+        inmask = np.where(mask[pix])[0]
+        decinmask.append(dec[inmask])
+        rainmask.append(ra[inmask])
+        pixinmask.append(pix[inmask])
+        cnt += nchunk
+        if verbose:
+            log.info('...generated {} random points...t={:.1f}s'
+                     .format(cnt,time()-t0))
 
-    #ADM convert the random points to pixel number
-    pix = desimodel.footprint.radec2pix(nside,ra,dec)
+    #ADM collapse the 2-D chunks into a 1-D array
+    from itertools import chain
+    rainmask = np.array(list(chain.from_iterable(rainmask)))
+    decinmask = np.array(list(chain.from_iterable(decinmask)))
+    pixinmask = np.array(list(chain.from_iterable(pixinmask)))
 
-    #ADM retain random points for which the mask is True (i.e. just the fractional pixels)
-    inmask = np.where(mask[pix])[0]
-    pixinmask = pix[inmask]
     if verbose:
         log.info('{} of the random points are in fractional pixels...t={:.1f}s'
-                 .format(len(inmask),time()-t0))
+                 .format(len(pixinmask),time()-t0))
 
-    #ADM find which random points in the fraction pixels are in the DESI footprint
+    #ADM find which random points in the fractional pixels are in the DESI footprint
     if verbose:
         log.info('Start integration over fractional pixels at edges of DESI footprint...')
-    indesi = desimodel.footprint.is_point_in_desi(desimodel.io.load_tiles(),ra[inmask],dec[inmask])
+    indesi = desimodel.footprint.is_point_in_desi(desimodel.io.load_tiles(),rainmask,decinmask)
     if verbose:
         log.info('...{} of the random points in fractional pixels are in DESI...t={:.1f}s'
                  .format(np.sum(indesi),time()-t0))
