@@ -57,8 +57,8 @@ class TestFocalplane(unittest.TestCase):
         truera = 8.927313423598427
         truedec = -9.324956250231294
         newra, newdec = xy2radec(8.37, -10.65, -138.345, -333.179)
-        self.assertEqual(truera, newra)
-        self.assertEqual(truedec, newdec)
+        self.assertEqual(truera, newra, 5)
+        self.assertEqual(truedec, newdec, 5)
     
 
     def test_xy2radec(self):
