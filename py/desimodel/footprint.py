@@ -227,28 +227,16 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, write=False, outpl
     if i == 20:
         log.warning('Integration around pixel boundaries did NOT converge!')
 
+    #ADM create a mask that is True for fractional pixels, false for all other pixels
+    mask = np.zeros(npix,bool)
+    mask[fracpix] = True
+
     #ADM find the minimum and maximum dec of interest (there's no need to populate
     #ADM declinations that lie beyond the fractional pixels with random points)
     xyzverts = hp.boundaries(nside,fracpix,nest=True)
     theta, phi = hp.vec2ang(np.hstack(xyzverts).T)
     ra, dec = np.degrees(phi), 90-np.degrees(theta)
     decmin, decmax = np.min(dec), np.max(dec)
-
-    if np.min(allinfracpix) == 0:
-        w = np.where(allinfracpix == 0)
-        theta, phi = hp.pix2ang(nside,allinfracpix[w],nest=True)
-        raout, decout = np.degrees(phi), 90 - np.degrees(theta)
-        coords = [ i for i in zip(raout,decout) ]
-        log.fatal('There are points in DESI outside of the range {} to {} degrees:'
-                  .format(decmin,decmax))
-        log.fatal('{}'.format(coords))
-
-
-    #ADM create a mask that is True for fractional pixels, false for all other pixels
-    mask = np.zeros(npix,bool)
-    mask[fracpix] = True
-
-    #ADM the extent of the sphere to populate in sin of dec-space and its area
     sindecmin, sindecmax = np.sin(np.radians(decmin)), np.sin(np.radians(decmax))
     area = 360.*np.degrees(sindecmax-sindecmin)
     if verbose:
