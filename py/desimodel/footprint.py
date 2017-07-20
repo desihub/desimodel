@@ -163,10 +163,6 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, write=False, outpl
         precision: approximate precision at which to calculate the area of pixels
             that partially overlap the footprint in SQUARE DEGREES
             (e.g. 0.01 means precise to 0.01 sq. deg., or 36 sq. arcmin.)
-        decmin: For speed-up; a minuimum declination that is outside of the 
-            DESI footprint (degrees)
-        decmax: For speed-up; a maximum declination that is outside of the 
-            DESI footprint (degrees)
         write: if True, then write the pixel->weight array to the file
            $DESIMODEL/data/footprint/desi-healpix-weights.fits
         outplot: if a string is passed, create a plot named that string
@@ -231,8 +227,8 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, write=False, outpl
     mask = np.zeros(npix,bool)
     mask[fracpix] = True
 
-    #ADM find the minimum and maximum dec of interest (there's no need to populate
-    #ADM declinations that lie beyond the fractional pixels with random points)
+    #ADM find the minimum and maximum dec of interest (there's no need to Monte Carlo
+    #ADM integrate over declinations that lie beyond the fractional pixels)
     xyzverts = hp.boundaries(nside,fracpix,nest=True)
     theta, phi = hp.vec2ang(np.hstack(xyzverts).T)
     ra, dec = np.degrees(phi), 90-np.degrees(theta)
@@ -240,7 +236,7 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, write=False, outpl
     sindecmin, sindecmax = np.sin(np.radians(decmin)), np.sin(np.radians(decmax))
     area = 360.*np.degrees(sindecmax-sindecmin)
     if verbose:
-        log.info('Populating randoms between {:.1f} and {:.1f} degrees, an area of {:.1f} sq. deg....t={:.1f}s'
+        log.info('Populating randoms between {:.2f} and {:.2f} degrees, an area of {:.1f} sq. deg....t={:.1f}s'
                  .format(decmin,decmax,area,time()-t0))
 
     #ADM determine the required precision for the area of interest
