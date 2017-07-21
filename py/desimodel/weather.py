@@ -229,3 +229,43 @@ def sample_timeseries(x_grid, pdf_grid, psd, n_sample, dt_sec=180., gen=None):
     # Un-whiten the samples to recover the desired 1D PDF.
     x_cdf = 0.5 * (1 + scipy.special.erf(x / np.sqrt(2)))
     return np.interp(x_cdf, cdf_grid, x_grid)
+
+
+def _seeing_psd(freq):
+    """Evaluate the 'chi-by-eye' fit of the seeing PSD described in
+    DESI-doc-3087.
+    """
+    N, f0, a0, a1 = 8000, 0.10, 2.8, -1.1
+    return (N * (freq/f0)**a0 / (1 + (freq/f0)**a0) *
+            (freq/f0) ** a1 / (10 + (freq/f0) ** a1))
+
+
+def sample_seeing(n_sample, dt_sec=180., median_seeing=1.1, max_seeing=2.5,
+                  gen=None):
+    """Generate a random time series of FWHM seeing values.
+
+    See DESI-doc-3087 for details. Uses :func:`_seeing_psd` and
+    :func:`sample_timeseries`.
+
+    Parameters
+    ----------
+    n_sample : int
+        Number of equally spaced samples to generate.
+    dt_sec : float
+        Time interval between samples in seconds.
+    median_seeing : float
+        See :func:`get_seeing_pdf`.
+    mex_seeing : float
+        See :func:`get_seeing_pdf`.
+    gen : np.random.RandomState or None
+        Provide an existing RandomState for full control of reproducible random
+        numbers, or None for non-reproducible random numbers.
+
+    Returns
+    -------
+    array
+        1D array of randomly generated samples.
+    """
+    fwhm_grid, pdf_grid = get_seeing_pdf(median_seeing, max_seeing)
+    return sample_timeseries(
+        fwhm_grid, pdf_grid, _seeing_psd, n_sample, dt_sec, gen)
