@@ -47,6 +47,12 @@ class TestWeather(unittest.TestCase):
         ys = F(xs)
         assert np.all(np.diff(ys) >= 0)
 
+    def test_seeing_pdf_norm(self):
+        fwhm, pdf = get_seeing_pdf()
+        norm = np.sum(pdf * np.gradient(fwhm))
+        assert np.allclose(norm, 1)
+
+
 def test_suite():
     """Allows testing of only this module with the command::
         python setup.py test -m <modulename>

@@ -109,3 +109,52 @@ def whiten_transforms(data, data_min=None, data_max=None):
     cdf = np.arange(n_data + 2) / (n_data + 1.)
 
     return whiten_transforms_from_cdf(sorted_data, cdf)
+
+
+def _seeing_fit_model(x):
+    """Evalute the fit to MzLS seeing described in DESI-doc-3087.
+    """
+    p = np.array([  0.07511146,   0.44276671,  23.02442192,  38.07691498])
+    y = (1 + ((x - p[0]) / p[1]) ** 2) ** (-p[2]) * x ** p[3]
+    return y / (y.sum() * np.gradient(x))
+
+
+def get_seeing_pdf(median_seeing=1.1, max_seeing=2.5, n=250):
+    """Return PDF of FWHM seeing for specified clipped median value.
+
+    Note that this is atmospheric seeing, not delivered image quality.
+    See DESI-doc-3087 for details.
+
+    Scales the clipped MzLS seeing PDF in order to achieve the requested
+    median value.  Note that clipping is applied before scaling, so
+    the output PDF is clipped at scale * max_seeing.
+
+    Parameters
+    ----------
+    median_seeing : float
+        Target FWHM seeing value in arcsec. Must be in the range [0.95, 1.30].
+    max_seeing : float
+        Calculate scaled median using unscaled values below this value.
+
+    Returns
+    -------
+    tuple
+        Tuple (fwhm, pdf) that tabulates pdf[fwhm]. Normalized so that
+        np.sum(pdf * np.gradient(fwhm)) = 1.
+    """
+    # Tabulate the nominal (scale=1) seeing PDF.
+    fwhm = np.linspace(0., max_seeing, n)
+    pdf = _seeing_fit_model(fwhm)
+    pdf /= (pdf.sum() * np.gradient(fwhm))
+    cdf = np.cumsum(pdf)
+    cdf /= cdf[-1]
+    # Tabulate the median as a function of FWHM scale.
+    scale = np.linspace(0.9, 1.4, 11)
+    median = np.empty_like(scale)
+    for i, s in enumerate(scale):
+        median[i] = np.interp(0.5, cdf, s * fwhm)
+    if median_seeing < median[0] or median_seeing > median[-1]:
+        raise ValueError('Requested median is outside allowed range.')
+    # Interpolate to find the scale factor that gives the requested median.
+    s = np.interp(median_seeing, median, scale)
+    return fwhm * s, pdf / s
