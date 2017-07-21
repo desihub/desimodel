@@ -201,11 +201,12 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, write=False, outpl
     weight[pix] = 1.
 
     #ADM loop through to find the "edge" (fractional) pixels, until convergence
+    if verbose:
+        log.info('Start integration around partial pixels...')
     setfracpix = set([-1])
     #ADM only have a limited range, to prevent this running forever
     for i in range(20):
         if verbose:
-            log.info('Start integration around partial pixels...')
             log.info('Trying {} pixel boundary points (step={})...t={:.1f}s'
                      .format(4*2**i,2**i,time()-t0))
         #ADM find the fractional pixels at this step
