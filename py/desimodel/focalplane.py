@@ -129,6 +129,164 @@ def get_tile_radius_deg():
 
     return _tile_radius_deg
 
+def get_radius_mm(theta):
+    """
+    Returns the radius in mm given an radius in degrees using the platescale data
+    relative to the center of the focal plane as (0,0)
+    Parameters
+    ----------
+    theta: A float that represents the angle from the center of the focal plane
+    """
+    import scipy.interpolate
+    import desimodel.io
+    platescale = desimodel.io.load_platescale()
+    # Uses a quadratic one-dimensional interpolation to approximate the radius in degrees versus radius in mm
+    fn = scipy.interpolate.interp1d(platescale['theta'], platescale['radius'], kind = 'quadratic')
+    radius = float(fn(theta))
+    return radius
+
+def get_radius_deg(x, y):
+    """
+    Returns the radius in degrees given x, y coordinates using the platescale data
+    Parameters
+    ----------
+    x: The x coordinate in mm of a location on the focal plane
+    y: The y coordinate in mm of a location on the focal plane
+    """
+    import scipy.interpolate
+    import desimodel.io
+    radius = np.sqrt(x**2 + y**2)
+    platescale = desimodel.io.load_platescale()
+    # Plots are used for debugging.
+    #plot(platescale['radius'], platescale['theta'], 'k.')
+    #plot(platescale['radius'], platescale['radial_platescale'], 'k.')
+    fn = scipy.interpolate.interp1d(platescale['radius'], platescale['theta'], kind = 'quadratic')
+    degree = float(fn(radius))
+    return degree
+
+def cartesian_to_polar_angle(x, y):
+    """
+    Given cartesian coordinates, this function returns the polar angle in degrees
+    for use in polar coordinates
+    Parameters
+    ----------
+    x: The x coordinate in mm of a location on the focal plane
+    y: The y coordinate in mm of a location on the focal plane
+    """
+    return np.degrees(np.arctan2(y, x))
+
+
+def xy2radec(telra, teldec, x, y):
+    """
+    Returns the new RA and Dec of an x, y position on the focal plane
+    in the sky given an arbitrary telescope pointing in RA and Dec
+    Parameters
+    ----------
+    telra: a float signifying the telescope's RA pointing in degrees
+    teldec: a float signifying the telescope's Dec pointing in degrees
+    x: The x coordinate in mm of a location on the focal plane
+    y: The y coordinate in mm of a location on the focal plane
+    """
+    from math import atan2, acos, radians, degrees
+    
+    # radial distance on the focal plane in degrees
+    r_deg = get_radius_deg(x, y)
+    # q signifies the angle the position makes with the +x-axis of focal plane
+    q = cartesian_to_polar_angle(x, y)
+    
+    coord = np.zeros(shape=(3,1))
+    coord[0] = 1
+    
+    # Clockwise rotation around the z-axis by the radial distance to a point on the focal plane in radians
+    zrotate = np.zeros(shape=(3,3))
+    r_rad = radians(r_deg)
+    zrotate[0] = [np.cos(r_rad), np.sin(r_rad), 0]
+    zrotate[1] = [-np.sin(r_rad), np.cos(r_rad), 0]
+    zrotate[2] = [0, 0, 1]
+    
+    # Counter-clockwise rotation around the x-axis
+    xrotate = np.zeros(shape=(3,3))
+    q_rad = radians(q)
+    xrotate[0] = [1, 0, 0]
+    xrotate[1] = [0, np.cos(q_rad), -np.sin(q_rad)]
+    xrotate[2] = [0, np.sin(q_rad), np.cos(q_rad)]
+    
+    # Counter-clockwise rotation around y axis by declination of the tile center
+    decrotate = np.zeros(shape=(3,3))
+    teldec_rad = radians(teldec)
+    decrotate[0] = [np.cos(teldec_rad), 0, -np.sin(teldec_rad)]
+    decrotate[1] = [0, 1, 0]
+    decrotate[2] = [np.sin(teldec_rad), 0, np.cos(teldec_rad)]
+    
+    # Counter-clockwise rotation around the z-axis by the right ascension of the tile center
+    rarotate = np.zeros(shape=(3,3))
+    telra_rad = radians(telra)
+    rarotate[0] = [np.cos(telra_rad), -np.sin(telra_rad), 0]
+    rarotate[1] = [np.sin(telra_rad), np.cos(telra_rad), 0]
+    rarotate[2] = [0, 0, 1]
+    
+    coord1 = np.matmul(zrotate, coord)
+    coord2 = np.matmul(xrotate, coord1)
+    coord3 = np.matmul(decrotate, coord2)
+    coord4 = np.matmul(rarotate, coord3)
+    
+    ra_rad = atan2(coord4[1], coord4[0])
+    dec_rad = (np.pi / 2) - acos(coord4[2] / np.sqrt((coord4[0]**2) + (coord4[1]**2) + (coord4[2]**2)))
+    ra_deg = degrees(ra_rad)
+    dec_deg = degrees(dec_rad)
+    # Value can be 360, which should be 0
+    ra = ra_deg % 360
+    return ra, dec_deg
+
+def radec2xy(telra, teldec, ra, dec):
+    """
+    Returns arrays of the x, y positions of given celestial objects
+    on the focal plane given an arbitrary telescope pointing in RA and Dec and
+    arrays of  the RA and Dec of celestial objects in the sky
+    Parameters
+    ----------
+    telra: a scalar float signifying the telescope's RA pointing in degrees
+    teldec: a scalar float signifying the telescope's Dec pointing in degrees
+    ra: An array of RA values for locations in the sky
+    dec: An array of declination values for locations in the sky
+    
+    Warning:: This method is not completely implemented yet, so it raises a NotImplementedError if called!
+    
+    """
+    raise NotImplementedError
+    # Inclination is 90 degrees minus the declination in degrees
+    inc = 90 - dec
+    x0 = sin(math.radians(inc)) * cos(math.radians(ra))
+    y0 = sin(math.radians(inc)) * sin(math.radians(ra))
+    z0 = cos(math.radians(inc))
+    coord = [x0, y0, z0]
+    
+    # Clockwise rotation around y axis by declination of the tile center
+    decrotate = numpy.zeros(shape=(3,3))
+    teldec_rad = math.radians(teldec)
+    decrotate[0] = [cos(teldec_rad), 0, sin(teldec_rad)]
+    decrotate[1] = [0, 1, 0]
+    decrotate[2] = [-sin(teldec_rad), 0, cos(teldec_rad)]
+    
+    # Clockwise rotation around the z-axis by the right ascension of the tile center
+    rarotate = numpy.zeros(shape=(3,3))
+    telra_rad = math.radians(telra)
+    rarotate[0] = [cos(telra_rad), sin(telra_rad), 0]
+    rarotate[1] = [-sin(telra_rad), cos(telra_rad), 0]
+    rarotate[2] = [0, 0, 1]
+    
+    #coord1 = matmul(decrotate, coord)
+    #coord2 = matmul(rarotate, coord1)
+    
+    coord1 = matmul(rarotate, coord)
+    coord2 = matmul(decrotate, coord1)
+    x = coord2[0]
+    y = coord2[1]
+    z = coord2[2]
+    
+    return x, y, z
+
+
 class FocalPlane(object):
     """A class for modeling the DESI focal plane and converting between
     focal plane coordinates (in mm) and RA, Dec on the sky (in degrees).

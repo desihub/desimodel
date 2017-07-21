@@ -28,6 +28,17 @@ having to enter a password every time::
 Inputs to update
 ================
 
+DESI-0530-v13 Excel spreadsheet to .ecsv file for GFA locations
+—--------------------------------------------------------------
+
+This writes the .ecsv file containing the GFA data, which 
+is pulled from the "GFALocation" tab on the DESI-0530-v13 Excel spreadsheet and from rows 16-23 and columns A-I. The function build_gfa_table() writes the file in the current directory. 
+
+::
+
+    from import desimodel.inputs.gfa import build_gfa_table
+    build_gfa_table()
+
 Positioner to Fiber Mapping
 ---------------------------
 
