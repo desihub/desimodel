@@ -309,7 +309,6 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, write=False, outpl
                                'footprint','desi-healpix-weights.fits')
 
         #ADM write information indicating HEALPix setup to file header
-        from desiutil import depend
         import fitsio
         hdr = fitsio.FITSHDR()
         hdr['HPXNSIDE'] = nside
