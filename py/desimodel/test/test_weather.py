@@ -48,9 +48,24 @@ class TestWeather(unittest.TestCase):
         assert np.all(np.diff(ys) >= 0)
 
     def test_seeing_pdf_norm(self):
+        """Check that seeing PDF is normalized.
+        """
         fwhm, pdf = get_seeing_pdf()
         norm = np.sum(pdf * np.gradient(fwhm))
         assert np.allclose(norm, 1)
+
+    def test_sample_timeseries(self):
+        """Test sampling white noise with uniform 1D PDF
+        """
+        x = np.linspace(-1, 1, 500)
+        pdf = np.ones_like(x)
+        psd = lambda freq: np.ones_like(freq)
+        n, nb = 1000000, 10
+        gen = np.random.RandomState(1)
+        xs = sample_timeseries(x, pdf, psd, n, gen=gen)
+        bins, _ = np.histogram(xs, range=(-1,1), bins=nb)
+        pred = n / float(nb)
+        assert np.allclose(bins, pred, atol=5*np.sqrt(pred))
 
 
 def test_suite():

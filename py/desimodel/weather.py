@@ -158,3 +158,74 @@ def get_seeing_pdf(median_seeing=1.1, max_seeing=2.5, n=250):
     # Interpolate to find the scale factor that gives the requested median.
     s = np.interp(median_seeing, median, scale)
     return fwhm * s, pdf / s
+
+
+def sample_timeseries(x_grid, pdf_grid, psd, n_sample, dt_sec=180., gen=None):
+    """Sample a time series specified by a power spectrum and 1D PDF.
+
+    The PSD should describe the temporal correlations of whitened samples.
+    Generated samples will then be unwhitened to recover the input 1D PDF.
+    See DESI-doc-3087 for details.
+
+    Uses :func:`whiten_transforms_from_cdf`.
+
+    Parameters
+    ----------
+    x_grid : array
+        1D array of N increasing grid values covering the parameter range
+        to sample from.
+    pdf_grid : array
+        1D array of N increasing PDF values corresponding to each x_grid.
+        Does not need to be normalized.
+    psd : callable
+        Function of frequency in 1/days that returns the power-spectral
+        density of whitened temporal fluctations to sample from. Will only be
+        called for positive frequencies.  Normalization does not matter.
+    n_sample : int
+        Number of equally spaced samples to generate.
+    dt_sec : float
+        Time interval between samples in seconds.
+    gen : np.random.RandomState or None
+        Provide an existing RandomState for full control of reproducible random
+        numbers, or None for non-reproducible random numbers.
+    """
+    x_grid = np.array(x_grid)
+    pdf_grid = np.array(pdf_grid)
+    if not np.all(np.diff(x_grid) > 0):
+        raise ValueError('x_grid values are not increasing.')
+    if x_grid.shape != pdf_grid.shape:
+        raise ValueError('x_grid and pdf_grid arrays have different shapes.')
+    # Initialize random numbers if necessary.
+    if gen is None:
+        gen = np.random.RandomState()
+    # Calculate the CDF.
+    cdf_grid = np.cumsum(pdf_grid)
+    cdf_grid /= cdf_grid[-1]
+    # Calculate whitening / unwhitening transforms.
+    whiten, unwhiten = whiten_transforms_from_cdf(x_grid, cdf_grid)
+    # Build a linear grid of frequencies present in the Fourier transform
+    # of the requested time series.  Frequency units are 1/day.
+    dt_day = dt_sec / (24. * 3600.)
+    df_day = 1. / (n_sample * dt_day)
+    f_grid = np.arange(1 + (n_sample // 2)) * df_day
+    # Tabulate the power spectral density at each frequency.  The PSD
+    # describes seeing fluctuations that have been "whitened", i.e., mapped
+    # via a non-linear monotonic transform to have unit Gaussian probability
+    # density.
+    psd_grid = np.empty_like(f_grid)
+    psd_grid[1:] = psd(f_grid[1:])
+    # Force the mean to zero.
+    psd_grid[0] = 0.
+    # Force the variance to one.
+    psd_grid[1:] /= psd_grid[1:].sum() * df_day ** 2
+    # Generate random whitened samples.
+    n_psd = len(psd_grid)
+    x_fft = np.ones(n_psd, dtype=complex)
+    x_fft[1:-1].real = gen.normal(size=n_psd - 2)
+    x_fft[1:-1].imag = gen.normal(size=n_psd - 2)
+    x_fft *= np.sqrt(psd_grid) / (2 * dt_day)
+    x_fft[0] *= np.sqrt(2)
+    x = np.fft.irfft(x_fft, n_sample)
+    # Un-whiten the samples to recover the desired 1D PDF.
+    x_cdf = 0.5 * (1 + scipy.special.erf(x / np.sqrt(2)))
+    return np.interp(x_cdf, cdf_grid, x_grid)
