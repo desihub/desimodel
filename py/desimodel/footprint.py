@@ -213,7 +213,8 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, write=False, outpl
         fracpix = desimodel.footprint.tiles2fracpix(
             nside, step=2**i, tiles=tiles, radius=radius, fact=2**8)
         if verbose:
-            log.info('...found {} fractional pixels'.format(len(fracpix)))
+            log.info('...found {} fractional pixels...t={:.1f}s'
+                     .format(len(fracpix),time()-t0))
         if set(fracpix) == setfracpix:
             break
         #ADM if we didn't converge, loop through again with the new
@@ -311,8 +312,8 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, write=False, outpl
         from desiutil import depend
         import fitsio
         hdr = fitsio.FITSHDR()
-        depend.setdep(hdr, 'HPXNSIDE', nside)
-        depend.setdep(hdr, 'HPXNEST', True)
+        hdr['HPXNSIDE'] = nside
+        hdr['HPXNEST'] = True
 
         fitsio.write(outfile, outdata, extname='PIXWEIGHTS', header=hdr, clobber=True)
 
