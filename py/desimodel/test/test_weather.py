@@ -67,6 +67,24 @@ class TestWeather(unittest.TestCase):
         pred = n / float(nb)
         assert np.allclose(bins, pred, atol=5*np.sqrt(pred))
 
+    def test_seeing_median(self):
+        """Check that seeing has expected median
+        """
+        n = 100000
+        gen = np.random.RandomState(seed=123)
+        for m in (0.9, 1.0, 1.1, 1.2):
+            x = sample_seeing(n, median_seeing=m)
+            assert np.fabs(np.median(x) - m) < 0.005
+
+    def test_transp_range(self):
+        """Check that transparency has expected range
+        """
+        n = 100000
+        gen = np.random.RandomState(seed=123)
+        x = sample_transp(n)
+        assert np.min(x) >= 0 and np.min(x) < 0.0001
+        assert np.max(x) <= 1 and np.max(x) > 0.9999
+
 
 def test_suite():
     """Allows testing of only this module with the command::

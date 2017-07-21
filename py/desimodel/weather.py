@@ -135,6 +135,8 @@ def get_seeing_pdf(median_seeing=1.1, max_seeing=2.5, n=250):
         Target FWHM seeing value in arcsec. Must be in the range [0.95, 1.30].
     max_seeing : float
         Calculate scaled median using unscaled values below this value.
+    n : int
+        Size of grid to use for tabulating the returned arrays.
 
     Returns
     -------
@@ -244,8 +246,8 @@ def sample_seeing(n_sample, dt_sec=180., median_seeing=1.1, max_seeing=2.5,
                   gen=None):
     """Generate a random time series of FWHM seeing values.
 
-    See DESI-doc-3087 for details. Uses :func:`_seeing_psd` and
-    :func:`sample_timeseries`.
+    See DESI-doc-3087 for details. Uses :func:`get_seeing_pdf`,
+    :func:`_seeing_psd` and :func:`sample_timeseries`.
 
     Parameters
     ----------
@@ -269,3 +271,69 @@ def sample_seeing(n_sample, dt_sec=180., median_seeing=1.1, max_seeing=2.5,
     fwhm_grid, pdf_grid = get_seeing_pdf(median_seeing, max_seeing)
     return sample_timeseries(
         fwhm_grid, pdf_grid, _seeing_psd, n_sample, dt_sec, gen)
+
+
+_transp_pdf_cum = np.array([0.06,0.11,1.0])
+_transp_pdf_powers = np.array([0., 2.5, 35.])
+
+
+def get_transp_pdf(n=250):
+    """Return PDF of atmospheric transparency.
+
+    Derived from MzLS observations, but corrected for dust accumulation and
+    measurement error.  See DESI-doc-3087 for details.
+
+    Parameters
+    ----------
+    n : int
+        Size of grid to use for tabulating the returned arrays.
+
+    Returns
+    -------
+    tuple
+        Tuple (transp, pdf) that tabulates pdf[transp]. Normalized so that
+        np.sum(pdf * np.gradient(transp)) = 1.
+    """
+    transp = np.linspace(0., 1., n)
+    pdf = np.zeros_like(transp)
+    last_c = 0.
+    for c, p in zip(_transp_pdf_cum, _transp_pdf_powers):
+        pdf += (c - last_c) * np.power(transp, p) * (p + 1)
+        last_c = c
+    pdf /= pdf.sum() * np.gradient(transp)
+    return transp, pdf
+
+
+def _transp_psd(freq):
+    """Evaluate the 'chi-by-eye' fit of the transparency PSD described in
+    DESI-doc-3087.
+    """
+    N, f0, a0, a1 = 500, 1.5, 0.0, -1.5
+    return (N * (freq/f0)**a0 / (1 + (freq/f0)**a0) *
+            (freq/f0) ** a1 / (1 + (freq/f0) ** a1))
+
+
+def sample_transp(n_sample, dt_sec=180., gen=None):
+    """Generate a random time series of atmospheric transparency values.
+
+    See DESI-doc-3087 for details. Uses :func:`get_transp_pdf`,
+    :func:`_transp_psd` and :func:`sample_timeseries`.
+
+    Parameters
+    ----------
+    n_sample : int
+        Number of equally spaced samples to generate.
+    dt_sec : float
+        Time interval between samples in seconds.
+    gen : np.random.RandomState or None
+        Provide an existing RandomState for full control of reproducible random
+        numbers, or None for non-reproducible random numbers.
+
+    Returns
+    -------
+    array
+        1D array of randomly generated samples.
+    """
+    transp_grid, pdf_grid = get_transp_pdf()
+    return sample_timeseries(
+        transp_grid, pdf_grid, _transp_psd, n_sample, dt_sec, gen)
