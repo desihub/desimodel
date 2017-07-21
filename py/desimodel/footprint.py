@@ -5,6 +5,7 @@ import os
 from time import time
 from . import focalplane
 from . import io
+from . import __version__ as desimodel_version
 
 from desiutil.log import get_logger, DEBUG
 log = get_logger(DEBUG)
@@ -149,7 +150,7 @@ def tiles2fracpix(nside, step=1, tiles=None, radius=None, fact=4):
     #ADM the pixel integers where pixels are fractional
     return pix[np.where(isfracpix)]
 
-def pixweight(nside, tiles=None, radius=None, precision=0.01, write=False, outplot=None, verbose=True):
+def pixweight(nside, tiles=None, radius=None, precision=0.01, outfile=None, outplot=None, verbose=True):
     '''
     Create a rec array of the fraction of each pixel that overlaps the passed tiles
 
@@ -163,8 +164,8 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, write=False, outpl
         precision: approximate precision at which to calculate the area of pixels
             that partially overlap the footprint in SQUARE DEGREES
             (e.g. 0.01 means precise to 0.01 sq. deg., or 36 sq. arcmin.)
-        write: if True, then write the pixel->weight array to the file
-           $DESIMODEL/data/footprint/desi-healpix-weights.fits
+        outfile: if not None, then write the pixel->weight array to the file
+            passed as outfile (could be full directory path + file)
         outplot: if a string is passed, create a plot named that string
            (pass a *name* for a plot in the current directory, a *full path*
            for a plot in a different directory). This is passed to
@@ -302,15 +303,18 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, write=False, outpl
     outdata["HPXPIXEL"] = np.arange(npix)
     outdata["WEIGHT"] = weight
 
-    if write:
+    if outfile is not None:
         #ADM get path to DESIMODEL footprint directory, create output file name
         import desimodel.io
-        outfile = os.path.join(desimodel.io.datadir(),
-                               'footprint','desi-healpix-weights.fits')
 
         #ADM write information indicating HEALPix setup to file header
+        #ADM include desimodel version as a check in case footprint changes
         import fitsio
+        from desiutil import depend
+
         hdr = fitsio.FITSHDR()
+        depend.setdep(hdr, 'desimodel', desimodel_version)
+        hdr['PRECISE'] = precision
         hdr['HPXNSIDE'] = nside
         hdr['HPXNEST'] = True
 
