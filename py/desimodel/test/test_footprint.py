@@ -201,6 +201,7 @@ class TestFootprint(unittest.TestCase):
         #ADM really they should agree to much better than 11%. As "precision" is not set to be
         #ADM very high, this is just to check for catastrophic differences
         #ADM I checked that at precision = 0.04 this doesn't fail after 10000 attempts
+        print(np.all(np.abs(hiresweight-loresweight)))
         self.assertTrue(np.all(np.abs(hiresweight-loresweight) < 0.11))
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
