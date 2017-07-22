@@ -74,7 +74,7 @@ class TestWeather(unittest.TestCase):
         gen = np.random.RandomState(seed=123)
         for m in (0.9, 1.0, 1.1, 1.2):
             x = sample_seeing(n, median_seeing=m)
-            assert np.fabs(np.median(x) - m) < 0.005
+            assert np.fabs(np.median(x) - m) < 0.01
 
     def test_transp_range(self):
         """Check that transparency has expected range
