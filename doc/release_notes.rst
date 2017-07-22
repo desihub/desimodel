@@ -2,9 +2,12 @@
 desimodel Release Notes
 =======================
 
-0.7.1 (unreleased)
+0.8.0 (unreleased)
 ------------------
 
+* Add new weather module to specify assumed atmospheric seeing and transparency
+  distributions at KPNO, with accompanying DESI-doc and jupyter notebook.
+* Remove seeing module, which is superceded by new weather module.
 * Modified path to Lya SNR spectra files used in desi_quicklya.py, used in Lya Fisher forecast.
 * don't print warnings in desimodel.io if specter isn't installed
 
