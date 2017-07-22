@@ -7,7 +7,24 @@ desimodel.weather
 
 Model of the expected weather conditions at KPNO during the DESI survey.
 
-See DESI-doc-3087 for details.
+To generate a random time series of expected FWHM seeing in arcsecs and
+atmospheric transparency, use, for example::
+
+    n = 10000
+    dt = 300 # seconds
+    t = np.arange(n) * dt
+    gen = np.random.RandomState(seed=123)
+    seeing = sample_seeing(n, dt_sec=dt, gen=gen)
+    transp = sample_transp(n, dt_sec=dt, gen=gen)
+
+The resulting arrays are randomly sampled from models of the 1D probability
+density and 2-point power spectral density derived from MzLS observations.
+See `DESI-doc-3087
+<https://desi.lbl.gov/DocDB/cgi-bin/private/ShowDocument?docid=3087>`__
+for details.
+
+Used by :mod:`surveysim.weather` for simulations of DESI observing and
+survey strategy studies.
 """
 from __future__ import print_function, division
 
@@ -123,7 +140,10 @@ def get_seeing_pdf(median_seeing=1.1, max_seeing=2.5, n=250):
     """Return PDF of FWHM seeing for specified clipped median value.
 
     Note that this is atmospheric seeing, not delivered image quality.
-    See DESI-doc-3087 for details.
+    The reference wavelength for seeing values is 6355A, in the r band,
+    and the observed wavelength dependence in Dey & Valdes is closer to
+    ``lambda ** (-1/15)`` than the ``lambda ** (-1/5)`` predicted by
+    Kolmogorov theory. See DESI-doc-3087 for details.
 
     Scales the clipped MzLS seeing PDF in order to achieve the requested
     median value.  Note that clipping is applied before scaling, so
@@ -142,7 +162,7 @@ def get_seeing_pdf(median_seeing=1.1, max_seeing=2.5, n=250):
     -------
     tuple
         Tuple (fwhm, pdf) that tabulates pdf[fwhm]. Normalized so that
-        np.sum(pdf * np.gradient(fwhm)) = 1.
+        ``np.sum(pdf * np.gradient(fwhm)) = 1``.
     """
     # Tabulate the nominal (scale=1) seeing PDF.
     fwhm = np.linspace(0., max_seeing, n)
@@ -292,7 +312,7 @@ def get_transp_pdf(n=250):
     -------
     tuple
         Tuple (transp, pdf) that tabulates pdf[transp]. Normalized so that
-        np.sum(pdf * np.gradient(transp)) = 1.
+        ``np.sum(pdf * np.gradient(transp)) = 1``.
     """
     transp = np.linspace(0., 1., n)
     pdf = np.zeros_like(transp)
