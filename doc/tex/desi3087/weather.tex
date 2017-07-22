@@ -10,10 +10,6 @@
 \providecommand{\tab}[1]{Table~\ref{tab:#1}}
 \providecommand{\fig}[1]{Figure~\ref{fig:#1}}
 
-\providecommand{\vecsymbol}[1]{\ensuremath{\boldsymbol{#1}}}
-%\providecommand{\pv}{\vecsymbol{p}}
-%\providecommand{\deltav}{\vecsymbol{\delta}}
-
 \title{Weather Assumptions for\\
 DESI Survey Planning and Forecasts\\
 \vspace{5mm}{\large\bf DESI-doc-3087-v1}}
@@ -26,8 +22,9 @@ DESI Survey Planning and Forecasts\\
 
 This note briefly summarizes the expected weather-related observing conditions at the Mayall telescope during the five-year DESI survey.  In particular, we cover the expected fraction of nights where the dome remains closed due to weather and the expected distributions of atmospheric seeing and transparency on dome-open nights.  We describe the historical data used as the basis for our assumptions, and algorithms implemented to randomly sample expected weather conditions.
 
-A jupyter notebook to create the plots in this note is provided in the {\tt desimodel} package
-under {\tt doc/nb/}.  The LaTeX source for this note is maintained in the same package under {\tt doc/tex/desi3087/}.
+Code to sample from the weather models described here is implemented in the
+python {\tt desimodel.weather} module.  This version of the document corresponds
+to version {\tt 0.8.0} of the {\tt desimodel} package A jupyter notebook to create the plots in this note is provided in {\tt doc/nb/}.  The LaTeX source for this note is maintained in {\tt doc/tex/desi3087/}.
 
 \section{Historical Data}
 
