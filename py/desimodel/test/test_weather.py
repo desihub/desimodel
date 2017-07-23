@@ -67,6 +67,30 @@ class TestWeather(unittest.TestCase):
         pred = n / float(nb)
         assert np.allclose(bins, pred, atol=5*np.sqrt(pred))
 
+    def test_same_seed(self):
+        """Same seed should give same samples"""
+        x_grid = np.linspace(-1, 1, 500)
+        pdf_grid = np.ones_like(x_grid)
+        psd = lambda freq: np.ones_like(freq)
+        n_sample = 1000
+        gen1 = np.random.RandomState(seed=123)
+        x1 = sample_timeseries(x_grid, pdf_grid, psd, n_sample, gen=gen1)
+        gen2 = np.random.RandomState(seed=123)
+        x2 = sample_timeseries(x_grid, pdf_grid, psd, n_sample, gen=gen2)
+        self.assertTrue(np.all(x1 == x2))
+
+    def test_different_seed(self):
+        """Different seeds should give different samples"""
+        x_grid = np.linspace(-1, 1, 500)
+        pdf_grid = np.ones_like(x_grid)
+        psd = lambda freq: np.ones_like(freq)
+        n_sample = 1000
+        gen1 = np.random.RandomState(seed=1)
+        x1 = sample_timeseries(x_grid, pdf_grid, psd, n_sample, gen=gen1)
+        gen2 = np.random.RandomState(seed=2)
+        x2 = sample_timeseries(x_grid, pdf_grid, psd, n_sample, gen=gen2)
+        self.assertTrue(not np.any(x1 == x2))
+
     def test_seeing_median(self):
         """Check that seeing has expected median
         """
