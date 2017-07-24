@@ -296,7 +296,8 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, outfile=None, outp
     #ADM in the fractional pixels that are in the DESI footprint
     allinfracpix = np.histogram(pixinmask,bins=np.arange(npix))[0][fracpix]
     desiinfracpix = np.histogram(pixinmask[np.where(indesi)],bins=np.arange(npix))[0][fracpix]
-    weight[fracpix] = desiinfracpix/allinfracpix
+    #ADM guard against integer division (for backwards-compatability with Python2)
+    weight[fracpix] = desiinfracpix.astype('float64')/allinfracpix
 
     #ADM create rec array of pixels and weights and populate it
     outdata = np.empty(npix, dtype=[('HPXPIXEL', '>i8'), ('WEIGHT', '>f4')])
