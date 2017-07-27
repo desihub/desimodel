@@ -219,7 +219,7 @@ def load_pixweight(nside):
     
     #ADM determine the file's nside, and flag a warning if the passed nside exceeds it
     npix = len(pix)
-    truenside = hp.npix2nside(len(a))
+    truenside = hp.npix2nside(len(pix))
     if truenside < nside:
         log.warning("downsampling is fuzzy...Passed nside={}, but file {} is stored at nside={}"
                   .format(nside,pixfile,truenside))
