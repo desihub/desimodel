@@ -183,21 +183,21 @@ class TestFootprint(unittest.TestCase):
         radius = 1.605
 
         #ADM determine the weight array for pixels at nsides of 64 and 256
-        pixweight64 = footprint.pixweight(64,tiles=tiles,radius=radius,precision=0.04,verbose=False)
-        pixweight256 = footprint.pixweight(256,tiles=tiles,radius=radius,precision=0.04,verbose=False)
+        pixweight64 = footprint.pixweight(64,tiles=tiles,radius=radius,precision=0.04)
+        pixweight256 = footprint.pixweight(256,tiles=tiles,radius=radius,precision=0.04)
         
         #ADM check that the full pixel is assigned a weight of 1 at each nside
-        self.assertTrue(np.all(pixweight64[fullpix64]["WEIGHT"]==1))
-        self.assertTrue(np.all(pixweight256[fullpix256]["WEIGHT"]==1))
+        self.assertTrue(np.all(pixweight64[fullpix64]==1))
+        self.assertTrue(np.all(pixweight256[fullpix256]==1))
 
         #ADM check that the empty pixel is assigned a weight of 0 at each nside
-        self.assertTrue(np.all(pixweight64[emptypix64]["WEIGHT"]==0))
-        self.assertTrue(np.all(pixweight256[emptypix256]["WEIGHT"]==0))
+        self.assertTrue(np.all(pixweight64[emptypix64]==0))
+        self.assertTrue(np.all(pixweight256[emptypix256]==0))
 
         #ADM check weights of partial pixels agree reasonably at different nsides
         hirespixels = partpix64*16+np.arange(16)
-        hiresweight = np.mean(pixweight256[hirespixels]["WEIGHT"])
-        loresweight = pixweight64[partpix64]["WEIGHT"]
+        hiresweight = np.mean(pixweight256[hirespixels])
+        loresweight = pixweight64[partpix64]
         #ADM really they should agree to much better than 11%. As "precision" is not set to be
         #ADM very high, this is just to check for catastrophic differences
         #ADM I checked that at precision = 0.04 this doesn't fail after 10000 attempts
