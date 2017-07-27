@@ -150,9 +150,9 @@ def tiles2fracpix(nside, step=1, tiles=None, radius=None, fact=4):
     #ADM the pixel integers where pixels are fractional
     return pix[np.where(isfracpix)]
 
-def pixweight(nside, tiles=None, radius=None, precision=0.01, outfile=None, outplot=None, verbose=True):
+def pixweight(nside, tiles=None, radius=None, precision=0.01, outfile=None, outplot=None):
     '''
-    Create a rec array of the fraction of each pixel that overlaps the passed tiles
+    Create an array of the fraction of each pixel that overlaps the passed tiles
 
     Optional Args:
         nside: integer healpix nside, 2**k where 0 < k < 30
@@ -164,21 +164,21 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, outfile=None, outp
         precision: approximate precision at which to calculate the area of pixels
             that partially overlap the footprint in SQUARE DEGREES
             (e.g. 0.01 means precise to 0.01 sq. deg., or 36 sq. arcmin.)
+            lower numbers mean better precision
         outfile: if not None, then write the pixel->weight array to the file
             passed as outfile (could be full directory path + file)
         outplot: if a string is passed, create a plot named that string
            (pass a *name* for a plot in the current directory, a *full path*
            for a plot in a different directory). This is passed to
            matplotlib.pyplot's savefig routine
-        verbose: if True, write messages to the :mod:`desiutil.log` logger
 
     Returns pixweight:
-        a `~numpy.ndarray` where the first column is all possible pixels at the
-        passed nside (called `HPXPIXEL`) and the second column (called `WEIGHT`)
-        is the fracion of the pixel that overlaps the passed tiles:
+        an array of the weight for each pixel at the passed nside. The
+        weight is the fracion of the pixel that overlaps the passed tiles:
         `WEIGHT=1` for the pixel is entirely contained in the tiles
         `WEIGHT=0` for the pixel is entirely outside of the tiles
         `0 < WEIGHT < 1` for a pixel that overlaps the tiles
+        The index of the array is the HEALPixel integer
 
     Notes:
         it's sufficient to create the weights at a suitably high nside, say
@@ -186,6 +186,7 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, outfile=None, outp
         lower nsides can be obtained by integer division by powers of 4, e.g.
         pix_@_nside_128 = pix@nside_256//4 and fractional weights at lower
         nsides are the mean of the 4 pixels at the higher nside
+        desimodel.io.load_pixweight() can downsample the array to lower nsides
     '''
     t0 = time()
 
@@ -202,20 +203,17 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, outfile=None, outp
     weight[pix] = 1.
 
     #ADM loop through to find the "edge" (fractional) pixels, until convergence
-    if verbose:
-        log.info('Start integration around partial pixels...')
+    log.info('Start integration around partial pixels...')
     setfracpix = set([-1])
     #ADM only have a limited range, to prevent this running forever
     for i in range(20):
-        if verbose:
-            log.info('Trying {} pixel boundary points (step={})...t={:.1f}s'
-                     .format(4*2**i,2**i,time()-t0))
+        log.info('Trying {} pixel boundary points (step={})...t={:.1f}s'
+                 .format(4*2**i,2**i,time()-t0))
         #ADM find the fractional pixels at this step
         fracpix = desimodel.footprint.tiles2fracpix(
             nside, step=2**i, tiles=tiles, radius=radius, fact=2**8)
-        if verbose:
-            log.info('...found {} fractional pixels...t={:.1f}s'
-                     .format(len(fracpix),time()-t0))
+        log.info('...found {} fractional pixels...t={:.1f}s'
+                 .format(len(fracpix),time()-t0))
         if set(fracpix) == setfracpix:
             break
         #ADM if we didn't converge, loop through again with the new
@@ -238,15 +236,13 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, outfile=None, outp
     decmin, decmax = np.min(dec), np.max(dec)
     sindecmin, sindecmax = np.sin(np.radians(decmin)), np.sin(np.radians(decmax))
     area = 360.*np.degrees(sindecmax-sindecmin)
-    if verbose:
-        log.info('Populating randoms between {:.2f} and {:.2f} degrees, an area of {:.1f} sq. deg....t={:.1f}s'
-                 .format(decmin,decmax,area,time()-t0))
+    log.info('Populating randoms between {:.2f} and {:.2f} degrees, an area of {:.1f} sq. deg....t={:.1f}s'
+             .format(decmin,decmax,area,time()-t0))
 
     #ADM determine the required precision for the area of interest
     nptpersqdeg = int((1./precision)**2)
     npt = int(nptpersqdeg * area)
-    if verbose:
-        log.info('Generating {} random points...t={:.1f}s'.format(npt,time()-t0))
+    log.info('Generating {} random points...t={:.1f}s'.format(npt,time()-t0))
 
     #ADM loop over chunks (if npt > 1e7) to reach npt points while avoiding memory issues
     nchunk = int(1e7)
@@ -270,9 +266,8 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, outfile=None, outp
         rainmask.append(ra[inmask])
         pixinmask.append(pix[inmask])
         cnt += nchunk
-        if verbose:
-            log.info('...generated {} random points...t={:.1f}s'
-                     .format(cnt,time()-t0))
+        log.info('...generated {} random points...t={:.1f}s'
+                 .format(cnt,time()-t0))
 
     #ADM collapse the 2-D chunks into a 1-D array
     from itertools import chain
@@ -280,29 +275,22 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, outfile=None, outp
     decinmask = np.array(list(chain.from_iterable(decinmask)))
     pixinmask = np.array(list(chain.from_iterable(pixinmask)))
 
-    if verbose:
-        log.info('{} of the random points are in fractional pixels...t={:.1f}s'
-                 .format(len(pixinmask),time()-t0))
+    log.info('{} of the random points are in fractional pixels...t={:.1f}s'
+             .format(len(pixinmask),time()-t0))
 
     #ADM find which random points in the fractional pixels are in the DESI footprint
-    if verbose:
-        log.info('Start integration over fractional pixels at edges of DESI footprint...')
+    log.info('Start integration over fractional pixels at edges of DESI footprint...')
     indesi = desimodel.footprint.is_point_in_desi(desimodel.io.load_tiles(),rainmask,decinmask)
-    if verbose:
-        log.info('...{} of the random points in fractional pixels are in DESI...t={:.1f}s'
-                 .format(np.sum(indesi),time()-t0))
+    log.info('...{} of the random points in fractional pixels are in DESI...t={:.1f}s'
+             .format(np.sum(indesi),time()-t0))
 
     #ADM assign the weights of the fractional pixels as the fraction of random points
     #ADM in the fractional pixels that are in the DESI footprint
     allinfracpix = np.histogram(pixinmask,bins=np.arange(npix))[0][fracpix]
     desiinfracpix = np.histogram(pixinmask[np.where(indesi)],bins=np.arange(npix))[0][fracpix]
     #ADM guard against integer division (for backwards-compatability with Python2)
+    #ADM and create the final array of weights
     weight[fracpix] = desiinfracpix.astype('float64')/allinfracpix
-
-    #ADM create rec array of pixels and weights and populate it
-    outdata = np.empty(npix, dtype=[('HPXPIXEL', '>i8'), ('WEIGHT', '>f4')])
-    outdata["HPXPIXEL"] = np.arange(npix)
-    outdata["WEIGHT"] = weight
 
     if outfile is not None:
         #ADM get path to DESIMODEL footprint directory, create output file name
@@ -319,18 +307,17 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, outfile=None, outp
         hdr['HPXNSIDE'] = nside
         hdr['HPXNEST'] = True
 
-        fitsio.write(outfile, outdata, extname='PIXWEIGHTS', header=hdr, clobber=True)
+        fitsio.write(weight, outdata, extname='PIXWEIGHTS', header=hdr, clobber=True)
 
     #ADM if outplot was passed, make a plot of the final mask in Mollweide projection
     if outplot is not None:
         import matplotlib.pyplot as plt
-        hp.mollview(outdata["WEIGHT"], nest=True)
+        hp.mollview(weight, nest=True)
         plt.savefig(outplot)
 
-    if verbose:
-        log.info('Done...t={:.1f}s'.format(time()-t0))
+    log.info('Done...t={:.1f}s'.format(time()-t0))
 
-    return outdata
+    return weight
 
 def pix2tiles(nside, pixels, tiles=None, radius=None):
     '''
