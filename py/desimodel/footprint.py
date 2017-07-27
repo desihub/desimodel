@@ -307,7 +307,7 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, outfile=None, outp
         hdr['HPXNSIDE'] = nside
         hdr['HPXNEST'] = True
 
-        fitsio.write(weight, outdata, extname='PIXWEIGHTS', header=hdr, clobber=True)
+        fitsio.write(outfile, weight, extname='PIXWEIGHTS', header=hdr, clobber=True)
 
     #ADM if outplot was passed, make a plot of the final mask in Mollweide projection
     if outplot is not None:

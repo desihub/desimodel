@@ -201,6 +201,14 @@ def load_target_info():
 
     return data
 
+def load_pixweight(nside):
+    '''
+    Loads desimodel/data/footprint/desi-healpix-weights.fits
+
+        nside: After loading, the array will be down-sampled to the
+               passed HEALPix nside, if possible
+    '''
+
 def findfile(filename):
     '''
     Return full path to data file $DESIMODEL/data/filename
