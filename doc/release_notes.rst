@@ -5,6 +5,11 @@ desimodel Release Notes
 0.7.1 (unreleased)
 ------------------
 
+* Added `desimodel.footprint.pixweight()` in :mod:`desimodel.footprint` to create an array of what fraction
+  of every HEALPixel at a given nside overlaps the DESI footprint
+* Also added `desimodel.footprint.tiles2fracpix()` to estimate which HEALPixels overlap the footprint edges
+* Added `desimodel.io.load_pixweight()` in :mod:`desimodel.io` to load the array created by 
+  `desimodel.footprint.pixweight()` and resample it to any HEALPix nside
 * Modified path to Lya SNR spectra files used in desi_quicklya.py, used in Lya Fisher forecast.
 * Added desimodel.inputs.build_gfa_table and its helper functions to write a .ecsv file for GFA data
 * Added desimodel.io.load_gfa to return the GFA data table
