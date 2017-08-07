@@ -2,7 +2,7 @@
 desimodel Release Notes
 =======================
 
-0.8.0 (unreleased)
+0.8.0 (2017-08-07)
 ------------------
 
 * Add new weather module to specify assumed atmospheric seeing and transparency
