@@ -12,6 +12,9 @@ import yaml
 import numpy as np
 import warnings
 
+from desiutil.log import get_logger, DEBUG
+log = get_logger(DEBUG)
+
 _thru = dict()
 def load_throughput(channel):
     """Returns specter Throughput object for the given channel 'b', 'r', or 'z'.
@@ -65,6 +68,21 @@ def load_desiparams():
         _params['exptime'] = _params['exptime_dark']
 
     return _params
+#
+#
+#
+# Added and still needs to be committed and pushed to desihub
+_gfa = None
+def load_gfa():
+    """Returns GFA table from desimodel/data/focalplane/gfa.ecsv"""
+    global _gfa
+    from astropy.table import Table
+    # os is imported already in the desimodel io.py
+    import os
+    if _gfa is None:
+        gfaFile = os.path.join(os.environ['DESIMODEL'], 'data', 'focalplane', 'gfa.ecsv')
+        _gfa = Table.read(gfaFile, format = 'ascii.ecsv')
+    return _gfa
 #
 #
 #
@@ -185,6 +203,29 @@ def load_target_info():
         data = yaml.load(fx)
 
     return data
+
+def load_pixweight(nside):
+    '''
+    Loads desimodel/data/footprint/desi-healpix-weights.fits
+
+        nside: after loading, the array will be resampled to the
+               passed HEALPix nside
+    '''
+    import healpy as hp
+    #ADM read in the standard pixel weights file
+    pixfile = os.path.join(os.environ['DESIMODEL'],'data','footprint','desi-healpix-weights.fits')
+    with fits.open(pixfile) as hdulist:
+        pix = hdulist[0].data
+    
+    #ADM determine the file's nside, and flag a warning if the passed nside exceeds it
+    npix = len(pix)
+    truenside = hp.npix2nside(len(pix))
+    if truenside < nside:
+        log.warning("downsampling is fuzzy...Passed nside={}, but file {} is stored at nside={}"
+                  .format(nside,pixfile,truenside))
+
+    #ADM resample the map
+    return hp.pixelfunc.ud_grade(pix,nside,order_in='NESTED',order_out='NESTED')
 
 def findfile(filename):
     '''

@@ -53,6 +53,7 @@ class TestIO(unittest.TestCase):
         io._thru = dict()
         io._psf = dict()
         io._params = None
+        io._gfa = None
         io._fiberpos = None
         io._tiles = None
 
@@ -79,7 +80,17 @@ class TestIO(unittest.TestCase):
         """
         p = io.load_desiparams()
         self.assertTrue(isinstance(p, dict))
-
+    
+    @unittest.skipUnless(desimodel_available, desimodel_message)
+    def test_load_gfa(self):
+        """Test loading of gfa location data.
+            """
+        gfa = io.load_gfa()
+        # length of the GFA table should be 40 since there are each corner of the 10 GFAs are included
+        self.assertEqual(len(gfa), 40)
+        for key in ('PETAL', 'X', 'Y', 'Z', 'Q', 'RADIUS_DEG', 'RADIUS_MM'):
+            self.assertIn(key, gfa.dtype.names)
+        
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_load_fiberpos(self):
         """Test loading of fiber positioner data.
@@ -108,6 +119,17 @@ class TestIO(unittest.TestCase):
         self.assertIn('ntarget_lrg', data.keys())
         self.assertIn('nobs_elg', data.keys())
         self.assertIn('success_qso', data.keys())
+
+    @unittest.skip('Skip *until* the pixel weights file is in the DESIMODEL directory')
+#    @unittest.skipUnless(desimodel_available, desimodel_message)
+    def test_load_pix_file(self):
+        """Test loading of the file of HEALPixel weights.
+        """
+        nside = 16
+        pix = io.load_pixweight(nside)
+        npix = len(pix)
+        #ADM Test the length of the returned array is appropriate to the passed nside
+        self.assertEqual(npix,12*nside*nside)
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_load_tiles(self):
