@@ -30,7 +30,7 @@ The desimodel package/API
 .. automodule:: desimodel.focalplane
     :members:
 
-.. automodule:: desimodel.seeing
+.. automodule:: desimodel.weather
     :members:
 
 .. automodule:: desimodel.install
