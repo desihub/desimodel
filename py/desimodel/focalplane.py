@@ -139,22 +139,14 @@ def get_radius_mm(theta):
     """
     import scipy.interpolate
     import desimodel.io
+    platescale = desimodel.io.load_platescale()
+    # Uses a quadratic one-dimensional interpolation to approximate the radius in degrees versus radius in mm
+    fn = scipy.interpolate.interp1d(platescale['theta'], platescale['radius'], kind = 'quadratic')
+    radius = fn(theta)
     if(np.isscalar(theta)):
-        platescale = desimodel.io.load_platescale()
-        # Uses a quadratic one-dimensional interpolation to approximate the radius in degrees versus radius in mm
-        fn = scipy.interpolate.interp1d(platescale['theta'], platescale['radius'], kind = 'quadratic')
-        radius = float(fn(theta))
-        return radius
+        return float(radius)
     else:
-        platescale = desimodel.io.load_platescale()
-        # Uses a quadratic one-dimensional interpolation to approximate the radius in degrees versus radius in mm
-        fn = scipy.interpolate.interp1d(platescale['theta'], platescale['radius'], kind = 'quadratic')
-        radius = []
-        for x in theta:
-            radius_mm = float(fn(x))
-            radius.append(radius_mm)
-        radius_array = np.array(radius)
-        return radius_array
+        return radius
 
 def get_radius_deg(x, y):
     """
@@ -265,9 +257,9 @@ def radec2xy(telra, teldec, ra, dec):
     import numpy as np
     import math
     # Inclination is 90 degrees minus the declination in degrees
-    decarray = np.array(dec)
+    dec = np.asarray(dec)
     inc = 90 - decarray
-    raarray = np.array(ra)
+    ra = np.asarray(ra)
     #inc = 90 - dec
     x0 = np.sin(np.radians(inc)) * np.cos(np.radians(raarray))
     y0 = np.sin(np.radians(inc)) * np.sin(np.radians(raarray))
