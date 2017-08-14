@@ -46,12 +46,16 @@ class TestFocalplane(unittest.TestCase):
         truedegree = 1.5731300326614939
         radius = get_radius_mm(1.5731300326614939)
         trueradius = 398.5010456698936
+        testradii = [1.5731300326614939, 1.5]
+        radius1 = get_radius_mm(testradii)
+        trueradius1 = [398.50104567, 378.53678987]
         self.assertAlmostEqual(truedegree, degree, 5)
         self.assertAlmostEqual(trueradius, radius, 5)
+        self.assertAlmostEqual(all(trueradius1), all(radius1), 5)
     
     def new_test_xy2radec(self):
-        """Should test the consistency between the conversion functions
-        radec2xy and xy2radec. Right now tests the accuracy of the xy2radec 
+        """Tests the consistency between the conversion functions
+        radec2xy and xy2radec. Also tests the accuracy of the xy2radec
         on particular cases.
         """
         truera = 8.927313423598427
@@ -59,7 +63,9 @@ class TestFocalplane(unittest.TestCase):
         newra, newdec = xy2radec(8.37, -10.65, -138.345, -333.179)
         self.assertEqual(truera, newra, 5)
         self.assertEqual(truedec, newdec, 5)
-    
+        x, y = radec2xy(8.37, -10.65, newra, newdec)
+        self.assertEqual(x, -138.345, 5)
+        self.assertEqual(y, -333.179, 5)
 
     def test_xy2radec(self):
         """Test the consistency between the conversion functions

@@ -131,19 +131,30 @@ def get_tile_radius_deg():
 
 def get_radius_mm(theta):
     """
-    Returns the radius in mm given an radius in degrees using the platescale data
-    relative to the center of the focal plane as (0,0)
+    Returns an array of radii in mm given an array of radii in degrees using the platescale data
+    relative to the center of the focal plane as (0,0). Supports scalar and vector inputs.
     Parameters
     ----------
-    theta: A float that represents the angle from the center of the focal plane
+    theta: An array that represents the angle from the center of the focal plane
     """
     import scipy.interpolate
     import desimodel.io
-    platescale = desimodel.io.load_platescale()
-    # Uses a quadratic one-dimensional interpolation to approximate the radius in degrees versus radius in mm
-    fn = scipy.interpolate.interp1d(platescale['theta'], platescale['radius'], kind = 'quadratic')
-    radius = float(fn(theta))
-    return radius
+    if(np.isscalar(theta)):
+        platescale = desimodel.io.load_platescale()
+        # Uses a quadratic one-dimensional interpolation to approximate the radius in degrees versus radius in mm
+        fn = scipy.interpolate.interp1d(platescale['theta'], platescale['radius'], kind = 'quadratic')
+        radius = float(fn(theta))
+        return radius
+    else:
+        platescale = desimodel.io.load_platescale()
+        # Uses a quadratic one-dimensional interpolation to approximate the radius in degrees versus radius in mm
+        fn = scipy.interpolate.interp1d(platescale['theta'], platescale['radius'], kind = 'quadratic')
+        radius = []
+        for x in theta:
+            radius_mm = float(fn(x))
+            radius.append(radius_mm)
+        radius_array = np.array(radius)
+        return radius_array
 
 def get_radius_deg(x, y):
     """
@@ -242,50 +253,61 @@ def radec2xy(telra, teldec, ra, dec):
     """
     Returns arrays of the x, y positions of given celestial objects
     on the focal plane given an arbitrary telescope pointing in RA and Dec and
-    arrays of  the RA and Dec of celestial objects in the sky
+    arrays of the RA and Dec of celestial objects in the sky. Implements the Haversine
+    formula
     Parameters
     ----------
     telra: a scalar float signifying the telescope's RA pointing in degrees
     teldec: a scalar float signifying the telescope's Dec pointing in degrees
     ra: An array of RA values for locations in the sky
     dec: An array of declination values for locations in the sky
-    
-    Warning:: This method is not completely implemented yet, so it raises a NotImplementedError if called!
-    
     """
-    raise NotImplementedError
+    import numpy as np
+    import math
     # Inclination is 90 degrees minus the declination in degrees
-    inc = 90 - dec
-    x0 = sin(math.radians(inc)) * cos(math.radians(ra))
-    y0 = sin(math.radians(inc)) * sin(math.radians(ra))
-    z0 = cos(math.radians(inc))
+    decarray = np.array(dec)
+    inc = 90 - decarray
+    raarray = np.array(ra)
+    #inc = 90 - dec
+    x0 = np.sin(np.radians(inc)) * np.cos(np.radians(raarray))
+    y0 = np.sin(np.radians(inc)) * np.sin(np.radians(raarray))
+    z0 = np.cos(np.radians(inc))
     coord = [x0, y0, z0]
     
     # Clockwise rotation around y axis by declination of the tile center
-    decrotate = numpy.zeros(shape=(3,3))
-    teldec_rad = math.radians(teldec)
-    decrotate[0] = [cos(teldec_rad), 0, sin(teldec_rad)]
+    decrotate = np.zeros(shape=(3,3))
+    teldec_rad = np.radians(teldec)
+    decrotate[0] = [np.cos(teldec_rad), 0, np.sin(teldec_rad)]
     decrotate[1] = [0, 1, 0]
-    decrotate[2] = [-sin(teldec_rad), 0, cos(teldec_rad)]
+    decrotate[2] = [-np.sin(teldec_rad), 0, np.cos(teldec_rad)]
     
     # Clockwise rotation around the z-axis by the right ascension of the tile center
-    rarotate = numpy.zeros(shape=(3,3))
+    rarotate = np.zeros(shape=(3,3))
     telra_rad = math.radians(telra)
-    rarotate[0] = [cos(telra_rad), sin(telra_rad), 0]
-    rarotate[1] = [-sin(telra_rad), cos(telra_rad), 0]
+    rarotate[0] = [np.cos(telra_rad), np.sin(telra_rad), 0]
+    rarotate[1] = [-np.sin(telra_rad), np.cos(telra_rad), 0]
     rarotate[2] = [0, 0, 1]
     
-    #coord1 = matmul(decrotate, coord)
-    #coord2 = matmul(rarotate, coord1)
-    
-    coord1 = matmul(rarotate, coord)
-    coord2 = matmul(decrotate, coord1)
+    coord1 = np.matmul(rarotate, coord)
+    coord2 = np.matmul(decrotate, coord1)
     x = coord2[0]
     y = coord2[1]
     z = coord2[2]
     
-    return x, y, z
-
+    newteldec = 0
+    newtelra = 0
+    ra_rad = np.arctan2(y, x)
+    dec_rad = (np.pi / 2) - np.arccos(z / np.sqrt((x**2) + (y**2) + (z**2)))
+    radius_rad = 2 * np.arcsin(np.sqrt((np.sin((dec_rad - newteldec) / 2)**2) + ((np.cos(newteldec)) * np.cos(dec_rad) * (np.sin((ra_rad - newtelra) / 2)**2))))
+    radius_deg = np.degrees(radius_rad)
+    
+    q_rad = np.arctan2(-z, -y)
+    
+    radius_mm = get_radius_mm(radius_deg)
+    x_focalplane = radius_mm * np.cos(q_rad)
+    y_focalplane = radius_mm * np.sin(q_rad)
+    
+    return x_focalplane, y_focalplane
 
 class FocalPlane(object):
     """A class for modeling the DESI focal plane and converting between
