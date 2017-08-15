@@ -261,8 +261,8 @@ def radec2xy(telra, teldec, ra, dec):
     inc = 90 - dec
     ra = np.asarray(ra)
     #inc = 90 - dec
-    x0 = np.sin(np.radians(inc)) * np.cos(np.radians(raarray))
-    y0 = np.sin(np.radians(inc)) * np.sin(np.radians(raarray))
+    x0 = np.sin(np.radians(inc)) * np.cos(np.radians(ra))
+    y0 = np.sin(np.radians(inc)) * np.sin(np.radians(ra))
     z0 = np.cos(np.radians(inc))
     coord = [x0, y0, z0]
     
