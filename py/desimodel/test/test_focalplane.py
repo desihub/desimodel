@@ -4,7 +4,7 @@
 """
 import unittest
 import numpy as np
-from ..focalplane import FocalPlane, generate_random_centroid_offsets, xy2radec, get_radius_mm, get_radius_deg
+from ..focalplane import FocalPlane, generate_random_centroid_offsets, xy2radec, radec2xy, get_radius_mm, get_radius_deg
 
 
 class TestFocalplane(unittest.TestCase):
@@ -53,7 +53,7 @@ class TestFocalplane(unittest.TestCase):
         self.assertAlmostEqual(trueradius, radius, 5)
         self.assertAlmostEqual(all(trueradius1), all(radius1), 5)
     
-    def new_test_xy2radec(self):
+    def test_xy2radec_new(self):
         """Tests the consistency between the conversion functions
         radec2xy and xy2radec. Also tests the accuracy of the xy2radec
         on particular cases.
@@ -64,8 +64,8 @@ class TestFocalplane(unittest.TestCase):
         self.assertEqual(truera, newra, 5)
         self.assertEqual(truedec, newdec, 5)
         x, y = radec2xy(8.37, -10.65, newra, newdec)
-        self.assertEqual(x, -138.345, 5)
-        self.assertEqual(y, -333.179, 5)
+        self.assertAlmostEqual(x, -138.345, 5)
+        self.assertAlmostEqual(y, -333.179, 5)
 
     def test_xy2radec(self):
         """Test the consistency between the conversion functions
