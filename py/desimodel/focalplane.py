@@ -540,3 +540,25 @@ class FocalPlane(object):
 # ditto for xy2pos(), xy2fiber(), etc.
 # positioner = thing on the focal plane
 # fiber = numerically increasing in order on the spectrograph CCDs
+
+def fiber_area_arcsec2(x, y):
+    '''
+    Returns area of fibers at (x,y) in arcsec^2
+    '''
+    from desimodel.io import load_desiparams, load_platescale
+    params = load_desiparams()
+    fiber_dia = params['fibers']['diameter_um']
+    x = np.asarray(x)
+    y = np.asarray(y)
+    r = np.sqrt(x**2 + y**2)
+
+    #- Platescales in um/arcsec
+    ps = load_platescale()
+    radial_scale = np.interp(r, ps['radius'], ps['radial_platescale'])
+    az_scale = np.interp(r, ps['radius'], ps['az_platescale'])
+
+    #- radial and azimuthal fiber radii in arcsec
+    rr  = 0.5 * fiber_dia / radial_scale
+    raz = 0.5 * fiber_dia / az_scale
+    fiber_area = (np.pi * rr * raz)
+    return fiber_area
