@@ -5,6 +5,7 @@
 import unittest
 import numpy as np
 from ..focalplane import FocalPlane, generate_random_centroid_offsets, xy2radec, get_radius_mm, get_radius_deg
+from ..focalplane import fiber_area_arcsec2
 
 
 class TestFocalplane(unittest.TestCase):
@@ -93,6 +94,14 @@ class TestFocalplane(unittest.TestCase):
                          np.any(np.fabs(dec_out-dec_obj) >1E-6),
                          ("Test Failed to recover the input RA, Dec with " +
                           "1E-6 precision"))
+
+    def test_area_arcsec2(self):
+        """ Test area calculation
+        """
+        x = [0., 50., 100., 200]
+        y = [-0., -50., -100., -200]
+        area = fiber_area_arcsec2(x, y)
+        self.assertFalse(np.any(np.fabs(area-np.array([1.97314482,  1.96207294,  1.92970506,  1.81091119])) >1E-6))
 
 
 def test_suite():
