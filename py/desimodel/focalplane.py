@@ -255,14 +255,13 @@ def radec2xy(telra, teldec, ra, dec):
     dec: An array of declination values for locations in the sky
     """
     import numpy as np
-    import math
     # Inclination is 90 degrees minus the declination in degrees
     dec = np.asarray(dec)
-    inc = 90 - decarray
+    inc = 90 - dec
     ra = np.asarray(ra)
     #inc = 90 - dec
-    x0 = np.sin(np.radians(inc)) * np.cos(np.radians(raarray))
-    y0 = np.sin(np.radians(inc)) * np.sin(np.radians(raarray))
+    x0 = np.sin(np.radians(inc)) * np.cos(np.radians(ra))
+    y0 = np.sin(np.radians(inc)) * np.sin(np.radians(ra))
     z0 = np.cos(np.radians(inc))
     coord = [x0, y0, z0]
     
@@ -275,7 +274,7 @@ def radec2xy(telra, teldec, ra, dec):
     
     # Clockwise rotation around the z-axis by the right ascension of the tile center
     rarotate = np.zeros(shape=(3,3))
-    telra_rad = math.radians(telra)
+    telra_rad = np.radians(telra)
     rarotate[0] = [np.cos(telra_rad), np.sin(telra_rad), 0]
     rarotate[1] = [-np.sin(telra_rad), np.cos(telra_rad), 0]
     rarotate[2] = [0, 0, 1]
@@ -562,3 +561,318 @@ def fiber_area_arcsec2(x, y):
     raz = 0.5 * fiber_dia / az_scale
     fiber_area = (np.pi * rr * raz)
     return fiber_area
+
+def on_gfa(telra, teldec, ra, dec, buffer_arcsec = 100):
+    """
+    Checks if a target is on any of the 10 GFAs given telra, teldec and an array of RA and Dec pointings,
+    as well as a parameter for degrees of tolerance one would like to allow. When using
+    desimodel.footprint.find_points_in_tiles(tiles, ra, dec, radius) with this function to
+    check what points are on the GFAs, the default radius parameter should be set to 1.651 (degrees),
+    so that boundary GFA area actually encompasses points normally outside of the tile.
+    Parameters:
+    telra: The telescope's arbitrary RA pointing
+    teldec: The telescope's arbitrary Dec pointing
+    ra: An array of RA values for locations in the sky
+    dec: An array of declination values for locations in the sky
+    buffer_arcsec: A value in arcseconds on the sky of how much tolerance
+    one would allow for seeing if a target is on the gfa.
+    Returns:
+    targetindices: a list  of targets with their respective indices in the
+    RA and Dec list passed in that fall on certain GFAs denoted by the index
+    in the gfaindices list.
+    gfaindices: a list equal in length with the targetindices list with the gfa location 0-9 as each element
+    """
+    import desimodel.footprint
+    # If any calculated area is under the threshold area, it is mathematically impossible
+    THRESHOLD_AREA = 469.7
+    MIN_TOLERANCE = 0.001
+    
+    inrangeindices = desimodel.footprint.find_points_in_tel_range(telra, teldec, ra, dec, 1.651)
+    if not inrangeindices:
+        return np.array([]), np.array([])
+    inrangeindices = np.asarray(inrangeindices)
+    
+    targetx, targety = desimodel.focalplane.radec2xy(telra, teldec, ra[inrangeindices], dec[inrangeindices])
+    
+    x_tolerance, y_tolerance = degrees2xytolerance(buffer_arcsec)
+    
+    targetindices = []
+    gfaindices = []
+    
+    # x and y hold the 40 new GFA coordinates
+    x, y = shift_gfa_points(x_tolerance, y_tolerance)
+    # The area boundary's value is the area of the gfa plus some tolerance.
+    AREA_BOUNDARY = retrieve_minimum_boundary(x_tolerance, y_tolerance) + MIN_TOLERANCE
+
+    targetx = np.asarray(targetx)
+    targety = np.asarray(targety)
+    # Method to check if point is inside the rectangle
+    for gfaid in range(0, 40, 4):
+        # a1 through a4 are edge lengths of the rectangle formed by corners of the GFAs
+        a1 = np.sqrt((x[gfaid] - x[gfaid + 1])**2 + (y[gfaid] - y[gfaid + 1])**2)
+        a2 = np.sqrt((x[gfaid + 1] - x[gfaid + 2])**2 + (y[gfaid + 1] - y[gfaid + 2])**2)
+        a3 = np.sqrt((x[gfaid + 2] - x[gfaid + 3])**2 + (y[gfaid + 2] - y[gfaid + 3])**2)
+        a4 = np.sqrt((x[gfaid + 3] - x[gfaid])**2 + (y[gfaid + 3] - y[gfaid])**2)
+        # b1 through b4 are the line segments from each corner to the target location
+        b1 = np.sqrt((x[gfaid] - targetx)**2 + (y[gfaid] - targety)**2)
+        b2 = np.sqrt((x[gfaid + 1] - targetx)**2 + (y[gfaid + 1] - targety)**2)
+        b3 = np.sqrt((x[gfaid + 2] - targetx)**2 + (y[gfaid + 2] - targety)**2)
+        b4 = np.sqrt((x[gfaid + 3] - targetx)**2 + (y[gfaid + 3] - targety)**2)
+        # Calculating areas of triangles using Heron's Formula
+        u1 = (a1 + b1 + b2) / 2.0
+        u2 = (a2 + b2 + b3) / 2.0
+        u3 = (a3 + b3 + b4) / 2.0
+        u4 = (a4 + b4 + b1) / 2.0
+        area1 = np.sqrt((u1 * (u1 - a1) * (u1 - b1) * (u1 - b2)).clip(0))
+        area2 = np.sqrt((u2 * (u2 - a2) * (u2 - b2) * (u2 - b3)).clip(0))
+        area3 = np.sqrt((u3 * (u3 - a3) * (u3 - b3) * (u3 - b4)).clip(0))
+        area4 = np.sqrt((u4 * (u4 - a4) * (u4 - b4) * (u4 - b1)).clip(0))
+        targetarea = area1 + area2 + area3 + area4
+         
+                     
+        assert np.all(targetarea > THRESHOLD_AREA)
+                     
+        if(any(targetarea < AREA_BOUNDARY) and all(targetarea > THRESHOLD_AREA)):
+            newtargetindices = np.where(targetarea < AREA_BOUNDARY)
+            targetindices.extend(newtargetindices[0])
+            gfaindices.extend([int(gfaid / 4)] * len(newtargetindices[0]))
+    return inrangeindices[targetindices], gfaindices
+
+def retrieve_minimum_boundary(x_tolerance, y_tolerance):
+    """
+    Used as a helper function to the on_gfa function to find the minimum boundary
+    area for a point to lie inside a certain GFA given an tolerance in x and y in mm
+    Parameters:
+    x_tolerance: tolerance in x in mm
+    y_tolerance: tolerance in y in mm
+    Returns:
+    targetarea: the minimum boundary area for the procedure to check if a point is inside the GFA
+    """
+    import desimodel.footprint
+    import desimodel.focalplane
+    
+    targetx = 116.279135121
+    targety = -372.885546514
+    #6.644525362152656, -9.055425745149217 GUARANTEED TO BE IN GFA (RA, DEC)
+    #x, y = desimodel.focalplane.radec2xy(7.11, -10.53, targetx, targety)
+    # If any calculated area is under the threshold area, it is mathematically impossible
+    THRESHOLD_AREA = 469.7
+    MIN_TOLERANCE = 0.001
+    # The area boundary's value is the area of the gfa plus some tolerance.
+    
+    # x and y hold the 40 new GFA coordinates
+    x, y = shift_gfa_points(x_tolerance, y_tolerance)
+    
+    targetx = np.asarray(targetx)
+    targety = np.asarray(targety)
+    # Method to check if point is inside the rectangle
+    for gfaid in range(0, 4, 4):
+        # a1 through a4 are edge lengths of the rectangle formed by corners of the GFAs
+        a1 = np.sqrt((x[gfaid] - x[gfaid + 1])**2 + (y[gfaid] - y[gfaid + 1])**2)
+        a2 = np.sqrt((x[gfaid + 1] - x[gfaid + 2])**2 + (y[gfaid + 1] - y[gfaid + 2])**2)
+        a3 = np.sqrt((x[gfaid + 2] - x[gfaid + 3])**2 + (y[gfaid + 2] - y[gfaid + 3])**2)
+        a4 = np.sqrt((x[gfaid + 3] - x[gfaid])**2 + (y[gfaid + 3] - y[gfaid])**2)
+        # b1 through b4 are the line segments from each corner to the target location
+        b1 = np.sqrt((x[gfaid] - targetx)**2 + (y[gfaid] - targety)**2)
+        b2 = np.sqrt((x[gfaid + 1] - targetx)**2 + (y[gfaid + 1] - targety)**2)
+        b3 = np.sqrt((x[gfaid + 2] - targetx)**2 + (y[gfaid + 2] - targety)**2)
+        b4 = np.sqrt((x[gfaid + 3] - targetx)**2 + (y[gfaid + 3] - targety)**2)
+        # Calculating areas of triangles using Heron's Formula
+        u1 = (a1 + b1 + b2) / 2.0
+        u2 = (a2 + b2 + b3) / 2.0
+        u3 = (a3 + b3 + b4) / 2.0
+        u4 = (a4 + b4 + b1) / 2.0
+        area1 = np.sqrt(u1 * (u1 - a1) * (u1 - b1) * (u1 - b2))
+        area2 = np.sqrt(u2 * (u2 - a2) * (u2 - b2) * (u2 - b3))
+        area3 = np.sqrt(u3 * (u3 - a3) * (u3 - b3) * (u3 - b4))
+        area4 = np.sqrt(u4 * (u4 - a4) * (u4 - b4) * (u4 - b1))
+        targetarea = area1 + area2 + area3 + area4
+         
+        assert np.all(targetarea > THRESHOLD_AREA)
+        return targetarea
+
+def degrees2xytolerance(buffer_arcsec):
+    """
+    Used as a helper function to the on_gfa function to find the tolerance in x and y
+    given a tolerance in arcseconds
+    Parameters:
+    buffer_arcsec: a tolerance in arcseconds for checking if a point is on the GFA
+    Returns:
+    x_tolerance: tolerance in x in mm
+    y_tolerance: tolerance in y in mm
+    """
+    # Uses the center of a given GFA from DESI-0530-v13 Excel Spreadsheet to find the tolerance
+    import desimodel.io
+    import scipy.interpolate
+    platescale = desimodel.io.load_platescale()
+    fn = scipy.interpolate.interp1d(platescale['radius'], platescale['radial_platescale'], kind = 'quadratic')
+    fn1 = scipy.interpolate.interp1d(platescale['radius'], platescale['az_platescale'], kind = 'quadratic')
+    # Center of a given GFA from DESI-0530-v13 Excel Spreadsheet
+    x = 333.738
+    y = 217.766
+    radius = np.sqrt(x**2 + y**2)
+    # Platescales are in units of microns per arcsecond
+    r_ps = fn(radius)
+    az_ps = fn(radius)
+    x_tolerance = buffer_arcsec / (10**3) * r_ps
+    y_tolerance = buffer_arcsec / (10**3) * az_ps
+    return x_tolerance, y_tolerance
+
+def shift_gfa_points(deltax, deltay):
+    """
+    Used as a helper function to the on_gfa function to find the new
+    GFA locations after incorporating a tolerance in x and y
+    Parameters:
+    deltax: tolerance in x in mm
+    deltay: tolerance in y in mm
+    Returns:
+    Returns the 40 new GFA locations in x and y
+    """
+    import numpy as np
+    x = [-125.10482863, -129.83038525, -159.04283509, -154.31646944]
+    y = [-370.01790486, -384.56223777, -375.05643893, -360.51151824]
+    point1 = [x[2], y[2]]
+    point2 = [x[1], y[1]]
+    vector1 = [(point2[0] - point1[0]), (point2[1] - point1[1])]
+    vector2 = [1, 0]
+    # Angle between vector1 and vector 2 using dot product
+    angle = np.arccos((np.dot(vector1, vector2))/(np.sqrt((vector1[0]**2) + (vector1[1]**2))))
+    
+    shiftmat = np.zeros(shape=(2,2))
+    shiftmat[0] = [np.cos(angle), -np.sin(angle)]
+    shiftmat[1] = [np.sin(angle), np.cos(angle)]
+    reverseshift= np.zeros(shape=(2,2))
+    reverseshift[0] = [np.cos(angle), np.sin(angle)]
+    reverseshift[1] = [-np.sin(angle), np.cos(angle)]
+    
+    # Shifts the initial coordinates to be parallel to the vector [1, 0]
+    coord = np.zeros(shape=(2,1))
+    oldxcoord = x
+    oldycoord = y
+    for i in range(4):
+        coord[0] = oldxcoord[i]
+        coord[1] = oldycoord[i]
+        newcoord = np.matmul(shiftmat, coord)
+        oldxcoord[i] = newcoord[0]
+        oldycoord[i] = newcoord[1]
+        if(i == 0 or i == 1):
+            x[i] = newcoord[0] + deltax
+        else:
+            x[i] = newcoord[0] - deltax
+        if(i == 1 or i == 2):
+            y[i] = newcoord[1] - deltay
+        else:
+            y[i] = newcoord[1] + deltay
+    oldxcoord = x
+    oldycoord = y
+    for i in range(4):
+        coord[0] = oldxcoord[i]
+        coord[1] = oldycoord[i]
+        newcoord = np.matmul(reverseshift, coord)
+        oldxcoord[i] = newcoord[0]
+        oldycoord[i] = newcoord[1]
+        x[i] = newcoord[0]
+        y[i] = newcoord[1]
+    
+    rotatemat = np.zeros(shape=(2,2))
+    rotatemat[0] = [np.cos(np.radians(36)), -np.sin(np.radians(36))]
+    rotatemat[1] = [np.sin(np.radians(36)), np.cos(np.radians(36))]
+    return find_new_gfa_coordinates(x, y, rotatemat)
+
+def find_new_gfa_coordinates(x, y, rotatemat):
+    """
+    Used as a helper function to the on_gfa function to find the new
+    GFA coordinates given a list of x coordinates, y coordinates, and a rotation matrix
+    Parameters:
+    x: a list of x coordinates for the GFAs
+    y: a list of y coordinates for the GFAs
+    rotatemat: a matrix for rotating the respective coordinates
+    Returns:
+    x_all: a complete list of the 40 GFA x coordinates
+    y_all: a complete list of the 40 GFA y coordinates
+    """
+    import numpy as np
+    x_all = np.zeros(shape=(40,1))
+    y_all = np.zeros(shape=(40,1))
+    coord = np.zeros(shape=(2,1))
+    gfacoord = np.zeros(shape=(4, 2))
+    oldxcoord = x
+    oldycoord = y
+    counter = 0
+    for j in range(10):
+        for i in range(4):
+            coord[0] = oldxcoord[i]
+            coord[1] = oldycoord[i]
+            newcoord = np.matmul(rotatemat, coord)
+            oldxcoord[i] = newcoord[0]
+            oldycoord[i] = newcoord[1]
+            gfacoord[i] = [newcoord[0], newcoord[1]]
+            x_all[counter] = newcoord[0]
+            y_all[counter] = newcoord[1]
+            counter += 1
+    return x_all, y_all
+
+def on_tile_gfa(tileid, targets, buffer_arcsec = 100):
+    """
+    This function takes a tileid, a table of targets, and an optional
+    buffer_arcsec parameter to return the indices of targets lying on the GFA
+    as well as the GFA locations from 0-9
+    Parameters:
+    tileid: (int) DESI tile ID, used to lookup telescope (RA, dec)
+    targets: table with columns RA, DEC
+    Options:
+    buffer_arcsec: (float) additional buffer region around GFA to include
+    Returns:
+    targetindices: list of indices for targets that are covered by GFA number
+    in corresponding gfaindices
+    gfaindices: list of indices corresponding to 0-9 GFA location
+    """
+    import desimodel.footprint
+    telra, teldec = desimodel.footprint.get_tile_radec(tileid)
+    return on_gfa(telra, teldec, targets['RA'], targets['DEC'], buffer_arcsec)
+
+def get_gfa_targets(targets, rfluxlim = 1000, tiles = None, buffer_arcsec = 100):
+    """
+    This function takes a table of targets, as well as optional parameters
+    including a minimum flux in the r-band, a list of tiles, and a buffer in arcseconds
+    and returns a table of targets on the GFA satisfying a minimum flux_r
+    Parameters:
+    targets: table with columns RA, DEC, FLUX_R
+    Options:
+    rfluxlim: (float) r-band flux limit; default 1000 = rmag 15
+    tiles: table of tiles, default to desimodel.io.load_tiles()
+    buffer_arcsec: (float) additional buffer region around GFA to include
+    Returns subset of input `targets` with additional columns:
+    TILEID: (integer) DESI tile ID
+    GFA_LOC: (integer) GFA location [0-9]
+    Note that the same target could be repeated with different TILEID, GFA_LOC
+    Note also that the function returns an empty list if no targets are on any GFAs or of sufficient brightness
+    """
+    if(tiles is None):
+        import desimodel.io
+        tiles = desimodel.io.load_tiles()
+    import desimodel.footprint
+    points = desimodel.footprint.find_points_in_tiles(tiles, targets['RA'], targets['DEC'])
+    alltargetindices = []
+    tileidlist = []
+    gfaidlist = []
+    # Checks if the flux_r meets a minimum threshold
+    brightindices = np.where(targets['FLUX_R'] > rfluxlim)
+    if(brightindices[0].size == 0):
+        return []
+    counter = 0
+    for lists in points:
+        if lists:
+            tileid = tiles[counter]['TILEID']
+            targetindices, gfaindices = on_tile_gfa(tileid, targets[brightindices[0]], buffer_arcsec)
+            tileidlist.extend([tileid] * len(targetindices))
+            alltargetindices.extend(targetindices)
+            gfaidlist.extend(gfaindices)
+        counter += 1
+    validtargets = targets[brightindices[0]][alltargetindices]
+    tileidlist = np.asarray(tileidlist)
+    gfaidlist = np.asarray(gfaidlist)
+    validtargets['TILEID'] = tileidlist
+    validtargets['GFA_LOC'] = gfaidlist
+    return validtargets
+
