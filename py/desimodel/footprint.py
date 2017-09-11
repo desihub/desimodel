@@ -457,27 +457,9 @@ def find_points_in_tiles(tiles, ra, dec, radius=None):
 
     default radius is from desimodel.focalplane.get_tile_radius_deg()
     """
-    from scipy.spatial import cKDTree as KDTree
+    return find_points_radec(tiles['RA'], tiles['DEC'], ra, dec, radius)
 
-    if radius is None:
-        radius = focalplane.get_tile_radius_deg()
-
-    # check for malformed input shapes. Sorry we currently only
-    # deal with vector inputs. (for a sensible definition of indices)
-
-    assert ra.ndim == 1
-    assert dec.ndim == 1
-
-    points = _embed_sphere(ra, dec)
-    tree = KDTree(points)
-
-    # radius to 3d distance
-    threshold = 2.0 * np.sin(np.radians(radius) * 0.5)
-    xyz = _embed_sphere(tiles['RA'], tiles['DEC'])
-    indices = tree.query_ball_point(xyz, threshold)
-    return indices
-
-def find_points_in_tel_range(telra, teldec, ra, dec, radius = None):
+def find_points_radec(telra, teldec, ra, dec, radius = None):
     """Return a list of indices of points that are within a radius of an arbitrary telra, teldec.
     
     This function is optimized to query a lot of points with a single telra and teldec.
