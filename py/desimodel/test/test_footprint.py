@@ -148,10 +148,10 @@ class TestFootprint(unittest.TestCase):
         self.assertEqual(len(ret), 1)
         self.assertEqual(ret[0], [])
     
-    def test_find_points_in_tel_range(self):
+    def test_find_points_radec(self):
         """Checks if the function is successfully finding points within a certain radius of a telra and teldec"""
         import numpy as np
-        answer = footprint.find_points_in_tel_range(0, 0, np.array([1.5, 0, 1.9, 0]), np.array([0, 1.5, 0, 1.3]))
+        answer = footprint.find_points_radec(0, 0, np.array([1.5, 0, 1.9, 0]), np.array([0, 1.5, 0, 1.3]))
         self.assertEqual(answer, [0, 1, 3])
 
     def test_partial_pixels(self):

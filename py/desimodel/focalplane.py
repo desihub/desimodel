@@ -587,7 +587,7 @@ def on_gfa(telra, teldec, ra, dec, buffer_arcsec = 100):
     THRESHOLD_AREA = 469.7
     MIN_TOLERANCE = 0.001
     
-    inrangeindices = desimodel.footprint.find_points_in_tel_range(telra, teldec, ra, dec, 1.651)
+    inrangeindices = desimodel.footprint.find_points_radec(telra, teldec, ra, dec, 1.651)
     if not inrangeindices:
         return np.array([]), np.array([])
     inrangeindices = np.asarray(inrangeindices)
