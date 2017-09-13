@@ -831,33 +831,38 @@ def get_gfa_targets(targets, rfluxlim = 1000, tiles = None, buffer_arcsec = 100)
     TILEID: (integer) DESI tile ID
     GFA_LOC: (integer) GFA location [0-9]
     Note that the same target could be repeated with different TILEID, GFA_LOC
-    Note also that the function returns an empty list if no targets are on any GFAs or of sufficient brightness
+    Note also that the function returns an empty Table if no targets are on any GFAs or of sufficient brightness
     """
+    # Checks if the flux_r meets a minimum threshold
+    targets = targets[targets['FLUX_R'] > rfluxlim]
+    if len(targets) == 0:
+        targets['TILEID'] = np.zeros(0, dtype=np.int32)
+        targets['GFA_LOC'] = np.zeros(0, dtype=np.int8)
+        return targets
+
     if(tiles is None):
         import desimodel.io
         tiles = desimodel.io.load_tiles()
+
     import desimodel.footprint
     points = desimodel.footprint.find_points_in_tiles(tiles, targets['RA'], targets['DEC'])
     alltargetindices = []
     tileidlist = []
     gfaidlist = []
-    # Checks if the flux_r meets a minimum threshold
-    brightindices = np.where(targets['FLUX_R'] > rfluxlim)
-    if(brightindices[0].size == 0):
-        return []
+
     counter = 0
     for lists in points:
         if lists:
             tileid = tiles[counter]['TILEID']
-            targetindices, gfaindices = on_tile_gfa(tileid, targets[brightindices[0]], buffer_arcsec)
+            targetindices, gfaindices = on_tile_gfa(tileid, targets, buffer_arcsec)
             tileidlist.extend([tileid] * len(targetindices))
             alltargetindices.extend(targetindices)
             gfaidlist.extend(gfaindices)
         counter += 1
-    validtargets = targets[brightindices[0]][alltargetindices]
+    validtargets = targets[alltargetindices]
     tileidlist = np.asarray(tileidlist)
     gfaidlist = np.asarray(gfaidlist)
-    validtargets['TILEID'] = tileidlist
-    validtargets['GFA_LOC'] = gfaidlist
+    validtargets['TILEID'] = np.array(tileidlist, dtype=np.int32)
+    validtargets['GFA_LOC'] = np.array(gfaidlist, dtype=np.int8)
     return validtargets
 
