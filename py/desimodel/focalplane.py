@@ -160,24 +160,9 @@ def get_radius_deg(x, y):
     import desimodel.io
     radius = np.sqrt(x**2 + y**2)
     platescale = desimodel.io.load_platescale()
-    # Plots are used for debugging.
-    #plot(platescale['radius'], platescale['theta'], 'k.')
-    #plot(platescale['radius'], platescale['radial_platescale'], 'k.')
     fn = scipy.interpolate.interp1d(platescale['radius'], platescale['theta'], kind = 'quadratic')
     degree = float(fn(radius))
     return degree
-
-def cartesian_to_polar_angle(x, y):
-    """
-    Given cartesian coordinates, this function returns the polar angle in degrees
-    for use in polar coordinates
-    Parameters
-    ----------
-    x: The x coordinate in mm of a location on the focal plane
-    y: The y coordinate in mm of a location on the focal plane
-    """
-    return np.degrees(np.arctan2(y, x))
-
 
 def xy2radec(telra, teldec, x, y):
     """
@@ -195,7 +180,7 @@ def xy2radec(telra, teldec, x, y):
     # radial distance on the focal plane in degrees
     r_deg = get_radius_deg(x, y)
     # q signifies the angle the position makes with the +x-axis of focal plane
-    q = cartesian_to_polar_angle(x, y)
+    q = np.degrees(np.arctan2(y, x))
     
     coord = np.zeros(shape=(3,1))
     coord[0] = 1
@@ -594,15 +579,15 @@ def on_gfa(telra, teldec, ra, dec, buffer_arcsec = 100):
     
     targetx, targety = desimodel.focalplane.radec2xy(telra, teldec, ra[inrangeindices], dec[inrangeindices])
     
-    x_tolerance, y_tolerance = degrees2xytolerance(buffer_arcsec)
+    x_tolerance, y_tolerance = _degrees2xytolerance(buffer_arcsec)
     
     targetindices = []
     gfaindices = []
     
     # x and y hold the 40 new GFA coordinates
-    x, y = shift_gfa_points(x_tolerance, y_tolerance)
+    x, y = _shift_gfa_points(x_tolerance, y_tolerance)
     # The area boundary's value is the area of the gfa plus some tolerance.
-    AREA_BOUNDARY = retrieve_minimum_boundary(x_tolerance, y_tolerance) + MIN_TOLERANCE
+    AREA_BOUNDARY = _retrieve_minimum_boundary(x_tolerance, y_tolerance) + MIN_TOLERANCE
 
     targetx = np.asarray(targetx)
     targety = np.asarray(targety)
@@ -638,7 +623,7 @@ def on_gfa(telra, teldec, ra, dec, buffer_arcsec = 100):
             gfaindices.extend([int(gfaid / 4)] * len(newtargetindices[0]))
     return inrangeindices[targetindices], gfaindices
 
-def retrieve_minimum_boundary(x_tolerance, y_tolerance):
+def _retrieve_minimum_boundary(x_tolerance, y_tolerance):
     """
     Used as a helper function to the on_gfa function to find the minimum boundary
     area for a point to lie inside a certain GFA given an tolerance in x and y in mm
@@ -661,7 +646,7 @@ def retrieve_minimum_boundary(x_tolerance, y_tolerance):
     # The area boundary's value is the area of the gfa plus some tolerance.
     
     # x and y hold the 40 new GFA coordinates
-    x, y = shift_gfa_points(x_tolerance, y_tolerance)
+    x, y = _shift_gfa_points(x_tolerance, y_tolerance)
     
     targetx = np.asarray(targetx)
     targety = np.asarray(targety)
@@ -691,7 +676,7 @@ def retrieve_minimum_boundary(x_tolerance, y_tolerance):
         assert np.all(targetarea > THRESHOLD_AREA)
         return targetarea
 
-def degrees2xytolerance(buffer_arcsec):
+def _degrees2xytolerance(buffer_arcsec):
     """
     Used as a helper function to the on_gfa function to find the tolerance in x and y
     given a tolerance in arcseconds
@@ -718,7 +703,7 @@ def degrees2xytolerance(buffer_arcsec):
     y_tolerance = buffer_arcsec / (10**3) * az_ps
     return x_tolerance, y_tolerance
 
-def shift_gfa_points(deltax, deltay):
+def _shift_gfa_points(deltax, deltay):
     """
     Used as a helper function to the on_gfa function to find the new
     GFA locations after incorporating a tolerance in x and y
@@ -777,9 +762,9 @@ def shift_gfa_points(deltax, deltay):
     rotatemat = np.zeros(shape=(2,2))
     rotatemat[0] = [np.cos(np.radians(36)), -np.sin(np.radians(36))]
     rotatemat[1] = [np.sin(np.radians(36)), np.cos(np.radians(36))]
-    return find_new_gfa_coordinates(x, y, rotatemat)
+    return _find_new_gfa_coordinates(x, y, rotatemat)
 
-def find_new_gfa_coordinates(x, y, rotatemat):
+def _find_new_gfa_coordinates(x, y, rotatemat):
     """
     Used as a helper function to the on_gfa function to find the new
     GFA coordinates given a list of x coordinates, y coordinates, and a rotation matrix

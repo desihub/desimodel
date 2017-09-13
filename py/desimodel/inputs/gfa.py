@@ -4,7 +4,7 @@
 #import desimodel.io
 #import scipy.interpolate
 import numpy as np
-from ..focalplane import get_radius_deg, get_radius_mm, cartesian_to_polar_angle
+from ..focalplane import get_radius_deg, get_radius_mm
 
 def build_gfa_table(outfile = 'gfa.ecsv'):
     '''
@@ -75,7 +75,7 @@ def find_gfa_coordinates(x, y, z, gfatable, rotatemat):
             oldycoord[i] = newcoord[1]
             gfacoord[i] = [newcoord[0], newcoord[1]]
             
-            theta = cartesian_to_polar_angle(newcoord[0], newcoord[1])
+            theta = np.degrees(np.arctan2(newcoord[0], newcoord[1]))
             # radius is the radius in mm
             radius = np.sqrt(newcoord[0]**2 + newcoord[1]**2)
             # degree is the radius in degrees
