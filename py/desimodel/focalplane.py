@@ -567,7 +567,7 @@ def on_gfa(telra, teldec, ra, dec, buffer_arcsec = 100):
     Checks if a target is on any of the 10 GFAs given telra, teldec and an array of RA and Dec pointings,
     as well as a parameter for degrees of tolerance one would like to allow. When using
     desimodel.footprint.find_points_in_tiles(tiles, ra, dec, radius) with this function to
-    check what points are on the GFAs, the default radius parameter should be set to 1.651 (degrees),
+    check what points are on the GFAs, the default radius parameter should be set to 1.65 (degrees),
     so that boundary GFA area actually encompasses points normally outside of the tile.
     Parameters:
     telra: The telescope's arbitrary RA pointing
@@ -587,7 +587,7 @@ def on_gfa(telra, teldec, ra, dec, buffer_arcsec = 100):
     THRESHOLD_AREA = 469.7
     MIN_TOLERANCE = 0.001
     
-    inrangeindices = desimodel.footprint.find_points_radec(telra, teldec, ra, dec, 1.651)
+    inrangeindices = desimodel.footprint.find_points_radec(telra, teldec, ra, dec, 1.65)
     if not inrangeindices:
         return np.array([]), np.array([])
     inrangeindices = np.asarray(inrangeindices)
