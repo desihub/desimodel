@@ -30,7 +30,7 @@ except KeyError:
     specter_message = desimodel_message
 
 
-class TestIO(unittest.TestCase):
+class _TestIO(unittest.TestCase):
     """Test desimodel.io.
     """
     @classmethod
@@ -39,6 +39,7 @@ class TestIO(unittest.TestCase):
         cls.specter_available = specter_available
         cls.desimodel_available = desimodel_available
         cls.trimdir = 'test-'+uuid.uuid4().hex
+        cls.testfile = 'test-'+uuid.uuid4().hex+'.fits'
 
     @classmethod
     def tearDownClass(cls):
@@ -55,7 +56,9 @@ class TestIO(unittest.TestCase):
         io._params = None
         io._gfa = None
         io._fiberpos = None
-        io._tiles = None
+        io._tiles = dict()
+        if os.path.exists(self.testfile):
+            os.remove(self.testfile)
 
     def tearDown(self):
         pass
@@ -135,7 +138,7 @@ class TestIO(unittest.TestCase):
     def test_load_tiles(self):
         """Test loading of tile files.
         """
-        self.assertIsNone(io._tiles)
+        self.assertEqual(io._tiles, {})
         t1 = io.load_tiles(onlydesi=False)
         tile_cache_id1 = id(io._tiles)
         self.assertIsNotNone(io._tiles)
@@ -163,6 +166,18 @@ class TestIO(unittest.TestCase):
         b = io.load_tiles(extra=True)
         self.assertGreater(np.sum(np.char.startswith(b['PROGRAM'], 'EXTRA')), 0)
         self.assertLess(len(a), len(b))
+
+    @unittest.skipUnless(desimodel_available, desimodel_message)
+    def test_load_tiles_alt(self):
+        t1 = Table(io.load_tiles())
+        t1.write(self.testfile)
+        #- no path; should fail since that file isn't in $DESIMODEL/data/footprint/
+        with self.assertRaises(FileNotFoundError):
+            t2 = io.load_tiles(tilesfile=self.testfile)
+
+        #- with path, should work:
+        t2 = Table(io.load_tiles(tilesfile='./'+self.testfile))
+        self.assertTrue(np.all(t1 == t2))
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_tiles_consistency(self):

@@ -121,47 +121,59 @@ def load_fiberpos():
 #
 #
 #
-_tiles = None
-def load_tiles(onlydesi=True, extra=False):
+_tiles = dict()
+def load_tiles(onlydesi=True, extra=False, tilesfile='desi-tiles.fits'):
     """Return DESI tiles structure from desimodel/data/footprint/desi-tiles.fits.
 
-    Parameters
-    ----------
+    Options
+    -------
     onlydesi : :class:`bool` (default True)
         If ``True``, trim to just the tiles in the DESI footprint.
     extra : :class:`bool`, (default False)
         If ``True``, include extra layers with PROGRAM='EXTRA'.
     """
     global _tiles
-    if _tiles is None:
-        footprint = os.path.join(os.environ['DESIMODEL'],'data','footprint','desi-tiles.fits')
-        with fits.open(footprint) as hdulist:
-            _tiles = hdulist[1].data
+
+    tilespath, filename = os.path.split(tilesfile)
+    if tilespath == '':
+        tilesfile = os.path.join(os.environ['DESIMODEL'],'data','footprint',filename)
+
+    #- standarize path location
+    tilesfile = os.path.abspath(tilesfile)
+
+    if tilesfile in _tiles:
+        tiledata = _tiles[tilesfile]
+    else:
+        with fits.open(tilesfile, memmap=False) as hdulist:
+            tiledata = hdulist[1].data
         #
         # Temporary workaround for problem identified in
         # https://github.com/desihub/desimodel/issues/30
         #
-        if any([c.bzero is not None for c in _tiles.columns]):
-            foo = [_tiles[k].dtype for k in _tiles.dtype.names]
+        if any([c.bzero is not None for c in tiledata.columns]):
+            foo = [_tiles[k].dtype for k in tiledata.dtype.names]
 
         #- Check for out-of-date tiles file
-        if np.issubdtype(_tiles['OBSCONDITIONS'].dtype, 'u2'):
+        if np.issubdtype(tiledata['OBSCONDITIONS'].dtype, 'u2'):
             import warnings
             warnings.warn('old desi-tiles.fits with uint16 OBSCONDITIONS; please update your $DESIMODEL checkout', DeprecationWarning)
 
+        #- load cache for next time
+        _tiles[tilesfile] = tiledata
+
     #- Filter to only the DESI footprint if requested
-    subset = np.ones(len(_tiles), dtype=bool)
+    subset = np.ones(len(tiledata), dtype=bool)
     if onlydesi:
-        subset &= _tiles['IN_DESI'] > 0
+        subset &= tiledata['IN_DESI'] > 0
 
     #- Filter out PROGRAM=EXTRA tiles if requested
     if not extra:
-        subset &= ~np.char.startswith(_tiles['PROGRAM'], 'EXTRA')
+        subset &= ~np.char.startswith(tiledata['PROGRAM'], 'EXTRA')
 
     if np.all(subset):
-        return _tiles
+        return tiledata
     else:
-        return _tiles[subset]
+        return tiledata[subset]
 
 _platescale = None
 def load_platescale():
