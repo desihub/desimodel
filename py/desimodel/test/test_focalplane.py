@@ -4,8 +4,8 @@
 """
 import unittest
 import numpy as np
-from ..focalplane import FocalPlane, generate_random_centroid_offsets, xy2radec, get_radius_mm, get_radius_deg
-from ..focalplane import fiber_area_arcsec2
+from ..focalplane import FocalPlane, generate_random_centroid_offsets, xy2radec, get_radius_mm, get_radius_deg, radec2xy
+from ..focalplane import fiber_area_arcsec2, on_gfa, on_tile_gfa, get_gfa_targets
 
 
 class TestFocalplane(unittest.TestCase):
@@ -54,7 +54,7 @@ class TestFocalplane(unittest.TestCase):
         self.assertAlmostEqual(trueradius, radius, 5)
         self.assertAlmostEqual(all(trueradius1), all(radius1), 5)
     
-    def new_test_xy2radec(self):
+    def test_xy2radec_new(self):
         """Tests the consistency between the conversion functions
         radec2xy and xy2radec. Also tests the accuracy of the xy2radec
         on particular cases.
@@ -62,11 +62,11 @@ class TestFocalplane(unittest.TestCase):
         truera = 8.927313423598427
         truedec = -9.324956250231294
         newra, newdec = xy2radec(8.37, -10.65, -138.345, -333.179)
-        self.assertEqual(truera, newra, 5)
-        self.assertEqual(truedec, newdec, 5)
+        self.assertAlmostEqual(truera, newra, 5)
+        self.assertAlmostEqual(truedec, newdec, 5)
         x, y = radec2xy(8.37, -10.65, newra, newdec)
-        self.assertEqual(x, -138.345, 5)
-        self.assertEqual(y, -333.179, 5)
+        self.assertAlmostEqual(x, -138.345, 5)
+        self.assertAlmostEqual(y, -333.179, 5)
 
     def test_xy2radec(self):
         """Test the consistency between the conversion functions
@@ -102,6 +102,43 @@ class TestFocalplane(unittest.TestCase):
         y = [-0., -50., -100., -200]
         area = fiber_area_arcsec2(x, y)
         self.assertFalse(np.any(np.fabs(area-np.array([1.97314482,  1.96207294,  1.92970506,  1.81091119])) >1E-6))
+
+    def test_on_gfa(self):
+        """Tests if on_gfa returns two lists as it is supposed to"""
+        import numpy as np
+        targetindices, gfalist = on_gfa(0, 0, np.array([1.0, 0, 0, 1.0]), np.array([0, 1.0, 1.5, .5]))
+        self.assertEqual(0, len(targetindices))
+        self.assertEqual(0, len(gfalist))
+        self.assertEqual(len(targetindices), len(gfalist))
+
+    def test_on_tile_gfa(self):
+        """Tests if on_tile_gfa returns two lists as it is supposed to"""
+        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
+                                      ('RA', 'f8'),
+                                      ('DEC', 'f8'),
+                                      ])
+        tiles['TILEID'] = np.array([23658] * 4)
+        tiles['RA'] = np.array([0.0, 1.0, 2.0, 3.0])
+        tiles['DEC'] = np.array([-2.0, -1.0, 1.0, 2.0])
+        targetindices, gfaid = on_tile_gfa(23658, tiles, 120)
+        self.assertEqual(0, targetindices.size)
+        self.assertEqual(0, gfaid.size)
+        self.assertEqual(targetindices.size, gfaid.size)
+
+    def test_get_gfa_targets(self):
+        """Tests if get_gfa_targets returns a table of targets on gfa"""
+        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
+                                      ('RA', 'f8'),
+                                      ('DEC', 'f8'),
+                                      ('FLUX_R', 'f8')
+                                      ])
+        tiles['TILEID'] = np.array([23658] * 4)
+        tiles['RA'] = [0.0, 1.0, 2.0, 3.0]
+        tiles['DEC'] = [-2.0, -1.0, 1.0, 2.0]
+        tiles['FLUX_R'] = [50, 50, 50, 100]
+        targets = get_gfa_targets(tiles)
+        self.assertEqual([], targets)
+
 
 
 def test_suite():
