@@ -138,12 +138,18 @@ class _TestIO(unittest.TestCase):
     def test_load_tiles(self):
         """Test loading of tile files.
         """
+        # starting clean
         self.assertEqual(io._tiles, {})
+        t0 = io.load_tiles(cache=False)
+        self.assertEqual(len(io._tiles), 0)
+        # loading tiles fills the cache with one items
         t1 = io.load_tiles(onlydesi=False)
-        tile_cache_id1 = id(io._tiles)
-        self.assertIsNotNone(io._tiles)
+        self.assertEqual(len(io._tiles), 1)
+        tile_cache_id1 = id(list(io._tiles.items())[0])
+        # reloading, even with a filter, shoudln't change cache
         t2 = io.load_tiles(onlydesi=True)
-        tile_cache_id2 = id(io._tiles)
+        self.assertEqual(len(io._tiles), 1)
+        tile_cache_id2 = id(list(io._tiles.items())[0])
         self.assertEqual(tile_cache_id1, tile_cache_id2)
         #- Temporarily support OBSCONDITIONS as u2 (old) or i4 (new)
         self.assertTrue(np.issubdtype(t1['OBSCONDITIONS'].dtype, 'i4') or \
@@ -156,7 +162,7 @@ class _TestIO(unittest.TestCase):
         # I think this is the exact same test as above, except using set theory.
         self.assertEqual(len(set(t2.TILEID) - set(t1.TILEID)), 0)
         t3 = io.load_tiles(onlydesi=False)
-        tile_cache_id3 = id(io._tiles)
+        tile_cache_id3 = id(list(io._tiles.items())[0])
         self.assertEqual(tile_cache_id1, tile_cache_id3)
         self.assertTrue(np.issubdtype(t3['OBSCONDITIONS'].dtype, 'i4') or \
                         np.issubdtype(t3['OBSCONDITIONS'].dtype, 'u2') )
@@ -169,6 +175,8 @@ class _TestIO(unittest.TestCase):
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_load_tiles_alt(self):
+        # starting clean
+        self.assertEqual(io._tiles, {})
         t1 = Table(io.load_tiles())
         t1.write(self.testfile)
         #- no path; should fail since that file isn't in $DESIMODEL/data/footprint/
@@ -178,6 +186,9 @@ class _TestIO(unittest.TestCase):
         #- with path, should work:
         t2 = Table(io.load_tiles(tilesfile='./'+self.testfile))
         self.assertTrue(np.all(t1 == t2))
+
+        #- cache should have two items now
+        self.assertEqual(len(io._tiles), 2)
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_tiles_consistency(self):

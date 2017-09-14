@@ -122,15 +122,19 @@ def load_fiberpos():
 #
 #
 _tiles = dict()
-def load_tiles(onlydesi=True, extra=False, tilesfile='desi-tiles.fits'):
+def load_tiles(onlydesi=True, extra=False, tilesfile='desi-tiles.fits', cache=True):
     """Return DESI tiles structure from desimodel/data/footprint/desi-tiles.fits.
 
-    Options
-    -------
+    Parameters
+    ----------
     onlydesi : :class:`bool` (default True)
         If ``True``, trim to just the tiles in the DESI footprint.
     extra : :class:`bool`, (default False)
         If ``True``, include extra layers with PROGRAM='EXTRA'.
+    tilesfile : (str) name of tiles file to load
+        Without path, look in $DESIMODEL/data/footprint, otherwise load file
+    cache : :class:`bool`, (default True)
+        Use cache of tiles data
     """
     global _tiles
 
@@ -141,7 +145,7 @@ def load_tiles(onlydesi=True, extra=False, tilesfile='desi-tiles.fits'):
     #- standarize path location
     tilesfile = os.path.abspath(tilesfile)
 
-    if tilesfile in _tiles:
+    if cache and tilesfile in _tiles:
         tiledata = _tiles[tilesfile]
     else:
         with fits.open(tilesfile, memmap=False) as hdulist:
@@ -159,7 +163,8 @@ def load_tiles(onlydesi=True, extra=False, tilesfile='desi-tiles.fits'):
             warnings.warn('old desi-tiles.fits with uint16 OBSCONDITIONS; please update your $DESIMODEL checkout', DeprecationWarning)
 
         #- load cache for next time
-        _tiles[tilesfile] = tiledata
+        if cache:
+            _tiles[tilesfile] = tiledata
 
     #- Filter to only the DESI footprint if requested
     subset = np.ones(len(tiledata), dtype=bool)
