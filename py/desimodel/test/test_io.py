@@ -146,7 +146,7 @@ class TestIO(unittest.TestCase):
         t1 = io.load_tiles(onlydesi=False)
         self.assertEqual(len(io._tiles), 1)
         tile_cache_id1 = id(list(io._tiles.items())[0])
-        # reloading, even with a filter, shoudln't change cache
+        # reloading, even with a filter, shouldn't change cache
         t2 = io.load_tiles(onlydesi=True)
         self.assertEqual(len(io._tiles), 1)
         tile_cache_id2 = id(list(io._tiles.items())[0])
