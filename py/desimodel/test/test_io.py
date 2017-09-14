@@ -30,7 +30,7 @@ except KeyError:
     specter_message = desimodel_message
 
 
-class _TestIO(unittest.TestCase):
+class TestIO(unittest.TestCase):
     """Test desimodel.io.
     """
     @classmethod
