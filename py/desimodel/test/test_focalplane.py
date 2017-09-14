@@ -137,7 +137,7 @@ class TestFocalplane(unittest.TestCase):
         tiles['DEC'] = [-2.0, -1.0, 1.0, 2.0]
         tiles['FLUX_R'] = [50, 50, 50, 100]
         targets = get_gfa_targets(tiles)
-        self.assertEqual([], targets)
+        self.assertEqual(len(targets), 0)
 
 
 

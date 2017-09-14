@@ -13,6 +13,7 @@ import os
 import numpy as np
 from astropy.io import fits
 import astropy.units as u
+from astropy.table import Table
 
 # Define this here to avoid a problem with Sphinx compilation.
 try:
@@ -834,7 +835,7 @@ def get_gfa_targets(targets, rfluxlim = 1000, tiles = None, buffer_arcsec = 100)
     Note also that the function returns an empty Table if no targets are on any GFAs or of sufficient brightness
     """
     # Checks if the flux_r meets a minimum threshold
-    targets = targets[targets['FLUX_R'] > rfluxlim]
+    targets = Table(targets[targets['FLUX_R'] > rfluxlim])
     if len(targets) == 0:
         targets['TILEID'] = np.zeros(0, dtype=np.int32)
         targets['GFA_LOC'] = np.zeros(0, dtype=np.int8)
