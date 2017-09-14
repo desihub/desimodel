@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Test desimodel.io.
 """
-import os
+import os, sys
 import uuid
 import numpy as np
 from astropy.table import Table
@@ -180,8 +180,12 @@ class TestIO(unittest.TestCase):
         t1 = Table(io.load_tiles())
         t1.write(self.testfile)
         #- no path; should fail since that file isn't in $DESIMODEL/data/footprint/
-        with self.assertRaises(FileNotFoundError):
-            t2 = io.load_tiles(tilesfile=self.testfile)
+        if sys.version_info.major == 2:
+            with self.assertRaises(IOError):
+                t2 = io.load_tiles(tilesfile=self.testfile)
+        else:
+            with self.assertRaises(FileNotFoundError):
+                t2 = io.load_tiles(tilesfile=self.testfile)
 
         #- with path, should work:
         t2 = Table(io.load_tiles(tilesfile='./'+self.testfile))
