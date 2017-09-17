@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 """Test desimodel.io.
 """
-import os, sys
+import os
+import sys
 import uuid
+import tempfile
 import numpy as np
 from astropy.table import Table
 import unittest
@@ -38,14 +40,15 @@ class TestIO(unittest.TestCase):
         global specter_available, desimodel_available
         cls.specter_available = specter_available
         cls.desimodel_available = desimodel_available
-        cls.trimdir = 'test-'+uuid.uuid4().hex
-        cls.testfile = 'test-'+uuid.uuid4().hex+'.fits'
+        cls.tempdir = tempfile.mkdtemp(prefix='testio-')
+        cls.trimdir = os.path.join(cls.tempdir, 'trim')
+        cls.testfile = os.path.join(cls.tempdir, 'test-abc123.fits')
 
     @classmethod
     def tearDownClass(cls):
-        if os.path.exists(cls.trimdir):
+        if os.path.exists(cls.tempdir):
             import shutil
-            shutil.rmtree(cls.trimdir)
+            shutil.rmtree(cls.tempdir)
 
     def setUp(self):
         """Ensure that any desimodel.io caches are clear before running
@@ -182,13 +185,13 @@ class TestIO(unittest.TestCase):
         #- no path; should fail since that file isn't in $DESIMODEL/data/footprint/
         if sys.version_info.major == 2:
             with self.assertRaises(IOError):
-                t2 = io.load_tiles(tilesfile=self.testfile)
+                t2 = io.load_tiles(tilesfile=os.path.basename(self.testfile))
         else:
             with self.assertRaises(FileNotFoundError):
-                t2 = io.load_tiles(tilesfile=self.testfile)
+                t2 = io.load_tiles(tilesfile=os.path.basename(self.testfile))
 
         #- with path, should work:
-        t2 = Table(io.load_tiles(tilesfile='./'+self.testfile))
+        t2 = Table(io.load_tiles(tilesfile=self.testfile))
         self.assertTrue(np.all(t1 == t2))
 
         #- cache should have two items now

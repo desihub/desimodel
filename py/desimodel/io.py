@@ -131,16 +131,18 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
         If ``True``, trim to just the tiles in the DESI footprint.
     extra : :class:`bool`, (default False)
         If ``True``, include extra layers with PROGRAM='EXTRA'.
-    tilesfile : (str) name of tiles file to load; or None for default
-        Without path, look in $DESIMODEL/data/footprint, otherwise load file
+    tilesfile : (str)
+        Name of tiles file to load; or None for default.
+        Without path, look in $DESIMODEL/data/footprint, otherwise load file.
     cache : :class:`bool`, (default True)
-        Use cache of tiles data
+        Use cache of tiles data.
     """
     global _tiles
 
     if tilesfile is None:
         tilesfile = 'desi-tiles.fits'
 
+    #- Check if tilesfile includes a path (absolute or relative)
     tilespath, filename = os.path.split(tilesfile)
     if tilespath == '':
         tilesfile = os.path.join(os.environ['DESIMODEL'],'data','footprint',filename)
