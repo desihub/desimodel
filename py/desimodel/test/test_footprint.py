@@ -22,6 +22,10 @@ class TestFootprint(unittest.TestCase):
         """Test grabbing tile information by tileID.
         """
         io_tile_cache = io._tiles
+        io._tiles = dict()
+        tx = io.load_tiles()
+        tilefile = list(io._tiles.keys())[0]
+
         tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
                                       ('RA', 'f8'),
                                       ('DEC', 'f8'),
@@ -34,7 +38,7 @@ class TestFootprint(unittest.TestCase):
         tiles['DEC'] = [-2.0, -1.0, 1.0, 2.0]
         tiles['IN_DESI'] = [0, 1, 1, 0]
         tiles['PROGRAM'] = 'DARK'
-        io._tiles = tiles
+        io._tiles[tilefile] = tiles
         ra, dec = footprint.get_tile_radec(1)
         self.assertEqual((ra, dec), (0.0, 0.0))
         ra, dec, = footprint.get_tile_radec(2)

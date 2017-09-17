@@ -3,7 +3,9 @@
 """Test desimodel.io.
 """
 import os
+import sys
 import uuid
+import tempfile
 import numpy as np
 from astropy.table import Table
 import unittest
@@ -38,13 +40,15 @@ class TestIO(unittest.TestCase):
         global specter_available, desimodel_available
         cls.specter_available = specter_available
         cls.desimodel_available = desimodel_available
-        cls.trimdir = 'test-'+uuid.uuid4().hex
+        cls.tempdir = tempfile.mkdtemp(prefix='testio-')
+        cls.trimdir = os.path.join(cls.tempdir, 'trim')
+        cls.testfile = os.path.join(cls.tempdir, 'test-abc123.fits')
 
     @classmethod
     def tearDownClass(cls):
-        if os.path.exists(cls.trimdir):
+        if os.path.exists(cls.tempdir):
             import shutil
-            shutil.rmtree(cls.trimdir)
+            shutil.rmtree(cls.tempdir)
 
     def setUp(self):
         """Ensure that any desimodel.io caches are clear before running
@@ -55,7 +59,9 @@ class TestIO(unittest.TestCase):
         io._params = None
         io._gfa = None
         io._fiberpos = None
-        io._tiles = None
+        io._tiles = dict()
+        if os.path.exists(self.testfile):
+            os.remove(self.testfile)
 
     def tearDown(self):
         pass
@@ -135,12 +141,18 @@ class TestIO(unittest.TestCase):
     def test_load_tiles(self):
         """Test loading of tile files.
         """
-        self.assertIsNone(io._tiles)
+        # starting clean
+        self.assertEqual(io._tiles, {})
+        t0 = io.load_tiles(cache=False)
+        self.assertEqual(len(io._tiles), 0)
+        # loading tiles fills the cache with one items
         t1 = io.load_tiles(onlydesi=False)
-        tile_cache_id1 = id(io._tiles)
-        self.assertIsNotNone(io._tiles)
+        self.assertEqual(len(io._tiles), 1)
+        tile_cache_id1 = id(list(io._tiles.items())[0])
+        # reloading, even with a filter, shouldn't change cache
         t2 = io.load_tiles(onlydesi=True)
-        tile_cache_id2 = id(io._tiles)
+        self.assertEqual(len(io._tiles), 1)
+        tile_cache_id2 = id(list(io._tiles.items())[0])
         self.assertEqual(tile_cache_id1, tile_cache_id2)
         #- Temporarily support OBSCONDITIONS as u2 (old) or i4 (new)
         self.assertTrue(np.issubdtype(t1['OBSCONDITIONS'].dtype, 'i4') or \
@@ -153,7 +165,7 @@ class TestIO(unittest.TestCase):
         # I think this is the exact same test as above, except using set theory.
         self.assertEqual(len(set(t2.TILEID) - set(t1.TILEID)), 0)
         t3 = io.load_tiles(onlydesi=False)
-        tile_cache_id3 = id(io._tiles)
+        tile_cache_id3 = id(list(io._tiles.items())[0])
         self.assertEqual(tile_cache_id1, tile_cache_id3)
         self.assertTrue(np.issubdtype(t3['OBSCONDITIONS'].dtype, 'i4') or \
                         np.issubdtype(t3['OBSCONDITIONS'].dtype, 'u2') )
@@ -163,6 +175,27 @@ class TestIO(unittest.TestCase):
         b = io.load_tiles(extra=True)
         self.assertGreater(np.sum(np.char.startswith(b['PROGRAM'], 'EXTRA')), 0)
         self.assertLess(len(a), len(b))
+
+    @unittest.skipUnless(desimodel_available, desimodel_message)
+    def test_load_tiles_alt(self):
+        # starting clean
+        self.assertEqual(io._tiles, {})
+        t1 = Table(io.load_tiles())
+        t1.write(self.testfile)
+        #- no path; should fail since that file isn't in $DESIMODEL/data/footprint/
+        if sys.version_info.major == 2:
+            with self.assertRaises(IOError):
+                t2 = io.load_tiles(tilesfile=os.path.basename(self.testfile))
+        else:
+            with self.assertRaises(FileNotFoundError):
+                t2 = io.load_tiles(tilesfile=os.path.basename(self.testfile))
+
+        #- with path, should work:
+        t2 = Table(io.load_tiles(tilesfile=self.testfile))
+        self.assertTrue(np.all(t1 == t2))
+
+        #- cache should have two items now
+        self.assertEqual(len(io._tiles), 2)
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_tiles_consistency(self):
