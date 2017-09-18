@@ -113,14 +113,15 @@ class TestFocalplane(unittest.TestCase):
 
     def test_on_tile_gfa(self):
         """Tests if on_tile_gfa returns two lists as it is supposed to"""
-        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
-                                      ('RA', 'f8'),
-                                      ('DEC', 'f8'),
-                                      ])
-        tiles['TILEID'] = np.array([23658] * 4)
-        tiles['RA'] = np.array([0.0, 1.0, 2.0, 3.0])
-        tiles['DEC'] = np.array([-2.0, -1.0, 1.0, 2.0])
-        targetindices, gfaid = on_tile_gfa(23658, tiles, 120)
+        targets = np.zeros((4,), dtype=[('TILEID', 'i2'),
+                                        ('RA', 'f8'),
+                                        ('DEC', 'f8'),
+                                        ])
+        tileid = 23658
+        targets['TILEID'] = np.array([tileid,] * 4)
+        targets['RA'] = np.array([0.0, 1.0, 2.0, 3.0])
+        targets['DEC'] = np.array([-2.0, -1.0, 1.0, 2.0])
+        targetindices, gfaid = on_tile_gfa(tileid, targets, 120)
         self.assertEqual(0, targetindices.size)
         self.assertEqual(0, gfaid.size)
         self.assertEqual(targetindices.size, gfaid.size)

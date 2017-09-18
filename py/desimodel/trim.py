@@ -63,6 +63,7 @@ def trim_footprint(indir, outdir):
     with fits.open(infile) as hdulist:
         t = Table(hdulist[1].data)
     ii = (110 < t['RA']) & (t['RA'] < 140) & (-10 < t['DEC']) & (t['DEC'] < 20)
+    # ii = (t['PROGRAM'] != 'EXTRA')
     tx = t[ii]
     tx.write(outfile, format='fits')
     tx.write(outfile.replace('.fits', '.ecsv'), format='ascii.ecsv')
