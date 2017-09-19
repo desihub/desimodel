@@ -54,17 +54,28 @@ class TestIO(unittest.TestCase):
         """Ensure that any desimodel.io caches are clear before running
         any test.
         """
-        io._thru = dict()
-        io._psf = dict()
-        io._params = None
-        io._gfa = None
-        io._fiberpos = None
-        io._tiles = dict()
+        io.reset_cache()
         if os.path.exists(self.testfile):
             os.remove(self.testfile)
 
     def tearDown(self):
         pass
+
+    def test_reset_cache(self):
+        """Test cache reset (two examples at least)
+        """
+        self.assertTrue(io._fiberpos is None)
+        self.assertTrue(isinstance(io._tiles, dict))
+        self.assertEqual(len(io._tiles), 0)
+        fiberpos = io.load_fiberpos()
+        tiles = io.load_tiles()
+        self.assertTrue(io._fiberpos is not None)
+        self.assertTrue(isinstance(io._tiles, dict))
+        self.assertEqual(len(io._tiles), 1)
+        io.reset_cache()
+        self.assertTrue(io._fiberpos is None)
+        self.assertTrue(isinstance(io._tiles, dict))
+        self.assertEqual(len(io._tiles), 0)
 
     @unittest.skipUnless(specter_available, specter_message)
     def test_load_throughput(self):

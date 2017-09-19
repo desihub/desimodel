@@ -622,7 +622,7 @@ def on_gfa(telra, teldec, ra, dec, buffer_arcsec = 100):
             newtargetindices = np.where(targetarea < AREA_BOUNDARY)
             targetindices.extend(newtargetindices[0])
             gfaindices.extend([int(gfaid / 4)] * len(newtargetindices[0]))
-    return inrangeindices[targetindices], gfaindices
+    return inrangeindices[targetindices], np.asarray(gfaindices)
 
 def _retrieve_minimum_boundary(x_tolerance, y_tolerance):
     """

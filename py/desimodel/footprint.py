@@ -500,13 +500,11 @@ def find_points_radec(telra, teldec, ra, dec, radius = None):
 def get_tile_radec(tileid):
     """Return (ra, dec) in degrees for the requested tileid.
 
-    If tileid is not in DESI, return (0.0, 0.0)
-    TODO: should it raise and exception instead?
+    Raises ValueError if tileid is not in list of known tiles
     """
     tiles = io.load_tiles()
     if tileid in tiles['TILEID']:
         i = np.where(tiles['TILEID'] == tileid)[0][0]
         return tiles[i]['RA'], tiles[i]['DEC']
     else:
-        return (0.0, 0.0)
-
+        raise ValueError('Unknown tileid {}'.format(tileid))

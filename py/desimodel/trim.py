@@ -62,7 +62,8 @@ def trim_footprint(indir, outdir):
     infile, outfile = inout(indir, outdir, 'desi-tiles.fits')
     with fits.open(infile) as hdulist:
         t = Table(hdulist[1].data)
-    ii = (110 < t['RA']) & (t['RA'] < 140) & (-10 < t['DEC']) & (t['DEC'] < 20)
+    #- Pick a subset on edge of footprint where healpix testing is done
+    ii = (35 < t['RA']) & (t['RA'] < 55) & (-10 < t['DEC']) & (t['DEC'] < 20)
     tx = t[ii]
     tx.write(outfile, format='fits')
     tx.write(outfile.replace('.fits', '.ecsv'), format='ascii.ecsv')
