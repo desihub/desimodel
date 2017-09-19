@@ -6,7 +6,8 @@ import unittest
 import numpy as np
 from ..focalplane import FocalPlane, generate_random_centroid_offsets, xy2radec, get_radius_mm, get_radius_deg, radec2xy
 from ..focalplane import fiber_area_arcsec2, on_gfa, on_tile_gfa, get_gfa_targets
-
+from .. import io
+from astropy.table import Table
 
 class TestFocalplane(unittest.TestCase):
     """Test desimodel.focalplane.
@@ -113,33 +114,34 @@ class TestFocalplane(unittest.TestCase):
 
     def test_on_tile_gfa(self):
         """Tests if on_tile_gfa returns two lists as it is supposed to"""
-        targets = np.zeros((4,), dtype=[('TILEID', 'i2'),
-                                        ('RA', 'f8'),
-                                        ('DEC', 'f8'),
-                                        ])
-        tileid = 23658
-        targets['TILEID'] = np.array([tileid,] * 4)
-        targets['RA'] = np.array([0.0, 1.0, 2.0, 3.0])
-        targets['DEC'] = np.array([-2.0, -1.0, 1.0, 2.0])
-        targetindices, gfaid = on_tile_gfa(tileid, targets, 120)
-        self.assertEqual(0, targetindices.size)
-        self.assertEqual(0, gfaid.size)
+        #- Generate some targets near a tile; some should land on the GFAs
+        tile = io.load_tiles()[0]
+        targets = Table()
+        ntargets = 1000
+        ra = np.random.uniform(tile['RA']-1.61, tile['RA']+1.61, size=ntargets)
+        dec = np.random.uniform(tile['DEC']-1.61, tile['DEC']+1.61, size=ntargets)
+        targets['RA'] = (ra+360) % 360
+        targets['DEC'] = dec
+        targetindices, gfaid = on_tile_gfa(tile['TILEID'], targets, 120)
         self.assertEqual(targetindices.size, gfaid.size)
+        self.assertGreater(targetindices.size, 0)
+        self.assertLess(np.max(targetindices), ntargets)
+        self.assertLess(np.max(gfaid), 10)
+        self.assertGreaterEqual(np.min(gfaid), 0)
 
-    def test_get_gfa_targets(self):
-        """Tests if get_gfa_targets returns a table of targets on gfa"""
-        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
-                                      ('RA', 'f8'),
-                                      ('DEC', 'f8'),
-                                      ('FLUX_R', 'f8')
-                                      ])
-        tiles['TILEID'] = np.array([23658] * 4)
-        tiles['RA'] = [0.0, 1.0, 2.0, 3.0]
-        tiles['DEC'] = [-2.0, -1.0, 1.0, 2.0]
-        tiles['FLUX_R'] = [50, 50, 50, 100]
-        targets = get_gfa_targets(tiles)
-        self.assertEqual(len(targets), 0)
+        #- Test higher level get_gfa_targets
+        targets['FLUX_R'] = 2000
+        gfatargets = get_gfa_targets(targets, rfluxlim=1000)
+        self.assertGreater(len(gfatargets), 0)
+        self.assertLess(np.max(gfatargets['GFA_LOC']), 10)
+        self.assertGreaterEqual(np.min(gfatargets['GFA_LOC']), 0)
+        self.assertTrue(tile['TILEID'] in gfatargets['TILEID'])
 
+        #- Shift +60 deg and verify that none are found for that tile
+        targets['RA'] = (targets['RA'] + 60) % 360
+        targetindices, gfaid = on_tile_gfa(tile['TILEID'], targets, 120)
+        self.assertEqual(targetindices.size, 0)
+        self.assertEqual(gfaid.size, 0)
 
 
 def test_suite():
