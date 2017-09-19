@@ -209,6 +209,17 @@ def load_platescale():
     _platescale = np.loadtxt(infile, usecols=[0,1,6,7], dtype=columns)
     return _platescale
 
+def reset_cache():
+    '''Reset I/O cache'''
+    global _thru, _psf, _params, _gfa, _fiberpos, _tiles, _platescale
+    _thru = dict()
+    _psf = dict()
+    _params = None
+    _gfa = None
+    _fiberpos = None
+    _tiles = dict()
+    _platescale = None
+
 def load_target_info():
     '''
     Loads data/targets/targets.yaml and returns the nested dictionary

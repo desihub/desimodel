@@ -16,16 +16,13 @@ except KeyError:
 class TestFootprint(unittest.TestCase):
     
     def setUp(self):
-        pass
+        io.reset_cache()
             
     def test_get_tile_radec(self):
         """Test grabbing tile information by tileID.
         """
-        io._tiles = dict()
         tx = io.load_tiles()
         tilefile = list(io._tiles.keys())[0]
-        io_tile_cache = io._tiles[tilefile]
-
         tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
                                       ('RA', 'f8'),
                                       ('DEC', 'f8'),
@@ -47,7 +44,6 @@ class TestFootprint(unittest.TestCase):
         #- But TILEID 2 should be there with correct redshift
         ra, dec, = footprint.get_tile_radec(2)
         self.assertEqual((ra, dec), (1.0, -1.0))
-        io._tiles[tilefile] = io_tile_cache
 
     def test_is_point_in_desi_mock(self):
         tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
