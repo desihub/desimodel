@@ -2,16 +2,16 @@
 desimodel Release Notes
 =======================
 
-0.8.1 (unreleased)
+0.9.0 (unreleased)
 ------------------
-()
+
 * Added desimodel.focalplane.radec2xy, which converts RA, Dec coordinates to x, y coordinates on the focal plane, which accepts vector inputs.
 * Added desimodel.focalplane.on_gfa() and its respective helper functions to check if a target is on a GFA of arbitrary telescope pointing
 * Added desimodel.focalplane.on_tile_gfa() to check return a list of indices of targets on a specific tile
 * Added desimodel.focalplane.get_gfa_targets() to return a table with added columns GFA_LOC and TILEID that consists of all targets on any GFA on any tile satisfying a minimum flux in the r-band. 
 * Unittests for the desimodel.focalplane functions were updated accordingly.
 * Added desimodel.footprint.find_points_in_tel_range() to return a list of indices withnin a radius of an arbitray telescope pointing, unaware of tiles (Added respective unittest)
-
+* Updates tests to work with trimmed data subset
 
 0.8.0 (2017-08-07)
 ------------------
