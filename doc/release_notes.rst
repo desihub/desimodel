@@ -5,7 +5,7 @@ desimodel Release Notes
 0.9.1 (unreleased)
 ------------------
 
-* No changes yet
+* Extracts wavelength coverage from specpsf files into params dictionary.
 
 0.9.0 (2017-09-19)
 ------------------
