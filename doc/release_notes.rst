@@ -5,7 +5,8 @@ desimodel Release Notes
 0.9.1 (unreleased)
 ------------------
 
-* No changes yet
+* Added desimodel.footprint.program2pass and pass2program to convert between
+  tiling integer pass number and string program name.
 
 0.9.0 (2017-09-19)
 ------------------
