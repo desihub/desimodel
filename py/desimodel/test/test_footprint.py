@@ -2,6 +2,7 @@ import unittest
 import os
 
 import numpy as np
+from astropy.table import Table
 
 from .. import io
 from .. import footprint
@@ -50,8 +51,22 @@ class TestFootprint(unittest.TestCase):
         self.assertEqual(footprint.program2pass('DARK'), [0,1,2,3])
         self.assertEqual(footprint.program2pass('GRAY'), [4,])
         self.assertEqual(footprint.program2pass('BRIGHT'), [5,6,7])
+        self.assertEqual(footprint.program2pass(['DARK', 'GRAY']), [[0,1,2,3], [4,]])
+        self.assertEqual(footprint.program2pass(np.array(['DARK', 'GRAY'])),
+                                                [[0,1,2,3], [4,]])
         with self.assertRaises(ValueError):
             footprint.program2pass('BLAT')
+
+        #- confirm it works with column inputs too
+        tiles = io.load_tiles()
+        passes = footprint.program2pass(tiles['PROGRAM'])
+        self.assertEqual(len(passes), len(tiles))
+        for p in passes:
+            self.assertNotEqual(p, None)
+        passes = footprint.program2pass(Table(tiles)['PROGRAM'])
+        self.assertEqual(len(passes), len(tiles))
+        for p in passes:
+            self.assertNotEqual(p, None)
 
     def test_get_tile_radec(self):
         """Test grabbing tile information by tileID.
