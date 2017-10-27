@@ -6,7 +6,9 @@ desimodel Release Notes
 ------------------
 
 * Added desimodel.footprint.program2pass and pass2program to convert between
-  tiling integer pass number and string program name.
+  tiling integer pass number and string program name (`PR#67`_).
+
+.. _`PR#67`: https://github.com/desihub/desimodel/pull/67
 
 0.9.0 (2017-09-19)
 ------------------
