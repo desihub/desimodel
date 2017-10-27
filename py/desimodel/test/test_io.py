@@ -97,6 +97,13 @@ class TestIO(unittest.TestCase):
         """
         p = io.load_desiparams()
         self.assertTrue(isinstance(p, dict))
+
+        #- Samity checks on augmented parameters
+        for channel in ['b', 'r', 'z']:
+            x = p['ccd'][channel]
+            self.assertLess(x['wavemin'], x['wavemax'])
+            self.assertLess(x['wavemin'], x['wavemin_all'])
+            self.assertGreater(x['wavemax'], x['wavemax_all'])
     
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_load_gfa(self):

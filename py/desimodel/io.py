@@ -63,9 +63,19 @@ def load_desiparams():
         with open(desiparamsfile) as par:
             _params = yaml.load(par)
 
-    #- for temporary backwards compability after 'exptime' -> 'exptime_dark'
-    if ('exptime' not in _params) and ('exptime_dark' in _params):
-        _params['exptime'] = _params['exptime_dark']
+        #- for temporary backwards compability after 'exptime' -> 'exptime_dark'
+        if ('exptime' not in _params) and ('exptime_dark' in _params):
+            _params['exptime'] = _params['exptime_dark']
+
+        #- Augment params with wavelength coverage from specpsf files
+        #- wavemin/max = min/max wavelength covered by *any* fiber on the CCD
+        #- wavemin/max_all = min/max wavelength covered by *all* fibers
+        for channel in ['b', 'r', 'z']:
+            hdr = fits.getheader(findfile('specpsf/psf-{}.fits'.format(channel)), 0)
+            _params['ccd'][channel]['wavemin'] = hdr['WAVEMIN']
+            _params['ccd'][channel]['wavemax'] = hdr['WAVEMAX']
+            _params['ccd'][channel]['wavemin_all'] = hdr['WMIN_ALL']
+            _params['ccd'][channel]['wavemax_all'] = hdr['WMAX_ALL']
 
     return _params
 #
