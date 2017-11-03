@@ -7,8 +7,8 @@ from . import focalplane
 from . import io
 from . import __version__ as desimodel_version
 
-from desiutil.log import get_logger, DEBUG
-log = get_logger(DEBUG)
+from desiutil.log import get_logger
+log = get_logger()
 
 def radec2pix(nside, ra, dec):
     '''Convert ra,dec to nested pixel number

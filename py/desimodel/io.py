@@ -12,8 +12,8 @@ import yaml
 import numpy as np
 import warnings
 
-from desiutil.log import get_logger, DEBUG
-log = get_logger(DEBUG)
+from desiutil.log import get_logger
+log = get_logger()
 
 _thru = dict()
 def load_throughput(channel):
