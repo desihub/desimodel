@@ -5,7 +5,12 @@ desimodel Release Notes
 0.9.1 (unreleased)
 ------------------
 
-* Extracts wavelength coverage from specpsf files into params dictionary.
+* Extracts wavelength coverage from specpsf files into params dictionary (`PR#68`_).
+* Added desimodel.footprint.program2pass and pass2program to convert between
+  tiling integer pass number and string program name (`PR#67`_).
+
+.. _`PR#67`: https://github.com/desihub/desimodel/pull/67
+.. _`PR#68`: https://github.com/desihub/desimodel/pull/68
 
 0.9.0 (2017-09-19)
 ------------------

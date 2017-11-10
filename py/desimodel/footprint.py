@@ -10,6 +10,58 @@ from . import __version__ as desimodel_version
 from desiutil.log import get_logger
 log = get_logger()
 
+_pass2program = None
+def pass2program(tilepass):
+    '''
+    Converts integer tile pass number to string program name.
+
+    Args:
+        tilepass: (int or int array) tiling pass number
+
+    Returns:
+        program: program name for each pass (str or list of str)
+    '''
+    global _pass2program
+    if _pass2program is None:
+        tiles = io.load_tiles()
+        _pass2program = dict(set(zip(tiles['PASS'], tiles['PROGRAM'])))
+    if np.isscalar(tilepass):
+        return _pass2program[tilepass]
+    else:
+        return [_pass2program[p] for p in tilepass]
+
+def program2pass(program):
+    '''
+    Convert string program name to tile passes for that program.
+
+    Args:
+        program: (str for str array) program name, e.g. DARK, BRIGHT, or GRAY
+
+    Returns:
+        list of integer passes that cover that program, or list of lists
+        if input was array-like
+    '''
+    tiles = io.load_tiles()
+
+    if np.isscalar(program):
+        passes = sorted(list(set(tiles['PASS'][tiles['PROGRAM'] == program])))
+        if len(passes) > 0:
+            return passes
+        else:
+            known_programs = set(tiles['PROGRAM'])
+            msg = 'Unknown program {}; known programs are {}'.format(
+                program, known_programs)
+            raise ValueError(msg)
+    else:
+        program = np.asarray(program)
+        passes = [None,] * len(program)
+        for thisprogram in np.unique(program):
+            thesepasses = program2pass(thisprogram)
+            for i in np.where(program == thisprogram)[0]:
+                passes[i] = thesepasses
+
+        return passes
+
 def radec2pix(nside, ra, dec):
     '''Convert ra,dec to nested pixel number
 

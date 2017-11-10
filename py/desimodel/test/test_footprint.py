@@ -2,6 +2,7 @@ import unittest
 import os
 
 import numpy as np
+from astropy.table import Table
 
 from .. import io
 from .. import footprint
@@ -17,7 +18,56 @@ class TestFootprint(unittest.TestCase):
     
     def setUp(self):
         io.reset_cache()
-            
+
+    def test_pass2program(self):
+        '''Test footprint.pass2program(tilepass)
+        '''
+        self.assertEqual(footprint.pass2program(0), 'DARK')
+        self.assertEqual(footprint.pass2program(1), 'DARK')
+        self.assertEqual(footprint.pass2program(2), 'DARK')
+        self.assertEqual(footprint.pass2program(3), 'DARK')
+        self.assertEqual(footprint.pass2program(4), 'GRAY')
+        self.assertEqual(footprint.pass2program(5), 'BRIGHT')
+        self.assertEqual(footprint.pass2program(6), 'BRIGHT')
+        self.assertEqual(footprint.pass2program(7), 'BRIGHT')
+
+        passes = [0,1,2,3,4,5,6,7]
+        programs = ['DARK', 'DARK', 'DARK', 'DARK', 'GRAY', 'BRIGHT', 'BRIGHT', 'BRIGHT']
+        tmp = footprint.pass2program(passes)
+        self.assertEqual(tmp, programs)
+
+        tmp = footprint.pass2program(np.array(passes))
+        self.assertEqual(tmp, programs)
+
+        tmp = footprint.pass2program([0,0,1])
+        self.assertEqual(tmp, ['DARK', 'DARK', 'DARK'])
+
+        with self.assertRaises(KeyError):
+            footprint.pass2program(999)
+
+    def test_program2pass(self):
+        '''Test footprint.program2pass()
+        '''
+        self.assertEqual(footprint.program2pass('DARK'), [0,1,2,3])
+        self.assertEqual(footprint.program2pass('GRAY'), [4,])
+        self.assertEqual(footprint.program2pass('BRIGHT'), [5,6,7])
+        self.assertEqual(footprint.program2pass(['DARK', 'GRAY']), [[0,1,2,3], [4,]])
+        self.assertEqual(footprint.program2pass(np.array(['DARK', 'GRAY'])),
+                                                [[0,1,2,3], [4,]])
+        with self.assertRaises(ValueError):
+            footprint.program2pass('BLAT')
+
+        #- confirm it works with column inputs too
+        tiles = io.load_tiles()
+        passes = footprint.program2pass(tiles['PROGRAM'])
+        self.assertEqual(len(passes), len(tiles))
+        for p in passes:
+            self.assertNotEqual(p, None)
+        passes = footprint.program2pass(Table(tiles)['PROGRAM'])
+        self.assertEqual(len(passes), len(tiles))
+        for p in passes:
+            self.assertNotEqual(p, None)
+
     def test_get_tile_radec(self):
         """Test grabbing tile information by tileID.
         """
