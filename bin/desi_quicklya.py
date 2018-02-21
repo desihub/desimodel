@@ -225,7 +225,7 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-v','--verbose', action = 'store_true',
         help = 'provide verbose output on progress')
-    parser.add_argument('--ab-magnitude', type = str, default = "g=23.0",
+    parser.add_argument('--ab-magnitude', type = str, default = None,
                         help = 'max magnitude to compute, e.g. g=22.0 or r=21.5')
     parser.add_argument('--exptime', type = float, default = 4000,
                         help = 'overrides exposure time specified in the parameter file (secs)')
@@ -259,23 +259,26 @@ def main():
     
     assert(flux.shape[0] == zqs.size)
     
-    # figure out magnitude
-    try:
-        band = args.ab_magnitude[0]
-        abmag = float(args.ab_magnitude[2:])
-        assert band in 'ugriz' and args.ab_magnitude[1] == '='
-    except(AssertionError,ValueError):
-        print('Invalid ab-magnitude parameter. '
-                                +'Valid syntax is, e.g. g=22.0 or r=21.5.')
-        return -1
-
-    # will generate a file for each g magnitude
-    min_m=19.25
-    dm=0.5
-    Nm=np.ceil((abmag-min_m)/dm)
-    mags = np.linspace(min_m, min_m+Nm*dm, Nm+1)
-    if args.verbose: print('mags', mags)
-    
+    if args.ab_magnitude is not None :
+        # figure out magnitude
+        try:
+            band = args.ab_magnitude[0]
+            abmag = float(args.ab_magnitude[2:])
+            assert band in 'ugriz' and args.ab_magnitude[1] == '='
+        except(AssertionError,ValueError):
+            print('Invalid ab-magnitude parameter. '
+                  +'Valid syntax is, e.g. g=22.0 or r=21.5.')
+            return -1
+        mags=[abmag]
+    else :
+        # will generate a file for each g magnitude
+        band="g"
+        min_m=19.25
+        dm=0.5
+        Nm=np.ceil((abmag-min_m)/dm)
+        mags = np.linspace(min_m, min_m+Nm*dm, Nm+1)
+        if args.verbose: print('mags', mags)
+        
     # compute magnitudes of QSO spectra in input file
     # assuming flux is prop to ergs/s/cm2/A 
     # (norme does not matter because the spectra will be rescaled)
