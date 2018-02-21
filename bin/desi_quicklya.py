@@ -86,7 +86,6 @@ def sim_spectra(wave, flux, program, obsconditions=None,
     
     # add DESI_TARGET 
     tm = desitarget.desi_mask    
-    frame_fibermap['DESI_TARGET'][sourcetype=="star"]=tm.STD_FSTAR
     frame_fibermap['DESI_TARGET'][sourcetype=="lrg"]=tm.LRG
     frame_fibermap['DESI_TARGET'][sourcetype=="elg"]=tm.ELG
     frame_fibermap['DESI_TARGET'][sourcetype=="qso"]=tm.QSO
@@ -169,7 +168,8 @@ def sim_spectra(wave, flux, program, obsconditions=None,
     
     nspec = flux.shape[0]
     
-    sim = desisim.simexp.simulate_spectra(wave, flux, fibermap=frame_fibermap,
+    
+    sim = desisim.simexp.simulate_spectra(wave, flux, fibermap=frame_fibermap, 
                                           obsconditions=obsconditions, seed=seed,specsim_config_file = specsim_config_file)
     
     
@@ -225,7 +225,7 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-v','--verbose', action = 'store_true',
         help = 'provide verbose output on progress')
-    parser.add_argument('--ab-magnitude', type = str, default = None,
+    parser.add_argument('--ab-magnitude', type = str, default = "g=23",
                         help = 'max magnitude to compute, e.g. g=22.0 or r=21.5')
     parser.add_argument('--exptime', type = float, default = 4000,
                         help = 'overrides exposure time specified in the parameter file (secs)')
@@ -259,25 +259,24 @@ def main():
     
     assert(flux.shape[0] == zqs.size)
     
-    if args.ab_magnitude is not None :
-        # figure out magnitude
-        try:
-            band = args.ab_magnitude[0]
-            abmag = float(args.ab_magnitude[2:])
-            assert band in 'ugriz' and args.ab_magnitude[1] == '='
-        except(AssertionError,ValueError):
-            print('Invalid ab-magnitude parameter. '
-                  +'Valid syntax is, e.g. g=22.0 or r=21.5.')
-            return -1
-        mags=[abmag]
-    else :
-        # will generate a file for each g magnitude
-        band="g"
-        min_m=19.25
-        dm=0.5
-        Nm=np.ceil((abmag-min_m)/dm)
-        mags = np.linspace(min_m, min_m+Nm*dm, Nm+1)
-        if args.verbose: print('mags', mags)
+   
+    # figure out magnitude
+    try:
+        band = args.ab_magnitude[0]
+        abmag = float(args.ab_magnitude[2:])
+        assert band in 'ugriz' and args.ab_magnitude[1] == '='
+    except(AssertionError,ValueError):
+        print('Invalid ab-magnitude parameter. '
+              +'Valid syntax is, e.g. g=22.0 or r=21.5.')
+        return -1
+    mags=[abmag]
+
+    band="g"
+    min_m=19.25
+    dm=0.5
+    Nm=np.ceil((abmag-min_m)/dm)
+    mags = np.linspace(min_m, min_m+Nm*dm, Nm+1)
+    if args.verbose: print('mags', mags)
         
     # compute magnitudes of QSO spectra in input file
     # assuming flux is prop to ergs/s/cm2/A 
@@ -299,7 +298,9 @@ def main():
             scaled_flux[s] = 10**(-0.4*(mag-infile_mags[s])) * flux[s]
         
         # simulating
-        sim_wave,sim_flux,sim_ivar = sim_spectra(wave, scaled_flux, program="dark", obsconditions=obsconditions, sourcetype="qso", specsim_config_file=args.config)
+        sourcetype = np.array(["qso" for i in range(flux.shape[0])])
+        
+        sim_wave,sim_flux,sim_ivar = sim_spectra(wave, scaled_flux, program="dark", obsconditions=obsconditions, sourcetype=sourcetype, specsim_config_file=args.config)
         sim_snr = np.sqrt(sim_ivar)*sim_flux/np.sqrt(np.gradient(sim_wave)) # S/N per sqrt(A)
         
         # for each wavelength, we will store a SN per redshift
