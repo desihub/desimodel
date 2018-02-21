@@ -227,6 +227,8 @@ def main():
         help = 'provide verbose output on progress')
     parser.add_argument('--ab-magnitude', type = str, default = "g=23",
                         help = 'max magnitude to compute, e.g. g=22.0 or r=21.5')
+    parser.add_argument('--single-mag', action = 'store_true',
+                        help = 'single magnitude')
     parser.add_argument('--exptime', type = float, default = 4000,
                         help = 'overrides exposure time specified in the parameter file (secs)')
     parser.add_argument('--config', type = str, default = "desi",
@@ -269,13 +271,15 @@ def main():
         print('Invalid ab-magnitude parameter. '
               +'Valid syntax is, e.g. g=22.0 or r=21.5.')
         return -1
-    mags=[abmag]
+    
+    if args.single_mag :
+        mags=[abmag]
+    else :
+        min_m=19.25
+        dm=0.5
+        Nm=np.ceil((abmag-min_m)/dm)
+        mags = np.linspace(min_m, min_m+Nm*dm, Nm+1)
 
-    band="g"
-    min_m=19.25
-    dm=0.5
-    Nm=np.ceil((abmag-min_m)/dm)
-    mags = np.linspace(min_m, min_m+Nm*dm, Nm+1)
     if args.verbose: print('mags', mags)
         
     # compute magnitudes of QSO spectra in input file
