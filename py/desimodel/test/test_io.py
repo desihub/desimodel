@@ -239,9 +239,12 @@ class TestIO(unittest.TestCase):
             else:
                 self.assertTrue(np.all(tf[col]==te[col]), 'fits[{col}] != ecsv[{col}]'.format(col=col))
 
-        self.assertTrue(not np.any(np.char.endswith(tf['PROGRAM'], ' ')))
-        self.assertTrue(not np.any(np.char.endswith(tt['PROGRAM'], ' ')))
-        self.assertTrue(not np.any(np.char.endswith(te['PROGRAM'], ' ')))
+        for program in set(tf['PROGRAM']):
+            self.assertTrue((program[-1] != ' ') and (program[-1] != b' '))
+        for program in set(tt['PROGRAM']):
+            self.assertTrue((program[-1] != ' ') and (program[-1] != b' '))
+        for program in set(te['PROGRAM']):
+            self.assertTrue((program[-1] != ' ') and (program[-1] != b' '))
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_trim_data(self):
