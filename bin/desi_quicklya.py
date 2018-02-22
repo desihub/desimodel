@@ -229,18 +229,22 @@ def main():
                         help = 'max magnitude to compute, e.g. g=22.0 or r=21.5')
     parser.add_argument('--single-mag', action = 'store_true',
                         help = 'single magnitude')
-    parser.add_argument('--exptime', type = float, default = 4000,
+    parser.add_argument('--total-exptime', type = float, default = 4000,
                         help = 'overrides exposure time specified in the parameter file (secs)')
+    parser.add_argument('--nexp', type = int, default = 4,
+                        help = 'number of exposures (affects total readnoise)')
     parser.add_argument('--config', type = str, default = "desi",
                         help = 'path to specsim configuration file')
     parser.add_argument('--prefix', type = str, default = "sn-spec-lya",
                         help = 'prefix for output S/N files')
+    
+    
     args = parser.parse_args()
     
     log = get_logger()
 
     obsconditions = desisim.simexp.reference_conditions['DARK']
-    obsconditions["EXPTIME"]=args.exptime
+    obsconditions["EXPTIME"]=args.total_exptime/args.nexp
     
 
     # We require that the DESIMODEL environment variable is set.
@@ -306,6 +310,9 @@ def main():
         
         sim_wave,sim_flux,sim_ivar = sim_spectra(wave, scaled_flux, program="dark", obsconditions=obsconditions, sourcetype=sourcetype, specsim_config_file=args.config)
         sim_snr = np.sqrt(sim_ivar)*sim_flux/np.sqrt(np.gradient(sim_wave)) # S/N per sqrt(A)
+
+        # compute snr for the sum of the exposures
+        sim_snr *= np.sqrt(args.nexp)
         
         # for each wavelength, we will store a SN per redshift
         collect_results = []
@@ -321,7 +328,7 @@ def main():
                     collect_results[j]['snr_'+str(zq)] = sim_snr[i,j]
         
         # Save the results to file
-        fname = args.prefix+'-'+band+str(mag)+'-t'+str(int(args.exptime))+'.dat'
+        fname = args.prefix+'-'+band+str(mag)+'-t'+str(int(args.total_exptime))+'-nexp'+str(int(args.nexp))+'.dat'
         
         log.info('Saving results to %s' % fname)
         # Try opening the requested output file.
@@ -331,7 +338,8 @@ def main():
             print('# INFILE=',infile,file=out)
             print('# BAND=',band,file=out)
             print('# MAG=',mag,file=out)
-            print('# EXPTIME=',obsconditions["EXPTIME"],file=out)
+            print('# EXPTIME=',args.total_exptime,file=out)
+            print('# NEXP=',args.nexp,file=out)
             print('#',file=out)
             z_header = '# Wave'
             for zq in zqs: z_header += ' SN(z='+str(zq)+')'
