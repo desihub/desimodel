@@ -254,7 +254,6 @@ def load_pixweight(nside, pixmap=None):
         nside: after loading, the array will be resampled to the
             passed HEALPix nside
         pixmap: input pixel weight map (optional, defaults to None)
-
     '''
     import healpy as hp
 
