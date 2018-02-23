@@ -5,7 +5,9 @@ desimodel Release Notes
 0.9.2 (unreleased)
 ------------------
 
-* No changes yet.
+* Optionally use an input pixel weight map in io.load_pixweight (`PR#74`_).
+
+.. _`PR#74`: https://github.com/desihub/desimodel/pull/74
 
 0.9.1 (2017-11-10)
 ------------------
