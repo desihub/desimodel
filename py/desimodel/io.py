@@ -253,10 +253,13 @@ def load_pixweight(nside, pixmap=None):
 
         nside: after loading, the array will be resampled to the
                passed HEALPix nside
+        pixmap: input pixel weight map (optional, defaults to None) 
     '''
     import healpy as hp
 
-    if pixmap is None:
+    if pixmap:
+        log.debug('Using input pixel weight map of length {}.'.format(len(pixmap)))
+    else:
         #ADM read in the standard pixel weights file
         pixfile = os.path.join(os.environ['DESIMODEL'],'data','footprint','desi-healpix-weights.fits')
         with fits.open(pixfile) as hdulist:
