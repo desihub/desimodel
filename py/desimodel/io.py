@@ -262,7 +262,7 @@ def load_pixweight(nside, pixmap=None):
     '''
     import healpy as hp
 
-    if pixmap is None:
+    if pixmap is not None:
         log.debug('Using input pixel weight map of length {}.'.format(len(pixmap)))
     else:
         #ADM read in the standard pixel weights file
