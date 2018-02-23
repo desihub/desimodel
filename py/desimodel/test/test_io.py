@@ -144,8 +144,7 @@ class TestIO(unittest.TestCase):
         self.assertIn('nobs_elg', data.keys())
         self.assertIn('success_qso', data.keys())
 
-    @unittest.skip('Skip *until* the pixel weights file is in the DESIMODEL directory')
-#    @unittest.skipUnless(desimodel_available, desimodel_message)
+    @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_load_pix_file(self):
         """Test loading of the file of HEALPixel weights.
         """
