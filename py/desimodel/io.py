@@ -252,8 +252,9 @@ def load_pixweight(nside, pixmap=None):
     Loads desimodel/data/footprint/desi-healpix-weights.fits
 
         nside: after loading, the array will be resampled to the
-               passed HEALPix nside
-        pixmap: input pixel weight map (optional, defaults to None) 
+            passed HEALPix nside
+        pixmap: input pixel weight map (optional, defaults to None)
+
     '''
     import healpy as hp
 
