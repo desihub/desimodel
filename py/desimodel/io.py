@@ -247,28 +247,38 @@ def load_target_info():
 
     return data
 
-def load_pixweight(nside):
+def load_pixweight(nside, pixmap=None):
     '''
     Loads desimodel/data/footprint/desi-healpix-weights.fits
 
+    Args:
         nside: after loading, the array will be resampled to the
-               passed HEALPix nside
+            passed HEALPix nside
+
+    Options:
+        pixmap: input pixel weight map (optional, defaults to None)
+
+    Returns healpix weight map for the DESI footprint at the requested nside
     '''
     import healpy as hp
-    #ADM read in the standard pixel weights file
-    pixfile = os.path.join(os.environ['DESIMODEL'],'data','footprint','desi-healpix-weights.fits')
-    with fits.open(pixfile) as hdulist:
-        pix = hdulist[0].data
+
+    if pixmap is not None:
+        log.debug('Using input pixel weight map of length {}.'.format(len(pixmap)))
+    else:
+        #ADM read in the standard pixel weights file
+        pixfile = os.path.join(os.environ['DESIMODEL'],'data','footprint','desi-healpix-weights.fits')
+        with fits.open(pixfile) as hdulist:
+            pixmap = hdulist[0].data
     
     #ADM determine the file's nside, and flag a warning if the passed nside exceeds it
-    npix = len(pix)
-    truenside = hp.npix2nside(len(pix))
+    npix = len(pixmap)
+    truenside = hp.npix2nside(len(pixmap))
     if truenside < nside:
         log.warning("downsampling is fuzzy...Passed nside={}, but file {} is stored at nside={}"
                   .format(nside,pixfile,truenside))
 
     #ADM resample the map
-    return hp.pixelfunc.ud_grade(pix,nside,order_in='NESTED',order_out='NESTED')
+    return hp.pixelfunc.ud_grade(pixmap,nside,order_in='NESTED',order_out='NESTED')
 
 def findfile(filename):
     '''
