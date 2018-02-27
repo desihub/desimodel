@@ -2,11 +2,18 @@
 desimodel Release Notes
 =======================
 
-0.9.2 (unreleased)
+0.9.3 (unreleased)
 ------------------
 
+* No changes yet.
+
+0.9.2 (2018-02-27)
+------------------
+
+* Update LyA S/N calculation (`PR #73`_)
 * Optionally use an input pixel weight map in io.load_pixweight (`PR#74`_).
 
+.. _`PR#73`: https://github.com/desihub/desimodel/pull/73
 .. _`PR#74`: https://github.com/desihub/desimodel/pull/74
 
 0.9.1 (2017-11-10)
