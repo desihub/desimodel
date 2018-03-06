@@ -98,7 +98,7 @@ def update(testdir=None):
         hdus.append(fits.PrimaryHDU())
         hdus.append(fits.BinTableHDU(data, hdr, name='THROUGHPUT'))
         hdus.append(fits.BinTableHDU(fiberinput_data, name='FIBERINPUT'))
-        hdus.writeto(outfile, clobber=True)
+        hdus.writeto(outfile, overwrite=True)
         log.info('Wrote {}'.format(outfile))
 
 def load_throughput(filename):
@@ -159,7 +159,7 @@ def load_spec_throughput(filename):
     Args:
         filename: input filename, e.g. blue-thru.txt from DESI-0334
 
-    Returns InterpolatedUnivariateSpline instance.    
+    Returns InterpolatedUnivariateSpline instance.
     """
     #- Spectrograph throughputs from DESI-0334 have wavelength [nm] in the
     #- first column and total throughput in the last column
