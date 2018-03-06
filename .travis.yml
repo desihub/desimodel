@@ -57,6 +57,7 @@ env:
         - DEBUG=True
     matrix:
         - SETUP_CMD='egg_info'
+        - SETUP_CMD='bdist_egg'
         - SETUP_CMD='test'
 
 matrix:
@@ -80,11 +81,6 @@ matrix:
         - os: linux
           python: 3.5
           env: SETUP_CMD='test --coverage'
-
-        # Try all python versions with the latest numpy
-        - os: linux
-          python: 3.6
-          env: SETUP_CMD='test'
 
         # - os: osx
         #   env: PYTHON_VERSION=2.7 SETUP_CMD='test'
