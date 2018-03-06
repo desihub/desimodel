@@ -173,7 +173,7 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
             foo = [_tiles[k].dtype for k in tiledata.dtype.names]
 
         #- Check for out-of-date tiles file
-        if np.issubdtype(tiledata['OBSCONDITIONS'].dtype, 'u2'):
+        if np.issubdtype(tiledata['OBSCONDITIONS'].dtype, np.unsignedinteger):
             import warnings
             warnings.warn('old desi-tiles.fits with uint16 OBSCONDITIONS; please update your $DESIMODEL checkout', DeprecationWarning)
 
@@ -269,7 +269,7 @@ def load_pixweight(nside, pixmap=None):
         pixfile = os.path.join(os.environ['DESIMODEL'],'data','footprint','desi-healpix-weights.fits')
         with fits.open(pixfile) as hdulist:
             pixmap = hdulist[0].data
-    
+
     #ADM determine the file's nside, and flag a warning if the passed nside exceeds it
     npix = len(pixmap)
     truenside = hp.npix2nside(len(pixmap))

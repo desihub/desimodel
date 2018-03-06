@@ -104,7 +104,7 @@ class TestIO(unittest.TestCase):
             self.assertLess(x['wavemin'], x['wavemax'])
             self.assertLess(x['wavemin'], x['wavemin_all'])
             self.assertGreater(x['wavemax'], x['wavemax_all'])
-    
+
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_load_gfa(self):
         """Test loading of gfa location data.
@@ -114,7 +114,7 @@ class TestIO(unittest.TestCase):
         self.assertEqual(len(gfa), 40)
         for key in ('PETAL', 'X', 'Y', 'Z', 'Q', 'RADIUS_DEG', 'RADIUS_MM'):
             self.assertIn(key, gfa.dtype.names)
-        
+
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_load_fiberpos(self):
         """Test loading of fiber positioner data.
@@ -165,27 +165,27 @@ class TestIO(unittest.TestCase):
         # loading tiles fills the cache with one items
         t1 = io.load_tiles(onlydesi=False)
         self.assertEqual(len(io._tiles), 1)
-        tile_cache_id1 = id(list(io._tiles.items())[0])
+        tile_cache_id1 = id(list(io._tiles.values())[0])
         # reloading, even with a filter, shouldn't change cache
         t2 = io.load_tiles(onlydesi=True)
         self.assertEqual(len(io._tiles), 1)
-        tile_cache_id2 = id(list(io._tiles.items())[0])
+        tile_cache_id2 = id(list(io._tiles.values())[0])
         self.assertEqual(tile_cache_id1, tile_cache_id2)
         #- Temporarily support OBSCONDITIONS as u2 (old) or i4 (new)
-        self.assertTrue(np.issubdtype(t1['OBSCONDITIONS'].dtype, 'i4') or \
-                        np.issubdtype(t1['OBSCONDITIONS'].dtype, 'u2') )
-        self.assertTrue(np.issubdtype(t2['OBSCONDITIONS'].dtype, 'i4') or \
-                        np.issubdtype(t2['OBSCONDITIONS'].dtype, 'u2') )
+        self.assertTrue(np.issubdtype(t1['OBSCONDITIONS'].dtype, np.signedinteger) or
+                        np.issubdtype(t1['OBSCONDITIONS'].dtype, np.unsignedinteger) )
+        self.assertTrue(np.issubdtype(t2['OBSCONDITIONS'].dtype, np.signedinteger) or
+                        np.issubdtype(t2['OBSCONDITIONS'].dtype, np.unsignedinteger) )
         self.assertLess(len(t2), len(t1))
         # All tiles in DESI are also in full set.
         self.assertTrue(np.all(np.in1d(t2['TILEID'], t1['TILEID'])))
         # I think this is the exact same test as above, except using set theory.
         self.assertEqual(len(set(t2.TILEID) - set(t1.TILEID)), 0)
         t3 = io.load_tiles(onlydesi=False)
-        tile_cache_id3 = id(list(io._tiles.items())[0])
+        tile_cache_id3 = id(list(io._tiles.values())[0])
         self.assertEqual(tile_cache_id1, tile_cache_id3)
-        self.assertTrue(np.issubdtype(t3['OBSCONDITIONS'].dtype, 'i4') or \
-                        np.issubdtype(t3['OBSCONDITIONS'].dtype, 'u2') )
+        self.assertTrue(np.issubdtype(t3['OBSCONDITIONS'].dtype, np.signedinteger) or
+                        np.issubdtype(t3['OBSCONDITIONS'].dtype, np.unsignedinteger) )
         # Check for extra tiles.
         a = io.load_tiles(extra=False)
         self.assertEqual(np.sum(np.char.startswith(a['PROGRAM'], 'EXTRA')), 0)
@@ -233,7 +233,7 @@ class TestIO(unittest.TestCase):
 
         for col in tt.colnames:
             self.assertTrue(np.all(tf[col]==tt[col]), 'fits[{col}] != table[{col}]'.format(col=col))
-            if np.issubdtype(tf[col].dtype, float):
+            if np.issubdtype(tf[col].dtype, np.floating):
                 self.assertTrue(np.allclose(tf[col], te[col], atol=1e-4, rtol=1e-4), 'fits[{col}] != ecsv[{col}]'.format(col=col))
             else:
                 self.assertTrue(np.all(tf[col]==te[col]), 'fits[{col}] != ecsv[{col}]'.format(col=col))
