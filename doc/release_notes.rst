@@ -5,26 +5,32 @@ desimodel Release Notes
 0.9.3 (unreleased)
 ------------------
 
-* Fix some installation bugs, and update to latest versions on various dependencies.
+* Fix some installation bugs, and update to latest versions on various
+  dependencies (PR `#77`_).
+
+.. _`#77`: https://github.com/desihub/desimodel/pull/77
 
 0.9.2 (2018-02-27)
 ------------------
 
-* Update LyA S/N calculation (`PR#73`_)
-* Optionally use an input pixel weight map in io.load_pixweight (`PR#74`_).
+* Update LyA S/N calculation (PR `#73`_).
+* Optionally use an input pixel weight map in :func:`~desimodel.io.load_pixweight`
+  (PR `#74`_).
 
-.. _`PR#73`: https://github.com/desihub/desimodel/pull/73
-.. _`PR#74`: https://github.com/desihub/desimodel/pull/74
+.. _`#73`: https://github.com/desihub/desimodel/pull/73
+.. _`#74`: https://github.com/desihub/desimodel/pull/74
 
 0.9.1 (2017-11-10)
 ------------------
 
-* Extracts wavelength coverage from specpsf files into params dictionary (`PR#68`_).
-* Added desimodel.footprint.program2pass and pass2program to convert between
-  tiling integer pass number and string program name (`PR#67`_).
+* Extracts wavelength coverage from specpsf files into params dictionary
+  (PR `#68`_).
+* Added :func:`~desimodel.footprint.program2pass` and
+  :func:`~desimodel.footprint.pass2program` to convert between
+  tiling integer pass number and string program name (PR `#67`_).
 
-.. _`PR#67`: https://github.com/desihub/desimodel/pull/67
-.. _`PR#68`: https://github.com/desihub/desimodel/pull/68
+.. _`#67`: https://github.com/desihub/desimodel/pull/67
+.. _`#68`: https://github.com/desihub/desimodel/pull/68
 
 0.9.0 (2017-09-19)
 ------------------
