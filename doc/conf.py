@@ -73,7 +73,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'desimodel'
-copyright = u'2014-2016, DESI Collaboration'
+copyright = u'2014-2018, DESI Collaboration'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
