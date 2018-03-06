@@ -211,7 +211,7 @@ def trim_psf(indir, outdir, filename):
     d = fx['SPOTWAVE'].data
     hdus.append(ImageHDU(d[::5], header=fx['SPOTWAVE'].header))
 
-    hdus.writeto(outfile, clobber=True)
+    hdus.writeto(outfile, overwrite=True)
     fx.close()
 
 def trim_quickpsf(indir, outdir, filename):
@@ -224,5 +224,5 @@ def trim_quickpsf(indir, outdir, filename):
     for i in [1,2,3]:
         d = fx[i].data
         hdus.append(BinTableHDU(d[::10], header=fx[i].header))
-    hdus.writeto(outfile, clobber=True)
+    hdus.writeto(outfile, overwrite=True)
     fx.close()

@@ -1,12 +1,11 @@
-#!/bin/bash -x
-set -e
+#!/bin/bash
 #
 # If this script is being run by Travis, the Travis install script will
 # already be in the correct directory.
 # If this script is being run by desiInstall, then we need to make sure
-# we are running this in ${WORKING_DIR}.
+# we are running this in ${INSTALL_DIR}.
 #
-[[ -n "${WORKING_DIR}" ]] && cd ${WORKING_DIR}
+[[ -n "${INSTALL_DIR}" ]] && cd ${INSTALL_DIR}
 #
 # Make sure DESIMODEL_VERSION is set.
 #

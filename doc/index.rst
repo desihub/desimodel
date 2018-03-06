@@ -30,7 +30,22 @@ The desimodel package/API
 .. automodule:: desimodel.focalplane
     :members:
 
-.. automodule:: desimodel.weather
+.. automodule:: desimodel.footprint
+    :members:
+
+.. automodule:: desimodel.inputs
+    :members:
+
+.. automodule:: desimodel.inputs.docdb
+    :members:
+
+.. automodule:: desimodel.inputs.fiberpos
+    :members:
+
+.. automodule:: desimodel.inputs.gfa
+    :members:
+
+.. automodule:: desimodel.inputs.throughput
     :members:
 
 .. automodule:: desimodel.install
@@ -42,7 +57,7 @@ The desimodel package/API
 .. automodule:: desimodel.trim
     :members:
 
-.. automodule:: desimodel.inputs
+.. automodule:: desimodel.weather
     :members:
 
 Indices and tables

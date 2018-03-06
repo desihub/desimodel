@@ -25,8 +25,8 @@ addons:
             - dvipng
 python:
     - 2.7
-    - 3.4
     - 3.5
+    - 3.6
 env:
     global:
         # The following versions are the 'default' for tests, unless
@@ -35,15 +35,15 @@ env:
         # - NUMPY_VERSION=1.9
         # - SCIPY_VERSION=0.14
         # - ASTROPY_VERSION=1.1.1
-        - SPHINX_VERSION=1.5
+        # - SPHINX_VERSION=1.5
         - DESIUTIL_VERSION=1.9.9
-        - SPECTER_VERSION=0.6.0
+        - SPECTER_VERSION=0.8.3
         # This is the version of the svn data product to export.
-        # - DESIMODEL_VERSION=branches/test-0.6.0
+        # - DESIMODEL_VERSION=branches/test-0.9
         - DESIMODEL_VERSION=trunk
         - MAIN_CMD='python setup.py'
         # These packages will always be installed.
-        - CONDA_DEPENDENCIES='pyyaml scipy astropy healpy'
+        - CONDA_DEPENDENCIES='pyyaml scipy astropy healpy numba'
         # These packages will only be installed if we really need them.
         - CONDA_ALL_DEPENDENCIES=''
         # These packages will always be installed.
@@ -57,6 +57,7 @@ env:
         - DEBUG=True
     matrix:
         - SETUP_CMD='egg_info'
+        - SETUP_CMD='bdist_egg'
         - SETUP_CMD='test'
 
 matrix:
@@ -80,7 +81,6 @@ matrix:
         - os: linux
           python: 3.5
           env: SETUP_CMD='test --coverage'
-               DESIHUB_PIP_DEPENDENCIES="desiutil=${DESIUTIL_VERSION} specter=${SPECTER_VERSION}"
 
         # - os: osx
         #   env: PYTHON_VERSION=2.7 SETUP_CMD='test'
@@ -110,7 +110,7 @@ matrix:
 
 install:
     - git clone git://github.com/astropy/ci-helpers.git
-    - source ci-helpers/travis/setup_conda_$TRAVIS_OS_NAME.sh
+    - source ci-helpers/travis/setup_conda.sh
     # egg_info causes the astropy/ci-helpers script to exit before the pip
     # packages are installed, thus desiutil is not installed in that script.
     - for p in $DESIHUB_PIP_DEPENDENCIES; do r=$(echo $p | cut -d= -f1); v=$(echo $p | cut -d= -f2); pip install git+https://github.com/desihub/${r}.git@${v}#egg=${r}; done

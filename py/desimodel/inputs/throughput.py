@@ -15,7 +15,7 @@ from ..io import datadir, findfile
 
 def update(testdir=None):
     '''
-    Update thru-*.fits from DESI-0347 and DESI-0344
+    Update thru-\*.fits from DESI-0347 and DESI-0344
 
     Options:
         testdir: if not None, write files here instead of standard locations
@@ -98,7 +98,7 @@ def update(testdir=None):
         hdus.append(fits.PrimaryHDU())
         hdus.append(fits.BinTableHDU(data, hdr, name='THROUGHPUT'))
         hdus.append(fits.BinTableHDU(fiberinput_data, name='FIBERINPUT'))
-        hdus.writeto(outfile, clobber=True)
+        hdus.writeto(outfile, overwrite=True)
         log.info('Wrote {}'.format(outfile))
 
 def load_throughput(filename):
@@ -107,7 +107,8 @@ def load_throughput(filename):
     which will be loaded separately from higher resolution data.
 
     Args:
-        filename: DESI-0347 Excel file location
+        filename:
+            DESI-0347 Excel file location
 
     Returns (thruspine, xlsdata), where
 
@@ -159,7 +160,7 @@ def load_spec_throughput(filename):
     Args:
         filename: input filename, e.g. blue-thru.txt from DESI-0334
 
-    Returns InterpolatedUnivariateSpline instance.    
+    Returns InterpolatedUnivariateSpline instance.
     """
     #- Spectrograph throughputs from DESI-0334 have wavelength [nm] in the
     #- first column and total throughput in the last column
