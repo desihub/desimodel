@@ -15,7 +15,7 @@ from ..io import datadir, findfile
 
 def update(testdir=None):
     '''
-    Update thru-*.fits from DESI-0347 and DESI-0344
+    Update thru-\*.fits from DESI-0347 and DESI-0344
 
     Options:
         testdir: if not None, write files here instead of standard locations
@@ -107,7 +107,8 @@ def load_throughput(filename):
     which will be loaded separately from higher resolution data.
 
     Args:
-        filename: DESI-0347 Excel file location
+        filename:
+            DESI-0347 Excel file location
 
     Returns (thruspine, xlsdata), where
 

@@ -85,7 +85,8 @@ def tiles2pix(nside, tiles=None, radius=None, per_tile=False, fact=4):
     Returns sorted array of pixels that overlap the tiles
 
     Args:
-        nside: integer healpix nside, 2**k where 0 < k < 30
+        nside:
+            integer healpix nside, 2**k where 0 < k < 30
 
     Optional:
         tiles:
@@ -95,15 +96,17 @@ def tiles2pix(nside, tiles=None, radius=None, per_tile=False, fact=4):
             None to use all DESI tiles from desimodel.io.load_tiles()
         radius: tile radius in degrees;
             if None use desimodel.focalplane.get_tile_radius_deg()
-        per_tile: if True, return a list of arrays of pixels per tile
-        fact: factor healpy uses to resolve pixel overlaps. When this is
+        per_tile:
+            if True, return a list of arrays of pixels per tile
+        fact:
+            factor healpy uses to resolve pixel overlaps. When this is
             large there are fewer false positives at the expense of run
             time (although fact=2**8 seems fast). Must be a power of 2
 
     Returns pixels:
         integer array of pixel numbers that cover these tiles; or
         if per_tile is True, returns list of arrays such that pixels[i]
-            is an array of pixel numbers covering tiles[i]
+        is an array of pixel numbers covering tiles[i]
     '''
     import healpy as hp
     if tiles is None:
@@ -141,11 +144,12 @@ def tiles2fracpix(nside, step=1, tiles=None, radius=None, fact=4):
     Returns a sorted array of just the *fractional* pixels that overlap the tiles
 
     Optional Args:
-        nside: integer healpix nside, 2**k where 0 < k < 30
-        step: The number of integration steps around the edges of 
+        nside:
+            integer healpix nside, 2**k where 0 < k < 30
+        step: The number of integration steps around the edges of
               a HEALPix pixel. step=1 means just the pixel vertices (e.g., see
               http://healpy.readthedocs.io/en/latest/generated/healpy.boundaries.html)
-              step=2 means the vertices and the corners and the points halfway 
+              step=2 means the vertices and the corners and the points halfway
               between the vertices.
         tiles:
             Table-like with RA,DEC columns; or
@@ -188,11 +192,11 @@ def tiles2fracpix(nside, step=1, tiles=None, radius=None, fact=4):
     #ADM find points around the boundary of all pixels in Cartesian coordinates
     xyzverts = hp.boundaries(nside,pix,step=step,nest=True)
     #ADM convert to RA/Dec
-    theta, phi = hp.vec2ang(np.hstack(xyzverts).T) 
-    ra, dec = np.degrees(phi), 90-np.degrees(theta) 
+    theta, phi = hp.vec2ang(np.hstack(xyzverts).T)
+    ra, dec = np.degrees(phi), 90-np.degrees(theta)
 
     #ADM calculate which boundary points are in the tiles
-    verts_in = desimodel.footprint.is_point_in_desi(tiles, ra, dec, radius=radius) 
+    verts_in = desimodel.footprint.is_point_in_desi(tiles, ra, dec, radius=radius)
 
     #ADM reshape this into an array with nvertsperpix columns
     pix_verts_in = np.reshape(verts_in,(npix,nvertsperpix))
@@ -207,7 +211,8 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, outfile=None, outp
     Create an array of the fraction of each pixel that overlaps the passed tiles
 
     Optional Args:
-        nside: integer healpix nside, 2**k where 0 < k < 30
+        nside:
+            integer healpix nside, 2**k where 0 < k < 30
         tiles:
             Table-like with RA,DEC columns; or
             None to use all DESI tiles from desimodel.io.load_tiles()
@@ -271,7 +276,7 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, outfile=None, outp
         #ADM if we didn't converge, loop through again with the new
         #ADM set of fractional pixels
         setfracpix = set(fracpix)
-    
+
     #ADM warn the user if the integration didn't converge at 4*2**20 boundary points
     if i == 20:
         log.warning('Integration around pixel boundaries did NOT converge!')
@@ -513,34 +518,34 @@ def find_points_in_tiles(tiles, ra, dec, radius=None):
 
 def find_points_radec(telra, teldec, ra, dec, radius = None):
     """Return a list of indices of points that are within a radius of an arbitrary telra, teldec.
-    
+
     This function is optimized to query a lot of points with a single telra and teldec.
-    
+
     radius is in units of degrees. The return value is a list
     that contains the index of points that are in each tile.
     The indices are not sorted in any particular order.
-    
+
     if tiles is a scalar, a single list is returned.
-    
+
     default radius is from desimodel.focalplane.get_tile_radius_deg()
-    
+
     Note: This is simply a modified version of find_points_in_tiles, but this function does not know about tiles.
     """
     from scipy.spatial import cKDTree as KDTree
     import numpy as np
-    
+
     if radius is None:
         radius = focalplane.get_tile_radius_deg()
-    
+
     # check for malformed input shapes. Sorry we currently only
     # deal with vector inputs. (for a sensible definition of indices)
-    
+
     assert ra.ndim == 1
     assert dec.ndim == 1
-    
+
     points = _embed_sphere(ra, dec)
     tree = KDTree(points)
-    
+
     # radius to 3d distance
     threshold = 2.0 * np.sin(np.radians(radius) * 0.5)
     xyz = _embed_sphere(telra, teldec)

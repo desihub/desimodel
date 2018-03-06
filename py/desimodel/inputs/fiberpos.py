@@ -17,7 +17,8 @@ def update(testdir=None, seed=2):
     Options:
         testdir: if not None, write files here instead of
             $DESIMODEL/data/footprint/fiberpos*
-        seed: integer random number seed for randomization within a cartridge
+        seed:
+            integer random number seed for randomization within a cartridge
 
     Writes testdir/fiberpos* or $DESIMODEL/data/focalplane/fiberpos*
     '''
