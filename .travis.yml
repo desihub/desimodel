@@ -61,7 +61,7 @@ env:
     matrix:
         - SETUP_CMD='egg_info'
         - SETUP_CMD='bdist_egg'
-        - SETUP_CMD='test' CONDA_ALL_DEPENDENCIES=${CONDA_ALL_DEPENDENCIES}
+        - SETUP_CMD='test' CONDA_DEPENDENCIES=${CONDA_ALL_DEPENDENCIES}
 
 matrix:
     # Don't wait for allowed failures.
@@ -74,6 +74,7 @@ matrix:
           python: 3.6
           env: ASTROPY_VERSION=3.0
                SETUP_CMD='test'
+               CONDA_DEPENDENCIES=${CONDA_ALL_DEPENDENCIES}
 
     include:
 
@@ -83,6 +84,7 @@ matrix:
         - os: linux
           python: 3.5
           env: SETUP_CMD='build_sphinx --warning-is-error'
+               CONDA_DEPENDENCIES=${CONDA_ALL_DEPENDENCIES}
 
         # Coverage test.  Note that installing the coverage software can
         # change the set of packages installed by conda, so we do
@@ -90,11 +92,13 @@ matrix:
         - os: linux
           python: 3.5
           env: SETUP_CMD='test --coverage'
+               CONDA_DEPENDENCIES=${CONDA_ALL_DEPENDENCIES}
 
         - os: linux
           python: 3.6
           env: ASTROPY_VERSION=3.0
                SETUP_CMD='test'
+               CONDA_DEPENDENCIES=${CONDA_ALL_DEPENDENCIES}
 
         # - os: osx
         #   env: PYTHON_VERSION=2.7 SETUP_CMD='test'
