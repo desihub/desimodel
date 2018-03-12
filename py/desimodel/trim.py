@@ -74,8 +74,9 @@ def trim_footprint(indir, outdir):
     tx.write(outfile, format='fits')
     tx.write(outfile.replace('.fits', '.ecsv'), format='ascii.ecsv')
     infile, outfile = inout(indir, outdir, 'desi-healix-weights.fits')
-    # Use a low precision to speed up the calculation.
-    w = pixweight(256, tiles=tx, precision=0.01, outfile=outfile)
+    # Use a low precision to speed up the calculation.  Use lower nside
+    # to create a smaller file.
+    w = pixweight(64, tiles=tx, precision=0.01, outfile=outfile)
 
 
 def trim_inputs(indir, outdir):

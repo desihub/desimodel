@@ -496,6 +496,7 @@ def find_tiles_over_point(tiles, ra, dec, radius=None):
     default radius is from desimodel.focalplane.get_tile_radius_deg()
     """
     from scipy.spatial import cKDTree as KDTree
+    from .focalplane import get_tile_radius_deg
 
     if radius is None:
         radius = get_tile_radius_deg()
@@ -542,7 +543,7 @@ def find_points_radec(telra, teldec, ra, dec, radius = None):
     Note: This is simply a modified version of find_points_in_tiles, but this function does not know about tiles.
     """
     from scipy.spatial import cKDTree as KDTree
-    import numpy as np
+    from .focalplane import get_tile_radius_deg
 
     if radius is None:
         radius = get_tile_radius_deg()
