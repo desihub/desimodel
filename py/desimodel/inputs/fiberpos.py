@@ -1,5 +1,10 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 '''
-Utilities for updating positioner to fiber mapping
+desimodel.inputs.fiberpos
+=========================
+
+Utilities for updating positioner to fiber mapping.
 '''
 import os
 import shutil

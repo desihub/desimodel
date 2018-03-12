@@ -1,8 +1,11 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
+"""
+desimodel.inputs.gfa
+====================
 
-#import desimodel.io
-#import scipy.interpolate
+Utilities for updating GFA data.
+"""
 import numpy as np
 from ..focalplane import get_radius_deg, get_radius_mm
 
@@ -13,18 +16,18 @@ def build_gfa_table(outfile = 'gfa.ecsv'):
     the "GFALocation" tab on the spreadsheet and from rows 16-23 and columns A-I.
     Parameters
     ----------
-    outfile: a default parameter that represents the desired filename which is returned by 
-    this function. The filename defaults to "gfa.ecsv" if no parameters are given. 
+    outfile: a default parameter that represents the desired filename which is returned by
+    this function. The filename defaults to "gfa.ecsv" if no parameters are given.
     '''
     # Uses the reference projection of active area to create data table of GFAs
     from astropy.table import Table
     # Initial x and y coordinates for the GFAs
-    """ Uses the x and y from the petal indexed at 9 so the first petal 
+    """ Uses the x and y from the petal indexed at 9 so the first petal
         added to the table is indexed at 0
     [[-125.10482863 -370.01790486]
      [-129.83038525 -384.56223777]
      [-159.04283509 -375.05643893]
-     [-154.31646944 -360.51151824]]   
+     [-154.31646944 -360.51151824]]
     """
     # Data obtained from DESI-0530-v13 Excel spreadsheet
     x = [-125.10482863, -129.83038525, -159.04283509, -154.31646944]
@@ -33,9 +36,9 @@ def build_gfa_table(outfile = 'gfa.ecsv'):
     rotatemat = np.zeros(shape=(2,2))
     rotatemat[0] = [np.cos(36*np.pi/180), -np.sin(36*np.pi/180)]
     rotatemat[1] = [np.sin(36*np.pi/180), np.cos(36*np.pi/180)]
-    
-    # Note: the corners are 0 indexed 
-    gfatable = Table(names = ('PETAL', 'CORNER', 'X', 'Y', 'Z', 'Q', 'RADIUS_DEG', 'RADIUS_MM'), 
+
+    # Note: the corners are 0 indexed
+    gfatable = Table(names = ('PETAL', 'CORNER', 'X', 'Y', 'Z', 'Q', 'RADIUS_DEG', 'RADIUS_MM'),
                  dtype = ('int', 'int', 'float', 'float', 'float', 'float', 'float', 'float'))
     # Sets the units for the GFA table
     gfatable['X'].unit = 'mm'
@@ -47,7 +50,7 @@ def build_gfa_table(outfile = 'gfa.ecsv'):
     find_gfa_coordinates(x, y, z, gfatable, rotatemat)
     # Saves the table of data as an ecsv file
     gfatable.write(outfile, format='ascii.ecsv')
-    
+
 # Function that obtains the x and y coordinates for each corner of the GFAs
 def find_gfa_coordinates(x, y, z, gfatable, rotatemat):
     '''
@@ -58,7 +61,7 @@ def find_gfa_coordinates(x, y, z, gfatable, rotatemat):
     x : Array of four x initial coordinates of the GFA
     y : Array of four y initial coordinates of the GFA
     z: Array of four z initial coordinates of the GFA
-    gfaTable: Astropy Table object which stores the petal number, corner number, 
+    gfaTable: Astropy Table object which stores the petal number, corner number,
     and x, y, and z coordinates in mm within each row
     rotateMat: Rotation matrix to rotate the coordinates 36 degrees counterclockwise
     '''
@@ -74,7 +77,7 @@ def find_gfa_coordinates(x, y, z, gfatable, rotatemat):
             oldxcoord[i] = newcoord[0]
             oldycoord[i] = newcoord[1]
             gfacoord[i] = [newcoord[0], newcoord[1]]
-            
+
             theta = np.degrees(np.arctan2(newcoord[0], newcoord[1]))
             # radius is the radius in mm
             radius = np.sqrt(newcoord[0]**2 + newcoord[1]**2)
@@ -82,6 +85,3 @@ def find_gfa_coordinates(x, y, z, gfatable, rotatemat):
             degree = get_radius_deg(newcoord[0], newcoord[1])
             # Could be building the table in O(N^2), which is notably inefficient
             gfatable.add_row([j, i, newcoord[0], newcoord[1], z[i], theta, degree, radius])
-
-
-            

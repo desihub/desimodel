@@ -1,5 +1,10 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 '''
-Utility functions for working with DocDB files
+desimodel.inputs.docdb
+======================
+
+Utility functions for working with DocDB files.
 '''
 import os
 
@@ -10,7 +15,7 @@ from ..io import datadir
 def _xls_col2int(col):
     '''
     Convert column string name to index, starting at 0
-    
+
     e.g. A -> 0, B -> 1, ... Z -> 25, AA -> 26, AB -> 27
     '''
     abc = list('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
@@ -23,7 +28,7 @@ def _xls_col2int(col):
 def xls_read_row(filename, sheetname, rownum, firstcol, lastcol, dtype=None):
     '''
     Read Excel file row from firstcol to lastcol
-    
+
     Args:
         filename (str): Excel filename
         sheetname (str): sheet name within the filename
@@ -35,7 +40,7 @@ def xls_read_row(filename, sheetname, rownum, firstcol, lastcol, dtype=None):
         dtype: convert output to this numpy dtype
 
     Returns numpy array of data
-    
+
     Example:
         B5:D5 -> rownum=5, firstcol='B', lastcol='D' -> length 3 array
     '''
@@ -50,7 +55,7 @@ def xls_read_row(filename, sheetname, rownum, firstcol, lastcol, dtype=None):
 def xls_read_col(filename, sheetname, column, firstrow, lastrow, dtype=None):
     '''
     Read Excel file column from firstrow to lastrow
-    
+
     Args:
         filename (str): Excel filename
         sheetname (str): sheet name within the filename
@@ -62,7 +67,7 @@ def xls_read_col(filename, sheetname, column, firstrow, lastrow, dtype=None):
         dtype: convert output to this numpy dtype
 
     Returns numpy array of data
-    
+
     Example:
         B5:B10 -> column='B', firstrow=5, lastrow=10 -> length 6 array
     '''
@@ -95,7 +100,7 @@ def download(docnum, docver, filename, outdir=None, overwrite=False):
       * only supports python3
       * creates outdir if needed
       * prepends DESI-{docnum}v{docver} to {filename} even if filename
-        already starts with that (in DocDB, some do and some don't...)      
+        already starts with that (in DocDB, some do and some don't...)
     '''
     import urllib
     import requests
@@ -156,4 +161,4 @@ def _auth(machine='desi.lbl.gov'):
     except:
         raise ValueError('Unable to get user/pass from $HOME/.netrc for {}'.format(machine))
 
-    return HTTPDigestAuth(u,p)    
+    return HTTPDigestAuth(u,p)
