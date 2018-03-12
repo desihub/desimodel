@@ -7,8 +7,12 @@ desimodel Release Notes
 
 * Fix some installation bugs, and update to latest versions on various
   dependencies (PR `#77`_).
+* Ensure that desimodel tests are compatible with Astropy 2 and 3, and with
+  other DESI packages (PR `#78`_).
 
 .. _`#77`: https://github.com/desihub/desimodel/pull/77
+.. _`#78`: https://github.com/desihub/desimodel/pull/78
+
 
 0.9.2 (2018-02-27)
 ------------------
