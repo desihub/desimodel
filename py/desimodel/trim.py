@@ -13,19 +13,20 @@ import numpy as np
 import os.path
 import shutil
 
-def trim_data(indir, outdir, clobber=False):
-    '''
-    Trim a $DESIMODEL/data directory into a lightweight version for testing
+from .footprint import pixweight
+
+def trim_data(indir, outdir, overwrite=False):
+    '''Trim a ``$DESIMODEL/data`` directory into a lightweight version for
+    testing.
 
     Args:
-        indir : a $DESIMODEL/data directory from svn
-        outdir : output data directory location
-
-    Optional:
-        clobber : if True, remove outdir if it already exists
+        indir (str): A ``$DESIMODEL/data`` directory from svn.
+        outdir (str): Output data directory location.
+        overwrite (bool, optional):  If ``True``, remove `outdir` if it already
+            exists.
     '''
     assert os.path.abspath(indir) != os.path.abspath(outdir)
-    if os.path.exists(outdir) and clobber:
+    if os.path.exists(outdir) and overwrite:
         shutil.rmtree(outdir)
 
     os.makedirs(outdir)
@@ -43,19 +44,24 @@ def trim_data(indir, outdir, clobber=False):
     trim_targets(*inout(indir, outdir, 'targets'))
     trim_throughput(*inout(indir, outdir, 'throughput'))
 
+
 def inout(indir, outdir, filename):
     '''returns os.path.join(indir, filename) and .join(outdir, filename)'''
     infile = os.path.join(indir, filename)
     outfile = os.path.join(outdir, filename)
     return infile, outfile
 
+
 def trim_focalplane(indir, outdir):
     '''copy everything in focalplane'''
     assert os.path.basename(indir) == 'focalplane'
     shutil.copytree(indir, outdir)
 
+
 def trim_footprint(indir, outdir):
-    '''Copies subset of desi-tiles.fits and .ecsv but not .par'''
+    '''Copies subset of desi-tiles.fits and .ecsv but not .par. Also
+    creates a corresponding version of desi-healpix-weights.fits.
+    '''
     assert os.path.basename(indir) == 'footprint'
     if not os.path.exists(outdir):
         os.makedirs(outdir)
@@ -67,10 +73,16 @@ def trim_footprint(indir, outdir):
     tx = t[ii]
     tx.write(outfile, format='fits')
     tx.write(outfile.replace('.fits', '.ecsv'), format='ascii.ecsv')
+    infile, outfile = inout(indir, outdir, 'desi-healpix-weights.fits')
+    # Use a low precision to speed up the calculation.  Use lower nside
+    # to create a smaller file.
+    w = pixweight(64, tiles=tx, precision=0.01, outfile=outfile)
+
 
 def trim_inputs(indir, outdir):
     '''Don't copy any inputs'''
     pass
+
 
 def trim_sky(indir, outdir):
     '''copy solarspec file as-is'''
@@ -81,6 +93,7 @@ def trim_sky(indir, outdir):
     outfile = os.path.join(outdir, 'solarspec.txt')
     shutil.copy(infile, outfile)
 
+
 def trim_specpsf(indir, outdir):
     '''trim specpsf files to be much smaller'''
     assert os.path.basename(indir) == 'specpsf'
@@ -90,6 +103,7 @@ def trim_specpsf(indir, outdir):
     trim_psf(indir, outdir, 'psf-b.fits')
     trim_psf(indir, outdir, 'psf-r.fits')
     trim_psf(indir, outdir, 'psf-z.fits')
+
 
 def trim_spectra(indir, outdir):
     '''downsample spectra, and only a few of them'''
@@ -116,10 +130,12 @@ def trim_spectra(indir, outdir):
                         outfx.write(line)
                     i += 1
 
+
 def trim_targets(indir, outdir):
     '''copy everything in targets/'''
     assert os.path.basename(indir) == 'targets'
     shutil.copytree(indir, outdir)
+
 
 def trim_throughput(indir, outdir):
     '''downsample throughput files'''
@@ -129,26 +145,28 @@ def trim_throughput(indir, outdir):
 
     for targettype in ('elg', 'lrg', 'perfect', 'qso', 'sky', 'star'):
         filename = 'fiberloss-{}.dat'.format(targettype)
+        shutil.copy(os.path.join(indir, filename),
+                    os.path.join(outdir, filename))
+
+    for filename in ('thru-b.fits', 'thru-r.fits', 'thru-z.fits'):
+        with fits.open(os.path.join(indir, filename)) as fx:
+            hdus = HDUList()
+            hdus.append(fx[0])
+            hdus.append(BinTableHDU(fx[1].data[::20], header=fx[1].header))
+            hdus.append(BinTableHDU(fx[2].data[::20], header=fx[2].header))
+            hdus.writeto(os.path.join(outdir, filename))
+
+    # galsim-fiber-acceptance.fits is about 230 KB, and it's a fairly
+    # complex file, so just copy as-is.
+    for filename in ('DESI-0347_blur.ecsv', 'DESI-0347_offset.ecsv',
+                     'DESI-0347_random_offset_1.fits',
+                     'galsim-fiber-acceptance.fits'):
         shutil.copy(os.path.join(indir, filename), os.path.join(outdir, filename))
 
-    for filename in ['thru-b.fits', 'thru-r.fits', 'thru-z.fits']:
-        fx = fits.open(indir+'/'+filename)
-        hdus = HDUList()
-        hdus.append(fx[0])
-        hdus.append(BinTableHDU(fx[1].data[::20], header=fx[1].header))
-        hdus.append(BinTableHDU(fx[2].data[::20], header=fx[2].header))
-        hdus.writeto(outdir+'/'+filename)
-        fx.close()
 
-    for filename in [
-        'DESI-0347_blur.ecsv', 'DESI-0347_offset.ecsv',
-        'DESI-0347_random_offset_1.fits']:
-        shutil.copy(os.path.join(indir, filename), os.path.join(outdir, filename))
-
-
-#-------------------------------------------------------------------------
-#- Triming PSF files
-
+#
+# Triming PSF files
+#
 def rebin_image(image, n):
     """
     rebin 2D array pix into bins of size n x n
@@ -160,6 +178,7 @@ def rebin_image(image, n):
 
     s = image.shape[0]//n, n, image.shape[1]//n, n
     return image.reshape(s).sum(-1).sum(1)
+
 
 def trim_psf(indir, outdir, filename):
     assert os.path.abspath(indir) != os.path.abspath(outdir)
@@ -213,6 +232,7 @@ def trim_psf(indir, outdir, filename):
 
     hdus.writeto(outfile, overwrite=True)
     fx.close()
+
 
 def trim_quickpsf(indir, outdir, filename):
     assert os.path.abspath(indir) != os.path.abspath(outdir)

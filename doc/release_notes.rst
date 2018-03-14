@@ -9,9 +9,13 @@ desimodel Release Notes
   dependencies (PR `#77`_).
 * Ensure that desimodel tests are compatible with Astropy 2 and 3, and with
   other DESI packages (PR `#78`_).
+* Add ``footprint/desi-healpix-weights.fits`` and
+  ``throughput/galsim-fiber-acceptance.fits`` to the trimmed test data set
+  (PR `#79`_).
 
 .. _`#77`: https://github.com/desihub/desimodel/pull/77
 .. _`#78`: https://github.com/desihub/desimodel/pull/78
+.. _`#79`: https://github.com/desihub/desimodel/pull/79
 
 
 0.9.2 (2018-02-27)

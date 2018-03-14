@@ -1,7 +1,6 @@
 # See LICENSE.rst for BSD 3-clause license info
 # -*- coding: utf-8 -*-
 """
-=================
 desimodel.weather
 =================
 
