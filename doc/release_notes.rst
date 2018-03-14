@@ -2,7 +2,7 @@
 desimodel Release Notes
 =======================
 
-0.9.3 (unreleased)
+0.9.3 (2018-03-14)
 ------------------
 
 * Fix some installation bugs, and update to latest versions on various
