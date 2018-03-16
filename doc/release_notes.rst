@@ -5,7 +5,9 @@ desimodel Release Notes
 0.9.4 (unreleased)
 ------------------
 
-* No changes yet.
+* Download script will create :envvar:`INSTALL_DIR` if it doesn't exist (PR `#80`_).
+
+.. _`#80`: https://github.com/desihub/desimodel/pull/80
 
 0.9.3 (2018-03-14)
 ------------------

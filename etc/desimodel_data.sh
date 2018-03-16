@@ -5,7 +5,7 @@
 # If this script is being run by desiInstall, then we need to make sure
 # we are running this in ${INSTALL_DIR}.
 #
-[[ -n "${INSTALL_DIR}" ]] && cd ${INSTALL_DIR}
+[[ -n "${INSTALL_DIR}" ]] && /bin/mkdir -p ${INSTALL_DIR} && cd ${INSTALL_DIR}
 #
 # Make sure DESIMODEL_VERSION is set.
 #
