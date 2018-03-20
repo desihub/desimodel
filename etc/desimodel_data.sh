@@ -13,7 +13,11 @@ if [[ -z "${DESIMODEL_VERSION}" ]]; then
     echo "DESIMODEL_VERSION is not set!"
     exit 1
 fi
-svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_VERSION}/data
+if [[ "${DESIMODEL_VERSION}" == "tags/master" ]]; then
+    svn checkout https://desi.lbl.gov/svn/code/desimodel/trunk/data
+else
+    svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_VERSION}/data
+fi
 #
 # Set this for subsequent Travis tests.  For desiInstall, this environment
 # variable should already be set when the desimodel Module file is
