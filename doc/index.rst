@@ -13,7 +13,7 @@ Contents
 .. toctree::
     :maxdepth: 1
 
-    release_notes.rst
+    changes.rst
     update_inputs.rst
     testing.rst
     fiberpos.rst

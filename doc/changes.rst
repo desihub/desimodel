@@ -2,7 +2,12 @@
 desimodel Release Notes
 =======================
 
-0.9.4 (unreleased)
+0.9.5 (unreleased)
+------------------
+
+* No changes yet.
+
+0.9.4 (2018-03-29)
 ------------------
 
 * Download script will create :envvar:`INSTALL_DIR` if it doesn't exist (PR `#80`_).
