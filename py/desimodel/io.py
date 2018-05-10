@@ -113,7 +113,6 @@ def load_fiberpos():
 
         #- Temporary backwards compatibility for renamed columns
         if 'POSITIONER' in _fiberpos.colnames:
-            import warnings
             warnings.warn('old fiberpos.fits with POSITIONER column instead of LOCATION; please update your $DESIMODEL checkout', DeprecationWarning)
             _fiberpos['LOCATION'] = _fiberpos['POSITIONER']
         else:
@@ -121,7 +120,6 @@ def load_fiberpos():
 
 
         if 'SPECTROGRAPH' in _fiberpos.colnames:
-            import warnings
             warnings.warn('old fiberpos.fits with SPECTROGRAPH column instead of SPECTRO; please update your $DESIMODEL checkout', DeprecationWarning)
             _fiberpos['SPECTRO'] = _fiberpos['SPECTROGRAPH']
         else:
@@ -174,7 +172,6 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
 
         #- Check for out-of-date tiles file
         if np.issubdtype(tiledata['OBSCONDITIONS'].dtype, np.unsignedinteger):
-            import warnings
             warnings.warn('old desi-tiles.fits with uint16 OBSCONDITIONS; please update your $DESIMODEL checkout', DeprecationWarning)
 
         #- load cache for next time
