@@ -40,7 +40,7 @@ class TestFocalplane(unittest.TestCase):
         F.set_tele_pointing(180.0, 45.0)
         self.assertEqual(F.ra, 180.0)
         self.assertEqual(F.dec, 45.0)
-    
+
     def test_get_radius(self):
         """Tests converting x, y coordinates on the focal plane to a radius in degrees and mm
         """
@@ -54,7 +54,7 @@ class TestFocalplane(unittest.TestCase):
         self.assertAlmostEqual(truedegree, degree, 5)
         self.assertAlmostEqual(trueradius, radius, 5)
         self.assertAlmostEqual(all(trueradius1), all(radius1), 5)
-    
+
     def test_xy2radec_new(self):
         """Tests the consistency between the conversion functions
         radec2xy and xy2radec. Also tests the accuracy of the xy2radec
@@ -143,9 +143,14 @@ class TestFocalplane(unittest.TestCase):
         self.assertEqual(targetindices.size, 0)
         self.assertEqual(gfaid.size, 0)
 
+        # Test an empty table
+        gfatargets = get_gfa_targets(targets, rfluxlim=3000)
+        self.assertEqual(len(gfatargets), 0)
+
 
 def test_suite():
     """Allows testing of only this module with the command::
+
         python setup.py test -m <modulename>
     """
     return unittest.defaultTestLoader.loadTestsFromName(__name__)
