@@ -5,7 +5,6 @@
 import os
 from subprocess import CalledProcessError
 import unittest
-from .. import __version__ as desimodel_version
 from ..install import default_install_dir, assert_svn_exists, svn_export, install
 
 skipMock = False
