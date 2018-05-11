@@ -64,12 +64,17 @@ class TestInstall(unittest.TestCase):
     def test_install(self):
         """Test the install function.
         """
-        mock = MagicMock(return_value=True)
-        with patch('os.path.exists', mock):
-            with self.assertRaises(ValueError) as e:
-                install(desimodel='/opt/desimodel')
-            self.assertEqual(str(e.exception), "/opt/desimodel/data already exists!")
-        mock.assert_called_with('/opt/desimodel/data')
+        with patch.dict('os.environ'):
+            try:
+                del os.environ['DESIMODEL']
+            except KeyError:
+                pass
+            with patch('os.path.exists') as exists:
+                exists.return_value = True
+                with self.assertRaises(ValueError) as e:
+                    install(desimodel='/opt/desimodel')
+                self.assertEqual(str(e.exception), "/opt/desimodel/data already exists!")
+        exists.assert_called_with('/opt/desimodel/data')
         with patch('desimodel.install.assert_svn_exists'):
             with patch('os.chdir'):
                 with patch.dict('os.environ'):
