@@ -34,11 +34,12 @@ class TestInputs(unittest.TestCase):
 
     @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
     def test_docdb__auth(self):
-        with self.assertRaises(ValueError) as e:
-            h = docdb._auth('www.example.com')
-        self.assertEqual(str(e.exception), 'Unable to get user/pass from $HOME/.netrc for www.example.com')
         with patch('netrc.netrc') as netrc:
             n = netrc.return_value
+            n.authenticators.return_value = None
+            with self.assertRaises(ValueError) as e:
+                h = docdb._auth('www.example.com')
+            self.assertEqual(str(e.exception), 'Unable to get user/pass from $HOME/.netrc for www.example.com')
             n.authenticators.return_value = ('username', 'foo', 'password')
             h = docdb._auth('www.example.com')
             try:
