@@ -32,6 +32,7 @@ def assert_svn_exists():
     except CalledProcessError as e:
         raise AssertionError("The svn command ({0}) on this system does not work. Output is: '{1}'.".format(e.cmd, e.output))
 
+
 def svn_export(desimodel_version=None):
     """Create a :command:`svn export` command suitable for downloading a
     particular desimodel version.

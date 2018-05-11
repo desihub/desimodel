@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Test desimodel.install.
 """
-from os.path import abspath, dirname
+import os
 from subprocess import CalledProcessError
 import unittest
 from .. import __version__ as desimodel_version
@@ -23,9 +23,10 @@ class TestInstall(unittest.TestCase):
     def test_default_install_dir(self):
         """Test setting default install directory.
         """
+        d = os.path.dirname
         d1 = default_install_dir()
-        d2 = dirname(dirname(dirname(dirname(dirname(dirname(__file__))))))
-        self.assertEqual(abspath(d1), abspath(d2))
+        d2 = d(d(d(d(d(d(__file__))))))
+        self.assertEqual(os.path.abspath(d1), os.path.abspath(d2))
 
     def test_svn_export(self):
         """Test svn export command.
@@ -71,14 +72,19 @@ class TestInstall(unittest.TestCase):
         mock.assert_called_with('/opt/desimodel/data')
         with patch('desimodel.install.assert_svn_exists'):
             with patch('os.chdir'):
-                with patch('subprocess.Popen') as Popen:
-                    proc = Popen.return_value
-                    proc.communicate.return_value = ('Mock stdout', 'Mock stderr')
-                    proc.returncode = 1
-                    with self.assertRaises(RuntimeError) as e:
-                        install(desimodel='/opt/desimodel')
-                    self.assertEqual(str(e.exception), "Mock stderr")
-                Popen.assert_called_with(['svn', 'export', 'https://desi.lbl.gov/svn/code/desimodel/trunk/data'], stderr=-1, stdout=-1)
+                with patch.dict('os.environ'):
+                    try:
+                        del os.environ['DESIMODEL']
+                    except KeyError:
+                        pass
+                    with patch('subprocess.Popen') as Popen:
+                        proc = Popen.return_value
+                        proc.communicate.return_value = ('Mock stdout', 'Mock stderr')
+                        proc.returncode = 1
+                        with self.assertRaises(RuntimeError) as e:
+                            install(desimodel='/opt/desimodel')
+                        self.assertEqual(str(e.exception), "Mock stderr")
+                    Popen.assert_called_with(['svn', 'export', 'https://desi.lbl.gov/svn/code/desimodel/trunk/data'], stderr=-1, stdout=-1)
 
 
 def test_suite():
