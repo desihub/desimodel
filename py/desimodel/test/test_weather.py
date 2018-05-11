@@ -55,19 +55,21 @@ class TestWeather(unittest.TestCase):
         self.assertTrue(np.allclose(norm, 1))
 
     def test_sample_timeseries(self):
-        """Test sampling white noise with uniform 1D PDF
+        """Test sampling white noise with uniform 1D PDF.
         """
         x = np.linspace(-1, 1, 500)
         pdf = np.ones_like(x)
         psd = lambda freq: np.ones_like(freq)
         n, nb = 1000000, 10
-        xs = sample_timeseries(x, pdf, psd, n, gen=self.gen)
+        gen = np.random.RandomState(1)
+        xs = sample_timeseries(x, pdf, psd, n, gen=gen)
         bins, _ = np.histogram(xs, range=(-1,1), bins=nb)
         pred = n / float(nb)
         self.assertTrue(np.allclose(bins, pred, atol=5*np.sqrt(pred)))
 
     def test_same_seed(self):
-        """Same seed should give same samples"""
+        """Same seed should give same samplesself.
+        """
         x_grid = np.linspace(-1, 1, 500)
         pdf_grid = np.ones_like(x_grid)
         psd = lambda freq: np.ones_like(freq)
@@ -79,7 +81,8 @@ class TestWeather(unittest.TestCase):
         self.assertTrue(np.all(x1 == x2))
 
     def test_different_seed(self):
-        """Different seeds should give different samples"""
+        """Different seeds should give different samples.
+        """
         x_grid = np.linspace(-1, 1, 500)
         pdf_grid = np.ones_like(x_grid)
         psd = lambda freq: np.ones_like(freq)
@@ -91,7 +94,7 @@ class TestWeather(unittest.TestCase):
         self.assertTrue(not np.any(x1 == x2))
 
     def test_seeing_median(self):
-        """Check that seeing has expected median
+        """Check that seeing has expected median.
         """
         n = 100000
         for m in (0.9, 1.0, 1.1, 1.2):
@@ -99,7 +102,7 @@ class TestWeather(unittest.TestCase):
             self.assertTrue(np.fabs(np.median(x) - m) < 0.01)
 
     def test_transp_range(self):
-        """Check that transparency has expected range
+        """Check that transparency has expected range.
         """
         n = 100000
         x = sample_transp(n)
