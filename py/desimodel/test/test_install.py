@@ -74,14 +74,27 @@ class TestInstall(unittest.TestCase):
                 with self.assertRaises(ValueError) as e:
                     install(desimodel='/opt/desimodel')
                 self.assertEqual(str(e.exception), "/opt/desimodel/data already exists!")
-        exists.assert_called_with('/opt/desimodel/data')
-        with patch('desimodel.install.assert_svn_exists'):
-            with patch('os.chdir'):
-                with patch.dict('os.environ'):
-                    try:
-                        del os.environ['DESIMODEL']
-                    except KeyError:
-                        pass
+            exists.assert_called_with('/opt/desimodel/data')
+            with patch('os.path.exists') as exists:
+                exists.return_value = True
+                with self.assertRaises(ValueError) as e:
+                    install()
+                self.assertEqual(str(e.exception), "{0}/data already exists!".format(default_install_dir()))
+            exists.assert_called_with('{0}/data'.format(default_install_dir()))
+            os.environ['DESIMODEL'] = '/opt/desimodel'
+            with patch('os.path.exists') as exists:
+                exists.return_value = True
+                with self.assertRaises(ValueError) as e:
+                    install()
+                self.assertEqual(str(e.exception), "/opt/desimodel/data already exists!")
+            exists.assert_called_with('/opt/desimodel/data')
+        with patch.dict('os.environ'):
+            try:
+                del os.environ['DESIMODEL']
+            except KeyError:
+                pass
+            with patch('desimodel.install.assert_svn_exists'):
+                with patch('os.chdir'):
                     with patch('subprocess.Popen') as Popen:
                         proc = Popen.return_value
                         proc.communicate.return_value = ('Mock stdout', 'Mock stderr')
