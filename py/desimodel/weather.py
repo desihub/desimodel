@@ -63,9 +63,9 @@ def whiten_transforms_from_cdf(x, cdf):
     if len(x.shape) != 1:
         raise ValueError('Input arrays must be 1D.')
     if not np.all(np.diff(x) >= 0):
-        raise ValueError('Values of x must be increasing.')
+        raise ValueError('Values of x must be non-decreasing.')
     if not np.all(np.diff(cdf) >= 0):
-        raise ValueError('Values of cdf must be increasing.')
+        raise ValueError('Values of cdf must be non-decreasing.')
     # Normalize.
     cdf /= cdf[-1]
     # Use linear interpolation for the forward and inverse transforms between

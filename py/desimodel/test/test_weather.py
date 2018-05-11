@@ -15,6 +15,36 @@ class TestWeather(unittest.TestCase):
     def setUp(self):
         self.gen = np.random.RandomState(seed=123)
 
+    def test_whiten_transforms_from_cdf(self):
+        """Test inputs to whiten_transforms_from_cdf().
+        """
+        x = np.ones((50,), dtype=np.float32)
+        cdf = np.linspace(0, 1, 50)
+        with self.assertRaises(ValueError) as e:
+            foo = whiten_transforms_from_cdf(cdf[::-1], cdf)
+        self.assertEqual(str(e.exception), 'Values of x must be non-decreasing.')
+        with self.assertRaises(ValueError) as e:
+            foo = whiten_transforms_from_cdf(x, cdf[::-1])
+        self.assertEqual(str(e.exception), 'Values of cdf must be non-decreasing.')
+        with self.assertRaises(ValueError) as e:
+            foo = whiten_transforms_from_cdf(x, cdf[:49])
+        self.assertEqual(str(e.exception), 'Input arrays must have same shape.')
+        xx = np.ones((50,5), dtype=np.float32)
+        with self.assertRaises(ValueError) as e:
+            foo = whiten_transforms_from_cdf(xx, xx)
+        self.assertEqual(str(e.exception), 'Input arrays must be 1D.')
+
+    def test_whiten_transforms_inputs(self):
+        """Test inputs to whiten_transforms().
+        """
+        x = np.linspace(0, 1, 50)
+        with self.assertRaises(ValueError) as e:
+            F, G = whiten_transforms(x, data_min=0.1)
+        self.assertEqual(str(e.exception), 'data_min > min(data)')
+        with self.assertRaises(ValueError) as e:
+            F, G = whiten_transforms(x, data_max=0.9)
+        self.assertEqual(str(e.exception), 'data_max < max(data)')
+
     def test_whiten_identity(self):
         """Check that whitener for samples from a Gaussian is linear.
         """
@@ -50,6 +80,9 @@ class TestWeather(unittest.TestCase):
     def test_seeing_pdf_norm(self):
         """Check that seeing PDF is normalized.
         """
+        with self.assertRaises(ValueError) as e:
+            fwhm, pdf = get_seeing_pdf(5.0)
+        self.assertEqual(str(e.exception), 'Requested median is outside allowed range.')
         fwhm, pdf = get_seeing_pdf()
         norm = np.sum(pdf * np.gradient(fwhm))
         self.assertTrue(np.allclose(norm, 1))
@@ -66,6 +99,13 @@ class TestWeather(unittest.TestCase):
         bins, _ = np.histogram(xs, range=(-1,1), bins=nb)
         pred = n / float(nb)
         self.assertTrue(np.allclose(bins, pred, atol=5*np.sqrt(pred)))
+        xx = np.ones((500,), dtype=pdf.dtype)
+        with self.assertRaises(ValueError) as e:
+            xs = sample_timeseries(xx, pdf, psd, n, gen=gen)
+        self.assertEqual(str(e.exception), 'x_grid values are not increasing.')
+        with self.assertRaises(ValueError) as e:
+            xs = sample_timeseries(x[:400], pdf, psd, n, gen=gen)
+        self.assertEqual(str(e.exception), 'x_grid and pdf_grid arrays have different shapes.')
 
     def test_same_seed(self):
         """Same seed should give same samplesself.
