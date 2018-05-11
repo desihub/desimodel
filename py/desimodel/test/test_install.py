@@ -3,9 +3,17 @@
 """Test desimodel.install.
 """
 from os.path import abspath, dirname
+from subprocess import CalledProcessError
 import unittest
 from .. import __version__ as desimodel_version
-from ..install import default_install_dir, svn_export, install
+from ..install import default_install_dir, assert_svn_exists, svn_export, install
+
+skipMock = False
+try:
+    from unittest.mock import patch, MagicMock
+except ImportError:
+    # Python 2
+    skipMock = True
 
 
 class TestInstall(unittest.TestCase):
@@ -32,10 +40,45 @@ class TestInstall(unittest.TestCase):
         cmd = svn_export('1.2.3')
         self.assertEqual(cmd[2], base_url.format('tags/1.2.3'))
 
+    @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
+    def test_assert_svn_exists(self):
+        """Test the check for svn presence.
+        """
+        mock = MagicMock(return_value=0)
+        with patch('subprocess.check_output', mock):
+            assert_svn_exists()
+        mock.assert_called_with(['svn', '--version'])
+        mock = MagicMock(side_effect=OSError(12345, "Mock error"))
+        with patch('subprocess.check_output', mock):
+            with self.assertRaises(AssertionError) as e:
+                assert_svn_exists()
+            self.assertEqual(str(e.exception), "svn command is not executable. Install svn to use the install script. Original Error is: 'Mock error'.")
+        mock = MagicMock(side_effect=CalledProcessError(1, 'svn', 'Mock stdout', 'Mock stderr'))
+        with patch('subprocess.check_output', mock):
+            with self.assertRaises(AssertionError) as e:
+                assert_svn_exists()
+            self.assertEqual(str(e.exception), "The svn command (svn) on this system does not work. Output is: 'Mock stdout'.")
+
+    @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
     def test_install(self):
         """Test the install function.
         """
-        pass
+        mock = MagicMock(return_value=True)
+        with patch('os.path.exists', mock):
+            with self.assertRaises(ValueError) as e:
+                install(desimodel='/opt/desimodel')
+            self.assertEqual(str(e.exception), "/opt/desimodel/data already exists!")
+        mock.assert_called_with('/opt/desimodel/data')
+        with patch('desimodel.install.assert_svn_exists'):
+            with patch('os.chdir'):
+                with patch('subprocess.Popen') as Popen:
+                    proc = Popen.return_value
+                    proc.communicate.return_value = ('Mock stdout', 'Mock stderr')
+                    proc.returncode = 1
+                    with self.assertRaises(RuntimeError) as e:
+                        install(desimodel='/opt/desimodel')
+                    self.assertEqual(str(e.exception), "Mock stderr")
+                Popen.assert_called_with(['svn', 'export', 'https://desi.lbl.gov/svn/code/desimodel/trunk/data'], stderr=-1, stdout=-1)
 
 
 def test_suite():

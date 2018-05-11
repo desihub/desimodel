@@ -28,9 +28,9 @@ def assert_svn_exists():
     try:
         r = check_output(['svn', '--version'])
     except OSError as e:
-        raise AssertionError("svn command is not executable. Install svn to use the install script. Original Error is %s", e.strerror)
+        raise AssertionError("svn command is not executable. Install svn to use the install script. Original Error is: '{0}'.".format(e.strerror))
     except CalledProcessError as e:
-        raise AssertionError("The svn command (%s) on this system does not work. Output is %s" % (e.cmd, e.output))
+        raise AssertionError("The svn command ({0}) on this system does not work. Output is: '{1}'.".format(e.cmd, e.output))
 
 def svn_export(desimodel_version=None):
     """Create a :command:`svn export` command suitable for downloading a
