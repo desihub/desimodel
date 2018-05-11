@@ -1,6 +1,9 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
+"""Test desimodel.footprint.
+"""
 import unittest
 import os
-
 import numpy as np
 from astropy.table import Table
 
@@ -14,13 +17,17 @@ try:
 except KeyError:
     desimodel_available = False
 
+
+
 class TestFootprint(unittest.TestCase):
-    
+    """Test desimodel.footprint.
+    """
+
     def setUp(self):
         io.reset_cache()
 
     def test_pass2program(self):
-        '''Test footprint.pass2program(tilepass)
+        '''Test footprint.pass2program().
         '''
         self.assertEqual(footprint.pass2program(0), 'DARK')
         self.assertEqual(footprint.pass2program(1), 'DARK')
@@ -46,7 +53,7 @@ class TestFootprint(unittest.TestCase):
             footprint.pass2program(999)
 
     def test_program2pass(self):
-        '''Test footprint.program2pass()
+        '''Test footprint.program2pass().
         '''
         self.assertEqual(footprint.program2pass('DARK'), [0,1,2,3])
         self.assertEqual(footprint.program2pass('GRAY'), [4,])
@@ -201,15 +208,18 @@ class TestFootprint(unittest.TestCase):
         ret = footprint.find_tiles_over_point(tiles, (0.0,), (-3.7,), radius=1.605)
         self.assertEqual(len(ret), 1)
         self.assertEqual(ret[0], [])
-    
+
     def test_find_points_radec(self):
-        """Checks if the function is successfully finding points within a certain radius of a telra and teldec"""
-        import numpy as np
-        answer = footprint.find_points_radec(0, 0, np.array([1.5, 0, 1.9, 0]), np.array([0, 1.5, 0, 1.3]))
+        """Checks if the function is successfully finding points within a certain radius of a telra and teldec.
+        """
+        answer = footprint.find_points_radec(0, 0,
+                                             np.array([1.5, 0, 1.9, 0]),
+                                             np.array([0, 1.5, 0, 1.3]))
         self.assertEqual(answer, [0, 1, 3])
 
     def test_partial_pixels(self):
-        """check weights assigned to HEALPixels that partially overlap tiles"""
+        """Check weights assigned to HEALPixels that partially overlap tiles.
+        """
         tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
                                       ('RA', 'f8'),
                                       ('DEC', 'f8'),
@@ -231,21 +241,21 @@ class TestFootprint(unittest.TestCase):
         #ADM full = footprint.pix2tiles(256,[180])
         #ADM part = footprint.pix2tiles(256,[406])
         #ADM empty = footprint.pix2tiles(256,[20])
-        #ADM to determine the tile coordinates for these pixels 
+        #ADM to determine the tile coordinates for these pixels
         #ADM (the first tile in  the array is full and the last tile is empty)
         tiles['TILEID'] = np.arange(4) + 1
         tiles['RA'] = [43.05, 47.41, 47.08, 45.38]
         tiles['DEC'] = [1.54, 3.12, 3.17, 0.0]
         tiles['IN_DESI'] = [1, 1, 1, 1]
         tiles['PROGRAM'] = 'DARK'
-        
+
         #ADM The approximate radius of DESI tiles
         radius = 1.605
 
         #ADM determine the weight array for pixels at nsides of 64 and 256
         pixweight64 = footprint.pixweight(64,tiles=tiles,radius=radius,precision=0.04)
         pixweight256 = footprint.pixweight(256,tiles=tiles,radius=radius,precision=0.04)
-        
+
         #ADM check that the full pixel is assigned a weight of 1 at each nside
         self.assertTrue(np.all(pixweight64[fullpix64]==1))
         self.assertTrue(np.all(pixweight256[fullpix256]==1))
@@ -265,6 +275,8 @@ class TestFootprint(unittest.TestCase):
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_spatial_real_tiles(self):
+        """Test code on actual DESI tiles.
+        """
         tiles = io.load_tiles()
         rng = np.random.RandomState(1234)
         ra = rng.uniform(0, 360, 1000)
@@ -285,9 +297,11 @@ class TestFootprint(unittest.TestCase):
 
         # Just interesting to see how many tiles overlap a random point?
         ### print(np.bincount([len(i) for i in ret]))
-                
+
+
 def test_suite():
     """Allows testing of only this module with the command::
+
         python setup.py test -m <modulename>
     """
     return unittest.defaultTestLoader.loadTestsFromName(__name__)
