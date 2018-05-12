@@ -6,11 +6,11 @@ import unittest
 from os.path import abspath, dirname
 import numpy as np
 from ..trim import (inout, rebin_image, trim_focalplane, trim_inputs,
-                    trim_sky, trim_targets)
+                    trim_sky, trim_targets, trim_data, trim_specpsf)
 
 skipMock = False
 try:
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import call, patch, MagicMock, DEFAULT
 except ImportError:
     # Python 2
     skipMock = True
@@ -19,6 +19,42 @@ except ImportError:
 class TestTrim(unittest.TestCase):
     """Test desimodel.trim.
     """
+
+    @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
+    @patch.multiple('desimodel.trim', trim_focalplane=DEFAULT,
+                    trim_footprint=DEFAULT, trim_inputs=DEFAULT,
+                    trim_sky=DEFAULT, trim_specpsf=DEFAULT, trim_spectra=DEFAULT,
+                    trim_targets=DEFAULT, trim_throughput=DEFAULT)
+    def test_trim_data(self, trim_focalplane, trim_footprint, trim_inputs,
+                       trim_sky, trim_specpsf, trim_spectra,
+                       trim_targets, trim_throughput):
+        """Test the trim wrapper function.
+        """
+        with patch('os.path.exists') as exists:
+            exists.return_value = False
+            with patch('os.makedirs') as makedirs:
+                with patch('shutil.copy') as copy:
+                    trim_data('/in', '/out')
+        exists.assert_called_with('/out')
+        makedirs.assert_called_with('/out')
+        copy.assert_called_with('/in/desi.yaml', '/out/desi.yaml')
+        trim_focalplane.assert_called_with('/in/focalplane', '/out/focalplane')
+        trim_footprint.assert_called_with('/in/footprint', '/out/footprint')
+        trim_inputs.assert_called_with('/in/inputs', '/out/inputs')
+        trim_sky.assert_called_with('/in/sky', '/out/sky')
+        trim_specpsf.assert_called_with('/in/specpsf', '/out/specpsf')
+        trim_spectra.assert_called_with('/in/spectra', '/out/spectra')
+        trim_targets.assert_called_with('/in/targets', '/out/targets')
+        trim_throughput.assert_called_with('/in/throughput', '/out/throughput')
+        with patch('os.path.exists') as exists:
+            exists.return_value = True
+            with patch('os.makedirs') as makedirs:
+                with patch.multiple('shutil', copy=DEFAULT, rmtree=DEFAULT) as shutilmock:
+                    trim_data('/in', '/out', overwrite=True)
+        exists.assert_called_with('/out')
+        makedirs.assert_called_with('/out')
+        shutilmock['rmtree'].assert_called_with('/out')
+        shutilmock['copy'].assert_called_with('/in/desi.yaml', '/out/desi.yaml')
 
     def test_inout(self):
         """Test pathname helper function.
@@ -49,22 +85,36 @@ class TestTrim(unittest.TestCase):
         trim_inputs('/in/focalplane', '/out/focalplane')
 
     @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
-    def test_trim_targets(self):
-        """Test trim_targets().
-        """
-        with patch('shutil.copytree') as copytree:
-            trim_targets('/in/targets', '/out/targets')
-            copytree.assert_called_with('/in/targets', '/out/targets')
-
-    @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
-    def test_trim_targets(self):
-        """Test trim_targets().
+    def test_trim_sky(self):
+        """Test trim_sky().
         """
         with patch('os.makedirs'):
             with patch('shutil.copy') as copy:
                 trim_sky('/in/sky', '/out/sky')
                 copy.assert_called_with('/in/sky/solarspec.txt',
                                         '/out/sky/solarspec.txt')
+
+    @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
+    @patch.multiple('desimodel.trim', trim_quickpsf=DEFAULT, trim_psf=DEFAULT)
+    def test_trim_specpsf(self, trim_quickpsf, trim_psf):
+        with patch('os.path.exists') as exists:
+            exists.return_value = False
+            with patch('os.makedirs') as makedirs:
+                trim_specpsf('/in/specpsf', '/out/specpsf')
+        exists.assert_called_with('/out/specpsf')
+        makedirs.assert_called_with('/out/specpsf')
+        trim_quickpsf.assert_called_with('/in/specpsf', '/out/specpsf', 'psf-quicksim.fits')
+        trim_psf.assert_has_calls([call('/in/specpsf', '/out/specpsf', 'psf-b.fits'),
+                                   call('/in/specpsf', '/out/specpsf', 'psf-r.fits'),
+                                   call('/in/specpsf', '/out/specpsf', 'psf-z.fits')])
+
+    @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
+    def test_trim_targets(self):
+        """Test trim_targets().
+        """
+        with patch('shutil.copytree') as copytree:
+            trim_targets('/in/targets', '/out/targets')
+            copytree.assert_called_with('/in/targets', '/out/targets')
 
 
 def test_suite():
