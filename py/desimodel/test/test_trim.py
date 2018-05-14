@@ -93,18 +93,18 @@ class TestTrim(unittest.TestCase):
                                         '/out/sky/solarspec.txt')
 
     @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
-    @patch.multiple('desimodel.trim', trim_quickpsf=DEFAULT, trim_psf=DEFAULT)
-    def test_trim_specpsf(self, trim_quickpsf, trim_psf):
-        with patch('os.path.exists') as exists:
-            exists.return_value = False
-            with patch('os.makedirs') as makedirs:
-                trim_specpsf('/in/specpsf', '/out/specpsf')
-        exists.assert_called_with('/out/specpsf')
-        makedirs.assert_called_with('/out/specpsf')
-        trim_quickpsf.assert_called_with('/in/specpsf', '/out/specpsf', 'psf-quicksim.fits')
-        trim_psf.assert_has_calls([call('/in/specpsf', '/out/specpsf', 'psf-b.fits'),
-                                   call('/in/specpsf', '/out/specpsf', 'psf-r.fits'),
-                                   call('/in/specpsf', '/out/specpsf', 'psf-z.fits')])
+    def test_trim_specpsf(self):
+        with patch.multiple('desimodel.trim', trim_quickpsf=DEFAULT, trim_psf=DEFAULT) as desimodel_trim:
+            with patch('os.path.exists') as exists:
+                exists.return_value = False
+                with patch('os.makedirs') as makedirs:
+                    trim_specpsf('/in/specpsf', '/out/specpsf')
+            exists.assert_called_with('/out/specpsf')
+            makedirs.assert_called_with('/out/specpsf')
+            desimodel_trim['trim_quickpsf'].assert_called_with('/in/specpsf', '/out/specpsf', 'psf-quicksim.fits')
+            desimodel_trim['trim_psf'].assert_has_calls([call('/in/specpsf', '/out/specpsf', 'psf-b.fits'),
+                                                         call('/in/specpsf', '/out/specpsf', 'psf-r.fits'),
+                                                         call('/in/specpsf', '/out/specpsf', 'psf-z.fits')])
 
     @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
     def test_trim_targets(self):
