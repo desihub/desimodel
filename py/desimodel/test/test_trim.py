@@ -5,7 +5,7 @@
 import unittest
 from os.path import abspath, dirname
 import numpy as np
-from ..trim import (inout, rebin_image, trim_focalplane, trim_inputs,
+from ..trim import (inout, rebin_image, trim_focalplane, trim_footprint, trim_inputs,
                     trim_sky, trim_targets, trim_data, trim_specpsf)
 
 skipMock = False
@@ -14,6 +14,13 @@ try:
 except ImportError:
     # Python 2
     skipMock = True
+
+
+class DummyData(object):
+    """Simple object with a 'data' attribute.
+    """
+    def __init__(self, d):
+        self.data = d
 
 
 class TestTrim(unittest.TestCase):
@@ -75,6 +82,27 @@ class TestTrim(unittest.TestCase):
         with patch('shutil.copytree') as copytree:
             trim_focalplane('/in/focalplane', '/out/focalplane')
             copytree.assert_called_with('/in/focalplane', '/out/focalplane')
+
+    @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
+    def test_trim_footprint(self):
+        """Test trim_footprint().
+        """
+        data = np.zeros((100,), dtype=[('RA', np.float64), ('DEC', np.float64)])
+        data['RA'] = np.linspace(0, 360, 100, dtype=np.float64)
+        data['DEC'] = np.linspace(-90, 90, 100, dtype=np.float64)
+        with patch('os.path.exists') as exists:
+            exists.return_value = False
+            with patch('os.makedirs') as makedirs:
+                with patch('astropy.io.fits.open') as hdulist:
+                    hdulist.return_value.__enter__.return_value = [None, DummyData(data)]
+                    with patch('astropy.table.Table.write') as w:
+                        with patch('desimodel.trim.pixweight') as pixweight:
+                            trim_footprint('/in/footprint', '/out/footprint')
+        exists.assert_called_with('/out/footprint')
+        makedirs.assert_called_with('/out/footprint')
+        hdulist.assert_called_with('/in/footprint/desi-tiles.fits')
+        w.assert_has_calls([call('/out/footprint/desi-tiles.fits', format='fits'),
+                            call('/out/footprint/desi-tiles.ecsv', format='ascii.ecsv')])
 
     def test_trim_inputs(self):
         """Test trim_inputs().
