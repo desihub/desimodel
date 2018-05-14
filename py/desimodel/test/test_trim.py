@@ -21,40 +21,38 @@ class TestTrim(unittest.TestCase):
     """
 
     @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
-    @patch.multiple('desimodel.trim', trim_focalplane=DEFAULT,
-                    trim_footprint=DEFAULT, trim_inputs=DEFAULT,
-                    trim_sky=DEFAULT, trim_specpsf=DEFAULT, trim_spectra=DEFAULT,
-                    trim_targets=DEFAULT, trim_throughput=DEFAULT)
-    def test_trim_data(self, trim_focalplane, trim_footprint, trim_inputs,
-                       trim_sky, trim_specpsf, trim_spectra,
-                       trim_targets, trim_throughput):
+    def test_trim_data(self):
         """Test the trim wrapper function.
         """
-        with patch('os.path.exists') as exists:
-            exists.return_value = False
-            with patch('os.makedirs') as makedirs:
-                with patch('shutil.copy') as copy:
-                    trim_data('/in', '/out')
-        exists.assert_called_with('/out')
-        makedirs.assert_called_with('/out')
-        copy.assert_called_with('/in/desi.yaml', '/out/desi.yaml')
-        trim_focalplane.assert_called_with('/in/focalplane', '/out/focalplane')
-        trim_footprint.assert_called_with('/in/footprint', '/out/footprint')
-        trim_inputs.assert_called_with('/in/inputs', '/out/inputs')
-        trim_sky.assert_called_with('/in/sky', '/out/sky')
-        trim_specpsf.assert_called_with('/in/specpsf', '/out/specpsf')
-        trim_spectra.assert_called_with('/in/spectra', '/out/spectra')
-        trim_targets.assert_called_with('/in/targets', '/out/targets')
-        trim_throughput.assert_called_with('/in/throughput', '/out/throughput')
-        with patch('os.path.exists') as exists:
-            exists.return_value = True
-            with patch('os.makedirs') as makedirs:
-                with patch.multiple('shutil', copy=DEFAULT, rmtree=DEFAULT) as shutilmock:
-                    trim_data('/in', '/out', overwrite=True)
-        exists.assert_called_with('/out')
-        makedirs.assert_called_with('/out')
-        shutilmock['rmtree'].assert_called_with('/out')
-        shutilmock['copy'].assert_called_with('/in/desi.yaml', '/out/desi.yaml')
+        with patch.multiple('desimodel.trim', trim_focalplane=DEFAULT,
+                            trim_footprint=DEFAULT, trim_inputs=DEFAULT,
+                            trim_sky=DEFAULT, trim_specpsf=DEFAULT, trim_spectra=DEFAULT,
+                            trim_targets=DEFAULT, trim_throughput=DEFAULT) as desimodel_trim:
+            with patch('os.path.exists') as exists:
+                exists.return_value = False
+                with patch('os.makedirs') as makedirs:
+                    with patch('shutil.copy') as copy:
+                        trim_data('/in', '/out')
+            exists.assert_called_with('/out')
+            makedirs.assert_called_with('/out')
+            copy.assert_called_with('/in/desi.yaml', '/out/desi.yaml')
+            desimodel_trim['trim_focalplane'].assert_called_with('/in/focalplane', '/out/focalplane')
+            desimodel_trim['trim_footprint'].assert_called_with('/in/footprint', '/out/footprint')
+            desimodel_trim['trim_inputs'].assert_called_with('/in/inputs', '/out/inputs')
+            desimodel_trim['trim_sky'].assert_called_with('/in/sky', '/out/sky')
+            desimodel_trim['trim_specpsf'].assert_called_with('/in/specpsf', '/out/specpsf')
+            desimodel_trim['trim_spectra'].assert_called_with('/in/spectra', '/out/spectra')
+            desimodel_trim['trim_targets'].assert_called_with('/in/targets', '/out/targets')
+            desimodel_trim['trim_throughput'].assert_called_with('/in/throughput', '/out/throughput')
+            with patch('os.path.exists') as exists:
+                exists.return_value = True
+                with patch('os.makedirs') as makedirs:
+                    with patch.multiple('shutil', copy=DEFAULT, rmtree=DEFAULT) as shutilmock:
+                        trim_data('/in', '/out', overwrite=True)
+            exists.assert_called_with('/out')
+            makedirs.assert_called_with('/out')
+            shutilmock['rmtree'].assert_called_with('/out')
+            shutilmock['copy'].assert_called_with('/in/desi.yaml', '/out/desi.yaml')
 
     def test_inout(self):
         """Test pathname helper function.
