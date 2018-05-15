@@ -6,7 +6,8 @@ import unittest
 from os.path import abspath, dirname
 import numpy as np
 from ..trim import (inout, rebin_image, trim_focalplane, trim_footprint, trim_inputs,
-                    trim_sky, trim_targets, trim_data, trim_specpsf, trim_spectra)
+                    trim_sky, trim_targets, trim_data, trim_specpsf, trim_spectra,
+                    trim_throughput)
 
 skipMock = False
 try:
@@ -168,6 +169,36 @@ class TestTrim(unittest.TestCase):
         with patch('shutil.copytree') as copytree:
             trim_targets('/in/targets', '/out/targets')
             copytree.assert_called_with('/in/targets', '/out/targets')
+
+    @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
+    def test_trim_throughput(self):
+        """Test trim_throughput().
+        """
+        with patch('os.path.exists') as exists:
+            exists.return_value = False
+            with patch('os.makedirs') as makedirs:
+                with patch('shutil.copy') as copy:
+                    with patch.multiple('astropy.io.fits', open=DEFAULT, HDUList=DEFAULT, BinTableHDU=DEFAULT) as fits:
+                        trim_throughput('/in/throughput', '/out/throughput')
+        exists.assert_called_with('/out/throughput')
+        makedirs.assert_called_with('/out/throughput')
+        fits['open'].assert_has_calls([call('/in/throughput/thru-b.fits'),
+                                       call('/in/throughput/thru-r.fits'),
+                                       call('/in/throughput/thru-z.fits')],
+                                       any_order=True)
+        fits['HDUList']().writeto.assert_has_calls([call('/out/throughput/thru-b.fits'),
+                                                    call('/out/throughput/thru-r.fits'),
+                                                    call('/out/throughput/thru-z.fits')])
+        copy.assert_has_calls([call('/in/throughput/fiberloss-elg.dat', '/out/throughput/fiberloss-elg.dat'),
+                               call('/in/throughput/fiberloss-lrg.dat', '/out/throughput/fiberloss-lrg.dat'),
+                               call('/in/throughput/fiberloss-perfect.dat', '/out/throughput/fiberloss-perfect.dat'),
+                               call('/in/throughput/fiberloss-qso.dat', '/out/throughput/fiberloss-qso.dat'),
+                               call('/in/throughput/fiberloss-sky.dat', '/out/throughput/fiberloss-sky.dat'),
+                               call('/in/throughput/fiberloss-star.dat', '/out/throughput/fiberloss-star.dat'),
+                               call('/in/throughput/DESI-0347_blur.ecsv', '/out/throughput/DESI-0347_blur.ecsv'),
+                               call('/in/throughput/DESI-0347_offset.ecsv', '/out/throughput/DESI-0347_offset.ecsv'),
+                               call('/in/throughput/DESI-0347_random_offset_1.fits', '/out/throughput/DESI-0347_random_offset_1.fits'),
+                               call('/in/throughput/galsim-fiber-acceptance.fits', '/out/throughput/galsim-fiber-acceptance.fits')])
 
 
 def test_suite():
