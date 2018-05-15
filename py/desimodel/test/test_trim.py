@@ -7,7 +7,7 @@ from os.path import abspath, dirname
 import numpy as np
 from ..trim import (inout, rebin_image, trim_focalplane, trim_footprint, trim_inputs,
                     trim_sky, trim_targets, trim_data, trim_specpsf, trim_spectra,
-                    trim_throughput)
+                    trim_throughput, trim_psf, trim_quickpsf)
 
 skipMock = False
 try:
@@ -131,6 +131,8 @@ class TestTrim(unittest.TestCase):
 
     @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
     def test_trim_specpsf(self):
+        """Test trim_specpsf().
+        """
         with patch.multiple('desimodel.trim', trim_quickpsf=DEFAULT, trim_psf=DEFAULT) as desimodel_trim:
             with patch('os.path.exists') as exists:
                 exists.return_value = False
@@ -199,6 +201,27 @@ class TestTrim(unittest.TestCase):
                                call('/in/throughput/DESI-0347_offset.ecsv', '/out/throughput/DESI-0347_offset.ecsv'),
                                call('/in/throughput/DESI-0347_random_offset_1.fits', '/out/throughput/DESI-0347_random_offset_1.fits'),
                                call('/in/throughput/galsim-fiber-acceptance.fits', '/out/throughput/galsim-fiber-acceptance.fits')])
+
+    @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
+    def test_trim_psf(self):
+        """Test trim_psf().
+        """
+        with patch.multiple('astropy.io.fits', open=DEFAULT, HDUList=DEFAULT, PrimaryHDU=DEFAULT, ImageHDU=DEFAULT, BinTableHDU=DEFAULT) as fits:
+            with patch('desimodel.trim.rebin_image') as rebin:
+                with patch('numpy.zeros') as zeros:
+                    trim_psf('/in/specpsf', '/out/specpsf', 'psf-b.fits')
+        fits['open'].assert_called_with('/in/specpsf/psf-b.fits')
+        zeros.assert_called_with((3, 3, 45, 45))
+        fits['HDUList']().writeto.assert_called_with('/out/specpsf/psf-b.fits', overwrite=True)
+
+    @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
+    def test_trim_quickpsf(self):
+        """Test trim_quickpsf().
+        """
+        with patch.multiple('astropy.io.fits', open=DEFAULT, HDUList=DEFAULT, BinTableHDU=DEFAULT) as fits:
+            trim_quickpsf('/in/specpsf', '/out/specpsf', 'psf-quicksim.fits')
+        fits['open'].assert_called_with('/in/specpsf/psf-quicksim.fits')
+        fits['HDUList']().writeto.assert_called_with('/out/specpsf/psf-quicksim.fits', overwrite=True)
 
 
 def test_suite():
