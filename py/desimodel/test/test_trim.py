@@ -6,11 +6,11 @@ import unittest
 from os.path import abspath, dirname
 import numpy as np
 from ..trim import (inout, rebin_image, trim_focalplane, trim_footprint, trim_inputs,
-                    trim_sky, trim_targets, trim_data, trim_specpsf)
+                    trim_sky, trim_targets, trim_data, trim_specpsf, trim_spectra)
 
 skipMock = False
 try:
-    from unittest.mock import call, patch, MagicMock, DEFAULT
+    from unittest.mock import call, patch, mock_open, MagicMock, DEFAULT
 except ImportError:
     # Python 2
     skipMock = True
@@ -21,6 +21,14 @@ class DummyData(object):
     """
     def __init__(self, d):
         self.data = d
+
+
+def iterable_mock_open(*args, **kargs):
+    """unittest.mock.mock_open doesn't support line iteration.
+    """
+    f_open = mock_open(*args, **kargs)
+    f_open.return_value.__iter__ = lambda self : iter(self.readline, '')
+    return f_open
 
 
 class TestTrim(unittest.TestCase):
@@ -133,6 +141,25 @@ class TestTrim(unittest.TestCase):
             desimodel_trim['trim_psf'].assert_has_calls([call('/in/specpsf', '/out/specpsf', 'psf-b.fits'),
                                                          call('/in/specpsf', '/out/specpsf', 'psf-r.fits'),
                                                          call('/in/specpsf', '/out/specpsf', 'psf-z.fits')])
+
+    @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
+    def test_trim_spectra(self):
+        """Test trim_spectra().
+        """
+        spectrum = '\n'.join(['#foo'] + [str(x) for x in range(42)])+'\n'
+        with patch('os.path.exists') as exists:
+            exists.return_value = False
+            with patch('os.makedirs') as makedirs:
+                with patch('builtins.open', new_callable=iterable_mock_open, read_data=spectrum) as mo:
+                    trim_spectra('/in/spectra', '/out/spectra')
+        exists.assert_called_with('/out/spectra')
+        makedirs.assert_called_with('/out/spectra')
+        # print(mo.mock_calls)
+        mo.assert_has_calls([call('/in/spectra/spec-sky.dat'), call('/out/spectra/ZenithExtinction-KPNO.dat', 'w')], any_order=True)
+        handle = mo()
+        # print(handle.mock_calls)
+        handle.write.assert_has_calls([call('#foo\n'), call('19\n'), call('39\n')], any_order=True)
+        # print(handle.write.mock_calls)
 
     @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
     def test_trim_targets(self):
