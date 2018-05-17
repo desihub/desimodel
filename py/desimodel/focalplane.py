@@ -20,7 +20,7 @@ from .io import load_desiparams, load_fiberpos, load_platescale, load_tiles
 # Define this here to avoid a problem with Sphinx compilation.
 try:
     default_offset = 10.886*u.um
-except TypeError:
+except TypeError:  # pragma: no cover
     default_offset = 10.886
 
 

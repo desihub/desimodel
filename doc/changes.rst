@@ -5,7 +5,9 @@ desimodel Release Notes
 0.9.5 (unreleased)
 ------------------
 
-* No changes yet.
+* Increase test coverage, especially for :mod:`desimodel.trim` (PR `#82`_).
+
+.. _`#82`: https://github.com/desihub/desimodel/pull/82
 
 0.9.4 (2018-03-29)
 ------------------

@@ -10,7 +10,7 @@ under data/.
 Basic Setup
 ===========
 
-Make branches of both desimodel github code and svn data::
+Make branches of both desimodel GitHub code and svn data::
 
     git checkout -b update_inputs
     base=https://desi.lbl.gov/svn/code/desimodel
@@ -25,14 +25,23 @@ having to enter a password every time::
     login StephenBailey
     password NotMyRealPassword
 
+The code in :mod:`desimodel.inputs.docdb` requires `requests`_
+(for communicating with DocDB) and `xlrd`_ (for reading Microsoft Excel spreadsheets).
+Both of these are available via Anaconda.
+
+.. _`requests`: http://docs.python-requests.org/en/master/
+.. _`xlrd`: http://www.python-excel.org/
+
 Inputs to update
 ================
 
 DESI-0530-v13 Excel spreadsheet to .ecsv file for GFA locations
 —--------------------------------------------------------------
 
-This writes the .ecsv file containing the GFA data, which 
-is pulled from the "GFALocation" tab on the DESI-0530-v13 Excel spreadsheet and from rows 16-23 and columns A-I. The function build_gfa_table() writes the file in the current directory. 
+This writes the .ecsv file containing the GFA data, which
+is pulled from the "GFALocation" tab on the DESI-0530-v13 Excel spreadsheet
+and from rows 16-23 and columns A-I. The function
+:func:`~desimodel.inputs.gfa.build_gfa_table` writes the file in the current directory.
 
 ::
 
@@ -70,10 +79,9 @@ Update methodology and document how to update the following:
   * Fiber input loss calculations
   * desi.yaml
   * desimodel/data/focalplane/platescale.txt
-  * trimming the full files into a small test set (desimodel.trim)
+  * trimming the full files into a small test set (:mod:`desimodel.trim`)
   * Optical distortions
 
       * data/inputs/throughput/raytracing.txt
       * data/throughput/DESI-0347_blur.ecsv
       * data/throughput/DESI-0347_offset.ecsv
-

@@ -157,8 +157,9 @@ def _auth(machine='desi.lbl.gov'):
     from requests.auth import HTTPDigestAuth
     n = netrc()
     try:
-        u,foo,p = n.authenticators(machine)
-    except:
+        u, foo, p = n.authenticators(machine)
+    except TypeError:
+        # authenticators() returns None if the machine is not found.
         raise ValueError('Unable to get user/pass from $HOME/.netrc for {}'.format(machine))
 
     return HTTPDigestAuth(u,p)
