@@ -6,6 +6,7 @@ import unittest
 import numpy as np
 from ..focalplane import FocalPlane, generate_random_centroid_offsets, xy2radec, get_radius_mm, get_radius_deg, radec2xy
 from ..focalplane import fiber_area_arcsec2, on_gfa, on_tile_gfa, get_gfa_targets
+from ..focalplane import GFALocations
 from .. import io
 from astropy.table import Table
 
@@ -54,47 +55,57 @@ class TestFocalplane(unittest.TestCase):
         self.assertAlmostEqual(truedegree, degree, 5)
         self.assertAlmostEqual(trueradius, radius, 5)
         self.assertAlmostEqual(all(trueradius1), all(radius1), 5)
+        
+        #- Arrays should also work
+        x = np.array([333.738, 333.738])
+        y = np.array([217.766, 217.766])
+        truedegrees = np.array([truedegree, truedegree])
+        degrees = get_radius_deg(x, y)
+        self.assertTrue(np.allclose(degrees, truedegrees))
 
-    def test_xy2radec_new(self):
+    def test_xy2radec_roundtrip(self):
         """Tests the consistency between the conversion functions
         radec2xy and xy2radec. Also tests the accuracy of the xy2radec
         on particular cases.
         """
-        truera = 8.927313423598427
-        truedec = -9.324956250231294
-        newra, newdec = xy2radec(8.37, -10.65, -138.345, -333.179)
-        self.assertAlmostEqual(truera, newra, 5)
-        self.assertAlmostEqual(truedec, newdec, 5)
-        x, y = radec2xy(8.37, -10.65, newra, newdec)
-        self.assertAlmostEqual(x, -138.345, 5)
-        self.assertAlmostEqual(y, -333.179, 5)
+        n = 100
+        r = 410 * np.sqrt(np.random.uniform(0, 1, size=n))
+        theta = np.random.uniform(0, 2*np.pi, size=n)
+        x = r*np.cos(theta)
+        y = r*np.sin(theta)
+        
+        test_telra = [0.0, 0.0, 90.0, 30.0]
+        test_teldec = [0.0, 90.0, 0.0, -30.0]
+        test_telra = np.concatenate([test_telra, np.random.uniform(0, 360, size=5)])
+        test_teldec = np.concatenate([test_teldec, np.random.uniform(-90, 90, size=5)])
+        
+        for telra, teldec in zip(test_telra, test_teldec):
+            ra, dec = xy2radec(telra, teldec, x, y)
+            xx, yy = radec2xy(telra, teldec, ra, dec)
+            dx = xx-x
+            dy = yy-y
+            self.assertLess(np.max(np.abs(dx)), 1e-4)   #- 0.1 um
+            self.assertLess(np.max(np.abs(dy)), 1e-4)   #- 0.1 um
 
-    def test_xy2radec(self):
-        """Test the consistency between the conversion functions
-        radec2xy and xy2radec.
-        """
+    def test_xy2radec_orientation(self):
+        """Test that +x = -RA and +y = +dec"""
+        n = 5
+        x = np.linspace(-400, 400, n)
+        y = np.zeros_like(x)
+        ii = np.arange(n, dtype=int)
+        for teldec in [-30, 0, 30]:
+            ra, dec = xy2radec(0.0, teldec, x, y)
+            self.assertTrue(np.all(np.argsort((ra+180) % 360) == ii[-1::-1]))
+            ra, dec = xy2radec(359.9, teldec, x, y)
+            self.assertTrue(np.all(np.argsort((ra+180) % 360) == ii[-1::-1]))
+            ra, dec = xy2radec(30.0, teldec, x, y)
+            self.assertTrue(np.all(np.argsort(ra) == ii[-1::-1]))
 
-        ra_list = np.array([0.0, 39.0, 300.0, 350.0, 359.9999, 20.0])
-        dec_list = np.array([0.0, 45.0, 89.9999, -89.9999, 0.0, 89.9999])
-
-        F = FocalPlane(ra_list, dec_list)
-
-        # First test to check that it places x, y at the center.
-        ra_obj = ra_list.copy()
-        dec_obj = dec_list.copy()
-
-        x_obj, y_obj = F.radec2xy(ra_obj, dec_obj)
-        self.assertFalse(np.any(np.fabs(x_obj) > 1E-6) |
-                         np.any(np.fabs(y_obj) > 1E-6),
-                         ("Test Failed to recover position center with 1E-6 " +
-                          "precision."))
-
-        # Second test to check that it recovers input ra_obj,dec_obj.
-        ra_out, dec_out = F.xy2radec(x_obj, y_obj)
-        self.assertFalse(np.any(np.fabs(ra_out-ra_obj) > 1E-6) |
-                         np.any(np.fabs(dec_out-dec_obj) >1E-6),
-                         ("Test Failed to recover the input RA, Dec with " +
-                          "1E-6 precision"))
+        y = np.linspace(-400, 400, n)
+        x = np.zeros_like(y)
+        for telra, teldec in [(0, -30), (0, 0), (0, 80), (30, 30)]:
+            ra, dec = xy2radec(0.0, teldec, x, y)
+            self.assertTrue(np.all(np.argsort(dec) == ii))
 
     def test_area_arcsec2(self):
         """ Test area calculation
@@ -105,15 +116,26 @@ class TestFocalplane(unittest.TestCase):
         self.assertFalse(np.any(np.fabs(area-np.array([1.97314482,  1.96207294,  1.92970506,  1.81091119])) >1E-6))
 
     def test_on_gfa(self):
-        """Tests if on_gfa returns two lists as it is supposed to"""
         import numpy as np
-        targetindices, gfalist = on_gfa(0, 0, np.array([1.0, 0, 0, 1.0]), np.array([0, 1.0, 1.5, .5]))
-        self.assertEqual(0, len(targetindices))
-        self.assertEqual(0, len(gfalist))
-        self.assertEqual(len(targetindices), len(gfalist))
+        telra, teldec = 10, 20
+        gfa = GFALocations()
+        x = gfa.gfatable['X']
+        y = gfa.gfatable['Y']
+        ra, dec = xy2radec(telra, teldec, x, y)
+
+        # GFA corners are on GFAs if scale>1.0
+        gfa_loc = on_gfa(telra, teldec, ra, dec, scale=1.1)
+        self.assertEqual(len(gfa_loc), len(ra))
+        self.assertTrue(np.all(gfa_loc >= 0))
+
+        # Test cases that aren't on a GFA
+        ra = np.random.uniform(telra-1, telra+1, size=10)
+        dec = np.random.uniform(teldec-1, teldec+1, size=10)
+        gfa_loc = on_gfa(telra, teldec, ra, dec, scale=1.1)
+        self.assertEqual(len(gfa_loc), len(ra))
+        self.assertTrue(np.all(gfa_loc == -1))
 
     def test_on_tile_gfa(self):
-        """Tests if on_tile_gfa returns two lists as it is supposed to"""
         #- Generate some targets near a tile; some should land on the GFAs
         tile = io.load_tiles()[0]
         targets = Table()
@@ -122,12 +144,9 @@ class TestFocalplane(unittest.TestCase):
         dec = np.random.uniform(tile['DEC']-1.61, tile['DEC']+1.61, size=ntargets)
         targets['RA'] = (ra+360) % 360
         targets['DEC'] = dec
-        targetindices, gfaid = on_tile_gfa(tile['TILEID'], targets, 120)
-        self.assertEqual(targetindices.size, gfaid.size)
-        self.assertGreater(targetindices.size, 0)
-        self.assertLess(np.max(targetindices), ntargets)
-        self.assertLess(np.max(gfaid), 10)
-        self.assertGreaterEqual(np.min(gfaid), 0)
+        gfa_targets = on_tile_gfa(tile['TILEID'], targets)
+        self.assertGreater(len(gfa_targets), 0)
+        self.assertIn('GFA_LOC', gfa_targets.dtype.names)
 
         #- Test higher level get_gfa_targets
         targets['FLUX_R'] = 2000
@@ -139,9 +158,8 @@ class TestFocalplane(unittest.TestCase):
 
         #- Shift +60 deg and verify that none are found for that tile
         targets['RA'] = (targets['RA'] + 60) % 360
-        targetindices, gfaid = on_tile_gfa(tile['TILEID'], targets, 120)
-        self.assertEqual(targetindices.size, 0)
-        self.assertEqual(gfaid.size, 0)
+        gfatargets = on_tile_gfa(tile['TILEID'], targets)
+        self.assertEqual(len(gfatargets), 0)
 
         # Test an empty table
         gfatargets = get_gfa_targets(targets, rfluxlim=3000)
