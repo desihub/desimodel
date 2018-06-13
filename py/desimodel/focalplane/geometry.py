@@ -9,11 +9,13 @@ Dimensions and coordinate system transforms for the DESI focal plane.
 
 import os
 import numpy as np
+from scipy.interpolate import interp1d
 from astropy.io import fits
 from astropy.table import Table
 
 from ..footprint import find_points_in_tiles, find_points_radec, get_tile_radec
-from ..io import load_desiparams, load_fiberpos, load_platescale, load_tiles
+from ..io import (load_desiparams, load_fiberpos, load_platescale,
+    load_tiles, load_deviceloc)
 
 _tile_radius_deg = None
 _tile_radius_mm = None
@@ -34,10 +36,9 @@ def get_tile_radius_deg():
     '''
     global _tile_radius_deg
     if _tile_radius_deg is None:
-        import scipy.interpolate
         rmax = get_tile_radius_mm()
         platescale = load_platescale()
-        fn = scipy.interpolate.interp1d(platescale['radius'], platescale['theta'], kind='quadratic')
+        fn = interp1d(platescale['radius'], platescale['theta'], kind='quadratic')
         _tile_radius_deg = float(fn(rmax))
     return _tile_radius_deg
 
@@ -55,10 +56,9 @@ def get_radius_mm(theta):
     :class:`float` or array-like
         Radii in mm.
     """
-    import scipy.interpolate
     platescale = load_platescale()
     # Uses a quadratic one-dimensional interpolation to approximate the radius in degrees versus radius in mm
-    fn = scipy.interpolate.interp1d(platescale['theta'], platescale['radius'], kind = 'quadratic')
+    fn = interp1d(platescale['theta'], platescale['radius'], kind = 'quadratic')
     radius = fn(theta)
     if(np.isscalar(theta)):
         return float(radius)
@@ -81,13 +81,28 @@ def get_radius_deg(x, y):
     :class:`float`
         Radius corresponding to `x`, `y`.
     """
-    import scipy.interpolate
     radius = np.sqrt(x**2 + y**2)
     platescale = load_platescale()
-    fn = scipy.interpolate.interp1d(platescale['radius'], platescale['theta'],
+    fn = interp1d(platescale['radius'], platescale['theta'],
                                     kind='quadratic')
     degree = fn(radius).astype(float)
     return degree
+
+def _extrapolate_r_s(r, s):
+    '''
+    Utility function for xy2qs and qs2xy; returns new r, s with extrapolations
+    to 0 and max(r)+10 mm.
+    '''
+    # quadratic extrapolation beyond rmax
+    ii = (r>410)
+    c = np.polyfit(r[ii], s[ii], 2)
+    xr = np.linspace(np.max(r)+0.1, np.max(r)+10, 10)
+    xs = np.polyval(c, xr)
+
+    full_r = np.concatenate([[0.0,], r, xr])
+    full_s = np.concatenate([[0.0,], s, xs])
+    return full_r, full_s
+
 
 def xy2qs(x, y):
     '''Focal tangent plane x,y -> angular q,s on curved focal surface
@@ -109,20 +124,10 @@ def xy2qs(x, y):
 
     q = np.degrees(np.arctan2(y, x))
     r = np.sqrt(x**2 + y**2)
-    
-    #- Add extrapolations
-    dr = np.sqrt(d['X']**2 + d['Y']**2)
-    ds = d['S']
-    ii = (dr>410)
-    c = np.polyfit(dr[ii], ds[ii], 2)
-    rx = np.linspace(np.max(dr), np.max(dr)+10, 10)
-    sx = np.polyval(c, rx)
-    
-    dr = np.concatenate([[0.0,], dr, rx])
-    ds = np.concatenate([[0.0,], ds, sx])
+
+    dr, ds = _extrapolate_r_s(np.sqrt(d['X']**2 + d['Y']**2), d['S'])
     ii = np.argsort(dr)
-    
-    from scipy.interpolate import interp1d
+
     fn = interp1d(dr[ii], ds[ii], kind='quadratic', assume_sorted=True)
     s = fn(r)
 
@@ -147,10 +152,9 @@ def qs2xy(q, s):
     d = load_deviceloc()
     d = d[d['PETAL'] == 0]
 
-    dr = np.sqrt(d['X']**2 + d['Y']**2)
-    ds = d['S']
+    dr, ds = _extrapolate_r_s(np.sqrt(d['X']**2 + d['Y']**2), d['S'])
     ii = np.argsort(ds)
-    from scipy.interpolate import interp1d
+
     fn = interp1d(ds[ii], dr[ii], kind='quadratic')
     r = fn(s)
     x = r*np.cos(np.radians(q))
@@ -358,53 +362,6 @@ class FocalPlane(object):
         self.ra = ra
         self.dec = dec
 
-    def plate_dist(self, theta):
-        """Returns the radial distance on the plate (mm) given the angle
-        (radians). This is a fit to some data, it should be calculated on the
-        fly at __init__.
-
-        Parameters
-        ----------
-        theta : :class:`float`
-            Angle in radians.
-
-        Returns
-        -------
-        :class:`float`
-            Radial distance in mm.
-        """
-        p = np.array([8.297E5, -1750.0, 1.394E4, 0.0])
-        radius = 0.0
-        for i in range(4):
-            radius = theta*radius + p[i]
-        return radius
-
-    def plate_angle(self, radius):
-        """Returns the angular distance on the plate (radians) given the
-        radial distance to the plate (mm).
-
-        It uses a Newton-Raphson method.
-
-        Parameters
-        ----------
-        radius : :class:`float`
-            Plate distance in mm.
-
-        Returns
-        -------
-        :class:`float`
-            Angular distance in radians.
-        """
-        angle_guess = 0.0 * radius
-        dist_guess = self.plate_dist(angle_guess) - radius
-        while np.any(np.fabs(dist_guess) > 1E-8):
-            derivative = (self.plate_dist(angle_guess+1E-5) -
-                          self.plate_dist(angle_guess))/1E-5
-            delta_guess = - dist_guess/derivative
-            angle_guess = angle_guess + delta_guess
-            dist_guess = self.plate_dist(angle_guess) - radius
-        return angle_guess
-
     def radec2xy(self, ra, dec):
         """Convert (RA, Dec) in degrees to (x, y) in mm on the focal plane
         given the current telescope pointing.
@@ -460,15 +417,13 @@ class FocalPlane(object):
         """
         raise NotImplementedError
 
+    def xy2pos(self, x, y):
+        """Identify which positioners cover (`x`, `y`).
 
-# Not sure what to call it, but it would also be useful to have a
-# function that takes (ra, dec) arrays and returns a list with one
-# element per positioner, giving the indices of the (ra,dec) arrays
-# that that positioner covers.
-#
-# ditto for xy2pos(), xy2fiber(), etc.
-# positioner = thing on the focal plane
-# fiber = numerically increasing in order on the spectrograph CCDs
+        .. warning:: This method is not implemented!
+        """
+        raise NotImplementedError
+
 
 def fiber_area_arcsec2(x, y):
     '''Returns area of fibers at (`x`, `y`) in arcsec^2.

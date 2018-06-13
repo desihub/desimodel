@@ -4,9 +4,7 @@
 """
 import unittest
 import numpy as np
-from ..focalplane import FocalPlane, generate_random_centroid_offsets, xy2radec, get_radius_mm, get_radius_deg, radec2xy
-from ..focalplane import fiber_area_arcsec2, on_gfa, on_tile_gfa, get_gfa_targets
-from ..focalplane import GFALocations
+from ..focalplane import *
 from .. import io
 from astropy.table import Table
 
@@ -62,6 +60,40 @@ class TestFocalplane(unittest.TestCase):
         truedegrees = np.array([truedegree, truedegree])
         degrees = get_radius_deg(x, y)
         self.assertTrue(np.allclose(degrees, truedegrees))
+
+    def test_FocalPlane(self):
+        n = 20
+        x, y = np.random.uniform(-100, 100, size=(2,n))
+        f = FocalPlane(ra=100, dec=20)
+        ra, dec = f.xy2radec(x, y)
+        xx, yy = f.radec2xy(ra, dec)
+        self.assertLess(np.max(np.abs(xx-x)), 1e-4)
+        self.assertLess(np.max(np.abs(yy-y)), 1e-4)
+
+    def test_xy2qs(self):
+        x, y = qs2xy(0.0, 100);   self.assertAlmostEqual(y, 0.0)
+        x, y = qs2xy(90.0, 100);  self.assertAlmostEqual(x, 0.0)
+        x, y = qs2xy(180.0, 100); self.assertAlmostEqual(y, 0.0)
+        x, y = qs2xy(270.0, 100); self.assertAlmostEqual(x, 0.0)
+
+        q, s = xy2qs(0.0, 100.0); self.assertAlmostEqual(q, 90.0)
+        q, s = xy2qs(100.0, 0.0); self.assertAlmostEqual(q, 0.0)
+        q, s = xy2qs(-100.0, 100.0); self.assertAlmostEqual(q, 135.0)
+
+        n = 100
+        s = 410*np.sqrt(np.random.uniform(0, 1, size=n))
+        q = np.random.uniform(0, 360, size=n)
+
+        x, y = qs2xy(q, s)
+        qq, ss = xy2qs(x, y)
+        xx, yy = qs2xy(qq, ss)
+        self.assertLess(np.max(np.abs(xx-x)), 1e-4)
+        self.assertLess(np.max(np.abs(yy-y)), 1e-4)
+        self.assertLess(np.max(np.abs(ss-s)), 1e-4)
+        dq = (qq-q) % 360
+        dq[dq>180] -= 360
+        self.assertLess(np.max(np.abs(dq)), 1e-4)
+
 
     def test_xy2radec_roundtrip(self):
         """Tests the consistency between the conversion functions
@@ -165,6 +197,64 @@ class TestFocalplane(unittest.TestCase):
         gfatargets = get_gfa_targets(targets, rfluxlim=3000)
         self.assertEqual(len(gfatargets), 0)
 
+    def test_qs_on_gfa(self):
+        n = 1000
+        s = np.random.uniform(391, 407, size=n)
+        q = np.random.uniform(0, 360, size=n)
+        gfa = GFALocations()
+        for gfaloc in range(10):
+            ok = gfa.qs_on_gfa(gfaloc, q, s)
+            if not np.any(ok):
+                print(gfaloc)
+                #--- DEBUG ---
+                import IPython
+                IPython.embed()
+                #--- DEBUG ---
+            # self.assertTrue(np.any(ok))
+
+    def test_gfa_coverage(self):
+        '''Test corner cases for testing coverage'''
+        gfatable = io.load_gfa().copy()
+        f = GFALocations(gfatable=gfatable)
+        if 'PETAL' in gfatable.colnames:
+            gfatable.rename_column('PETAL', 'GFA_LOC')
+        else:
+            gfatable.rename_column('GFA_LOC', 'PETAL')
+        f = GFALocations(gfatable=gfatable)
+        x, y = np.random.uniform(-100, 100, (2,10))
+        ok = f.xy_on_gfa(0, x, y)
+        self.assertEqual(len(ok), len(x))
+        self.assertTrue(np.all(ok == False))
+        ok = f.xy_on_gfa(1, x[0], y[0])
+        self.assertFalse(ok)
+
+        with self.assertRaises(ValueError):
+            ok = f.xy_on_gfa(99, x[0], y[0])    #- no GFA_LOC=99
+
+        if 'PETAL' in gfatable.colnames:
+            del gfatable['PETAL']
+
+        if 'GFA_LOC' in gfatable.colnames:
+            del gfatable['GFA_LOC']
+
+        with self.assertRaises(ValueError):
+            fx = GFALocations(gfatable=gfatable)
+
+        #- targets must have RA,DEC or TARGET_RA,TARGET_DEC
+        telra, teldec = 10, 20
+        targets = Table()
+        targets['RA'] = np.random.uniform(5, 15, size=10)
+        targets['DEC'] = np.random.uniform(5, 15, size=10)
+        ok = f.targets_on_gfa(telra, teldec, targets)
+        targets.rename_column('RA', 'TARGET_RA')
+        targets.rename_column('DEC', 'TARGET_DEC')
+        ok = f.targets_on_gfa(telra, teldec, targets)
+
+        targets['BLAT'] = np.arange(len(targets))
+        del targets['TARGET_RA']
+        del targets['TARGET_DEC']
+        with self.assertRaises(ValueError):
+            ok = f.targets_on_gfa(telra, teldec, targets)  #- no ra/dec
 
 def test_suite():
     """Allows testing of only this module with the command::

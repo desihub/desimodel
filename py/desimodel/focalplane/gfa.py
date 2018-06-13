@@ -13,7 +13,7 @@ import astropy.table
 
 from ..io import load_deviceloc, load_gfa, load_platescale, load_tiles
 from ..footprint import find_points_in_tiles, find_points_radec, get_tile_radec
-from .geometry import get_radius_deg, radec2xy
+from .geometry import get_radius_deg, radec2xy, qs2xy
 
 class GFALocations(object):
     def __init__(self, gfatable=None, scale=1.0):
@@ -46,7 +46,7 @@ class GFALocations(object):
         
         self.gfatable = gfatable
         self.gfa_polygons = list()
-        self.gfa_locations = sorted(set(gfa_locations))
+        self.gfa_locations = np.array(sorted(set(gfa_locations)))
         self.max_radius_mm = 0.0
         for loc in self.gfa_locations:
             ii = (gfa_locations == loc)
@@ -100,7 +100,7 @@ class GFALocations(object):
         
         Returns boolean array of whether (q,s) is on GFA at location GFA_LOC
         '''
-        x, y = desimodel.focalplane.qs2xy(q, s)
+        x, y = qs2xy(q, s)
         return self.xy_on_gfa(gfa_loc, x, y)
         
     def targets_on_gfa(self, telra, teldec, targets):
