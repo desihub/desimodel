@@ -217,6 +217,24 @@ class TestFootprint(unittest.TestCase):
                                              np.array([0, 1.5, 0, 1.3]))
         self.assertEqual(answer, [0, 1, 3])
 
+    def test_tiles2pix(self):
+        tiles = Table()
+        tiles['RA'] = [1.0, 2.0]
+        tiles['DEC'] = [10.0, 22.0]
+        pix = footprint.tiles2pix(16, tiles=tiles, per_tile=True)
+        self.assertEqual(len(pix), len(tiles))
+        allpix = np.unique(np.concatenate(pix))
+        pix = footprint.tiles2pix(16, tiles=tiles, per_tile=False)
+        self.assertEqual(set(pix), set(allpix))
+
+    def test_tileids2pix(self):
+        tiles = io.load_tiles()
+        pix = footprint.tileids2pix(16, tiles['TILEID'][0:3])
+        self.assertGreater(len(pix), 0)
+        n = np.max(tiles['TILEID'])
+        with self.assertRaises(ValueError):
+            pix = footprint.tileids2pix(16, [n, n+1, n+2])
+
     def test_partial_pixels(self):
         """Check weights assigned to HEALPixels that partially overlap tiles.
         """

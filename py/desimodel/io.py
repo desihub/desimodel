@@ -96,6 +96,22 @@ def load_gfa():
 #
 #
 #
+_deviceloc = None
+def load_deviceloc():
+    global _deviceloc
+    from astropy.table import Table
+    if _deviceloc is None:
+        fiberposfile = os.path.join(os.environ['DESIMODEL'],'data','focalplane','fiberpos-all.fits')
+        _deviceloc = Table.read(fiberposfile)
+
+    #- Convert to upper case if needed
+    #- Make copy of colnames b/c they are updated during iteration
+    for col in list(_deviceloc.colnames):
+        if col.islower():
+            _deviceloc.rename_column(col, col.upper())
+
+    return _deviceloc
+
 _fiberpos = None
 def load_fiberpos():
     """Returns fiberpos table from desimodel/data/focalplane/fiberpos.fits.
