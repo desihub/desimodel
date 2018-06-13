@@ -53,7 +53,7 @@ class TestFocalplane(unittest.TestCase):
         self.assertAlmostEqual(truedegree, degree, 5)
         self.assertAlmostEqual(trueradius, radius, 5)
         self.assertAlmostEqual(all(trueradius1), all(radius1), 5)
-        
+
         #- Arrays should also work
         x = np.array([333.738, 333.738])
         y = np.array([217.766, 217.766])
@@ -105,12 +105,12 @@ class TestFocalplane(unittest.TestCase):
         theta = np.random.uniform(0, 2*np.pi, size=n)
         x = r*np.cos(theta)
         y = r*np.sin(theta)
-        
+
         test_telra = [0.0, 0.0, 90.0, 30.0]
         test_teldec = [0.0, 90.0, 0.0, -30.0]
         test_telra = np.concatenate([test_telra, np.random.uniform(0, 360, size=5)])
         test_teldec = np.concatenate([test_teldec, np.random.uniform(-90, 90, size=5)])
-        
+
         for telra, teldec in zip(test_telra, test_teldec):
             ra, dec = xy2radec(telra, teldec, x, y)
             xx, yy = radec2xy(telra, teldec, ra, dec)
@@ -204,13 +204,7 @@ class TestFocalplane(unittest.TestCase):
         gfa = GFALocations()
         for gfaloc in range(10):
             ok = gfa.qs_on_gfa(gfaloc, q, s)
-            if not np.any(ok):
-                print(gfaloc)
-                #--- DEBUG ---
-                import IPython
-                IPython.embed()
-                #--- DEBUG ---
-            # self.assertTrue(np.any(ok))
+            self.assertTrue(np.any(ok))
 
     def test_gfa_coverage(self):
         '''Test corner cases for testing coverage'''

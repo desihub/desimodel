@@ -192,7 +192,7 @@ def xy2radec(telra, teldec, x, y):
     # Consider a unit sphere (x,y,z)
     # starting at (RA,dec) = (0,0) -> v0 = (1,0,0)
     # v0 = np.array([1.0, 0.0, 0.0])
-    
+
     # The focal plane is oriented with +yfocal = +dec but +xfocal = -RA
     # Rotate clockwise around z by r_rad
     # zrotate = np.zeros(shape=(3,3))
@@ -211,7 +211,7 @@ def xy2radec(telra, teldec, x, y):
     # xrotate[0] = [1, 0, 0]
     # xrotate[1] = [0, np.cos(q_rad), np.sin(q_rad)]
     # xrotate[2] = [0, -np.sin(q_rad), np.cos(q_rad)]
-    
+
     x2 = x1
     y2 = y1*np.cos(q_rad)           # z1=0 so drop sin(q_rad) term
     z2 = -y1*np.sin(q_rad)          # z1=0 so drop cos(q_rad) term
@@ -232,10 +232,10 @@ def xy2radec(telra, teldec, x, y):
     rarotate[2] = [0, 0, 1]
 
     x3, y3, z3 = v3 = rarotate.dot(decrotate.dot(v2))
-    
+
     ra_deg = np.degrees(np.arctan2(y3, x3)) % 360
     dec_deg = np.degrees((np.pi/2) - np.arccos(z3))
-        
+
     return ra_deg, dec_deg
 
 
@@ -321,9 +321,9 @@ class FocalPlane(object):
     ra, dec : :class:`float`
         Initialize DESI focal plane model with the telescope pointing
         at (`ra`, `dec`) in degrees.
-    
+
     NOTE: this class is deprecated (or should be further expanded), but
-    not removing it yet in order to not arbitrarily break code that
+    I'm not removing it yet in order to not arbitrarily break code that
     might be using it.
     """
 

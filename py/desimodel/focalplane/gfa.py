@@ -19,7 +19,7 @@ class GFALocations(object):
     def __init__(self, gfatable=None, scale=1.0):
         '''
         Wrapper class for GFA locations
-        
+
         Options:
             gfatable: table with GFA corners in X, Y and either GFA_LOC or PETAL
             scale: scale factor for GFA size
@@ -36,14 +36,14 @@ class GFALocations(object):
 
         if gfatable is None:
             gfatable = load_gfa()
-        
+
         if 'GFA_LOC' in gfatable.dtype.names:
             gfa_locations = gfatable['GFA_LOC']
         elif 'PETAL' in gfatable.dtype.names:
             gfa_locations = gfatable['PETAL']
         else:
             raise ValueError('gfatable must have GFA_LOC or PETAL column')
-        
+
         self.gfatable = gfatable
         self.gfa_polygons = list()
         self.gfa_locations = np.array(sorted(set(gfa_locations)))
@@ -52,15 +52,15 @@ class GFALocations(object):
             ii = (gfa_locations == loc)
             xcorners = gfatable['X'][ii]
             ycorners = gfatable['Y'][ii]
-            
+
             if scale != 1.0:
                 x0, y0 = np.mean(xcorners), np.mean(ycorners)
                 xcorners = x0 + scale*(xcorners-x0)
                 ycorners = y0 + scale*(ycorners-y0)
-            
+
             r = np.sqrt(xcorners**2 + ycorners**2)
             self.max_radius_mm = max(self.max_radius_mm, np.max(r))
-            
+
             self.gfa_polygons.append(Path(list(zip(xcorners, ycorners))))
 
         self.max_radius_deg = float(get_radius_deg(self.max_radius_mm, 0.0))
@@ -68,11 +68,11 @@ class GFALocations(object):
     def xy_on_gfa(self, gfa_loc, x, y):
         '''
         Return boolean array of whether points (x,y) are on GFA at GFA_LOC
-        
+
         Args:
             gfa_loc: integer GFA location [0-9] = PETAL_LOC for DESI
             x, y: array of focal tangent plane locations in mm
-        
+
         Returns boolean array of whether (x,y) is on GFA at location GFA_LOC
         '''
         if gfa_loc not in self.gfa_locations:
@@ -92,31 +92,31 @@ class GFALocations(object):
     def qs_on_gfa(self, gfa_loc, q, s):
         '''
         Return boolean array of whether points (q,s) are on GFA at GFA_LOC
-        
+
         Args:
             gfa_loc: integer GFA location ID
             q: angular coordinate in degrees
             s: radial coordinate along focal surface in mm
-        
+
         Returns boolean array of whether (q,s) is on GFA at location GFA_LOC
         '''
         x, y = qs2xy(q, s)
         return self.xy_on_gfa(gfa_loc, x, y)
-        
+
     def targets_on_gfa(self, telra, teldec, targets):
         '''
         Returns subset of targets table with new GFA_LOC column
-        
+
         Args:
             telra, teldec: Telescope pointing (RA,dec) in degrees
             targets: table with columns RA, DEC
-        
+
         Returns gfa_targets table: subset of targets with new GFA_LOC column
         '''
         #- Trim to targets that might be on this pointing
         ps = load_platescale()
         rmax = ps['theta'][-1]
-        
+
         columns = targets.dtype.names
         if ('RA' in columns) and ('DEC' in columns):
             ra = targets['RA']
@@ -126,7 +126,7 @@ class GFALocations(object):
             dec = targets['TARGET_DEC']
         else:
             raise ValueError('input targets must have columns RA,DEC or TARGET_RA,TARGET_DEC; has columns {}'.format(targets.dtype.names))
-        
+
         ii = find_points_radec(telra, teldec, ra, dec, radius=rmax)
         targets = targets[ii]
         ra = ra[ii]
@@ -140,15 +140,15 @@ class GFALocations(object):
             ii = self.xy_on_gfa(loc, x, y)
             keep |= ii
             gfa_loc[ii] = loc
-        
+
         results = astropy.table.Table(targets[keep], copy=False)
         results['GFA_LOC'] = gfa_loc[keep].astype(np.int16)
-        
+
         assert np.all(results['GFA_LOC'] >= 0)
         assert np.all(np.in1d(results['GFA_LOC'], self.gfa_locations))
-        
+
         return results
-        
+
 #-------------------------------------------------------------------------
 
 def on_gfa(telra, teldec, ra, dec, scale=1.0):
@@ -183,7 +183,7 @@ def on_gfa(telra, teldec, ra, dec, scale=1.0):
         gfaloc[ii] = loc
 
     return gfaloc
-    
+
 
 def on_tile_gfa(tileid, targets, scale=1.0):
     """This function takes a tileid, a table of targets, and an optional
@@ -246,7 +246,7 @@ def get_gfa_targets(targets, rfluxlim=1000, tiles=None, scale=1.0):
 
     if(tiles is None):
         tiles = load_tiles()
-    
+
     gfa = GFALocations(scale=scale)
 
     points = find_points_in_tiles(tiles, targets['RA'], targets['DEC'],
@@ -261,5 +261,5 @@ def get_gfa_targets(targets, rfluxlim=1000, tiles=None, scale=1.0):
             if len(tiletargets) > 0:
                 tiletargets['TILEID'] = tileid
                 target_tables.append(tiletargets)
-            
+
     return astropy.table.vstack(target_tables)
