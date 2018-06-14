@@ -149,11 +149,12 @@ def tileids2pix(nside, tileids, radius=None, per_tile=False):
     '''
     tiles = load_tiles()
     ii = np.in1d(tiles['TILEID'], tileids)
-    if np.count_nonzero(ii) > 0:
+    if np.count_nonzero(ii) == np.asarray(tileids).size:
         return tiles2pix(nside, tiles[ii], radius=radius, per_tile=per_tile)
     else:
-        raise ValueError('TILEID(s) {} not in DESI footprint'.format(tileids))
-
+        extra = set(tileids) - set(tiles['TILEID'])
+        raise ValueError('{}/{} TILEID(s) not in DESI footprint: {}'.format(
+            len(extra), len(tileids), extra))
 
 def tiles2fracpix(nside, step=1, tiles=None, radius=None, fact=4):
     '''Returns a sorted array of just the *fractional* pixels that overlap the
