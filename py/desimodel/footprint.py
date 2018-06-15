@@ -94,6 +94,12 @@ def radec2pix(nside, ra, dec):
     '''
     import healpy as hp
     theta, phi = np.radians(90-dec), np.radians(ra)
+    if np.isnan(np.sum(theta)) :
+        raise ValueError("some NaN theta values")
+
+    if np.sum((theta < 0)|(theta > np.pi))>0 :
+        raise ValueError("some theta values are outside [0,pi]: {}".format(theta[(theta < 0)|(theta > np.pi)]))
+
     return hp.ang2pix(nside, theta, phi, nest=True)
 
 
