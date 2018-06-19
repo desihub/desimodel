@@ -172,7 +172,8 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
         tilesfile = os.path.join(os.environ['DESIMODEL'],'data','footprint',filename)
 
     #- standarize path location
-    tilesfile = os.path.abspath(tilesfile)
+    print(tilesfile.format(**os.environ))
+    tilesfile = os.path.abspath(tilesfile.format(**os.environ))
 
     if cache and tilesfile in _tiles:
         tiledata = _tiles[tilesfile]
