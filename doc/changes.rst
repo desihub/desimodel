@@ -7,9 +7,11 @@ desimodel Release Notes
 
 * Increase test coverage, especially for :mod:`desimodel.trim` (PR `#82`_).
 * Reorganize desimodel.focalplane and add more GFA selection code (PR `#85`_).
+* Allow an environment variable in the tilesfile filename (PR `#87`_).
 
 .. _`#82`: https://github.com/desihub/desimodel/pull/82
 .. _`#85`: https://github.com/desihub/desimodel/pull/85
+.. _`#87`: https://github.com/desihub/desimodel/pull/87
 
 0.9.4 (2018-03-29)
 ------------------
