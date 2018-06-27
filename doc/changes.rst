@@ -2,7 +2,7 @@
 desimodel Release Notes
 =======================
 
-0.9.5 (unreleased)
+0.9.5 (2018-06-27)
 ------------------
 
 * Increase test coverage, especially for :mod:`desimodel.trim` (PR `#82`_).
