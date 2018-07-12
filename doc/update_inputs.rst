@@ -69,6 +69,15 @@ This updates the throughput model from DESI-0347 and DESI-0344.
     import desimodel.inputs.throughput
     desimodel.inputs.throughput.update()
 
+To update the version of DESI-347 that is used, change the default value of
+``desi347_version`` in the ``update()`` function.  Similiarly for DESI-344.
+
+Only three rows of the throughput spreadsheet from DESI-347 are used, with
+hard-coded row numbers.  There are some simple checks that these are correct,
+using the ``specthru_row`` and ``thru_row`` arguments to ``load_throughput()``,
+but check the outputs carefully if you think the spreadsheet structure might
+have changed.
+
 To Do
 =====
 
