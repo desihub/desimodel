@@ -45,7 +45,7 @@ and from rows 16-23 and columns A-I. The function
 
 ::
 
-    from import desimodel.inputs.gfa import build_gfa_table
+    from desimodel.inputs.gfa import build_gfa_table
     build_gfa_table()
 
 Positioner to Fiber Mapping
