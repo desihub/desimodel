@@ -123,6 +123,7 @@ def xy2qs(x, y):
     d = d[d['PETAL'] == 0]
 
     q = np.degrees(np.arctan2(y, x))
+    q[q<0] += 360.0
     r = np.sqrt(x**2 + y**2)
 
     dr, ds = _extrapolate_r_s(np.sqrt(d['X']**2 + d['Y']**2), d['S'])
