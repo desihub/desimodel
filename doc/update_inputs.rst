@@ -52,12 +52,14 @@ Positioner to Fiber Mapping
 ---------------------------
 
 This updates the mapping of device locations on the focal plane to
-spectrograph fiber numbers using DESI-0530 and DESI-2721.
+spectrograph fiber numbers using DESI-0530-v14, DESI-2721-v2 and DESI-329-v15.
 
 ::
 
     import desimodel.inputs.fiberpos
     desimodel.inputs.fiberpos.update()
+
+To update a DESI-doc versions, edit the corresponding ``docdb.download(...)`` call.
 
 Throughput
 ----------

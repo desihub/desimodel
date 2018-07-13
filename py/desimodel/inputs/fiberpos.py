@@ -32,7 +32,7 @@ def update(testdir=None, seed=2):
 
     #- Download input files from DocDB
     cassette_file = docdb.download(2721, 2, 'cassette_order.txt')
-    xls_fp_layout = docdb.download(530, 11, 'DESI-0530-v11 (Focal Plane Layout).xlsx')
+    xls_fp_layout = docdb.download(530, 14, 'DESI-0530-v14 (Focal Plane Layout).xlsx')
     platescale_file = docdb.download(329, 15, 'Echo22Platescale.txt')
 
     #- Pick filenames in output directory
@@ -57,7 +57,7 @@ def update(testdir=None, seed=2):
     sn = 'PositionerAndFiducialLocations'
 
     #- Sanity check that columns are still in the same place
-    rowmin, rowmax = 48, 590
+    rowmin, rowmax = 49, 591
     headers = docdb.xls_read_row(fn, sn, rowmin-1, 'B', 'S')
 
     assert headers[0] == 'device_location_id'
