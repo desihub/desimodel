@@ -22,12 +22,11 @@ def update(testdir=None, desi347_version=13, desi334_version=3):
     '''
     Update thru-\*.fits from DESI-0347 and DESI-0344
 
-    Options:
-        testdir: if not None, write files here instead of standard locations
+    Args:
+        testdir: If not None, write files here instead of standard locations
             under $DESIMODEL/data/
         desi347_version: version of DESI-347 to use
         desi334_version: version of DESI-334 to use
-    
     '''
     from desiutil.log import get_logger
     log = get_logger()
