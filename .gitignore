@@ -55,3 +55,6 @@ target/
 
 # data directory may be installed, but it is not part of git.
 data
+
+# Editor files
+.vscode
