@@ -27,6 +27,7 @@ def update(testdir=None, desi347_version=13, desi334_version=3):
             under $DESIMODEL/data/
         desi347_version: version of DESI-347 to use
         desi334_version: version of DESI-334 to use
+    
     '''
     from desiutil.log import get_logger
     log = get_logger()
