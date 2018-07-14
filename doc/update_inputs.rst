@@ -35,18 +35,23 @@ Both of these are available via Anaconda.
 Inputs to update
 ================
 
-DESI-0530-v13 Excel spreadsheet to .ecsv file for GFA locations
-—--------------------------------------------------------------
+The update functions below belong to :mod:`desimodel.inputs` and take an optional
+argument ``testdir`` to specify an alternate directory where updated outputs should be written.
+When ``testdir`` is not specified, outputs are written to their standard locations
+under :func:`desimodel.io.datadir`.
 
-This writes the .ecsv file containing the GFA data, which
+DESI-0530-v13 Excel spreadsheet to .ecsv file for GFA locations
+---------------------------------------------------------------
+
+This writes the ``gfa.ecsv`` file containing the GFA data, which
 is pulled from the "GFALocation" tab on the DESI-0530-v13 Excel spreadsheet
 and from rows 16-23 and columns A-I. The function
-:func:`~desimodel.inputs.gfa.build_gfa_table` writes the file in the current directory.
+:func:`desimodel.inputs.gfa.build_gfa_table` writes the file in the current directory.
 
 ::
 
-    from desimodel.inputs.gfa import build_gfa_table
-    build_gfa_table()
+    import desimodel.inputs.gfa
+    desimodel.inputs.gfa.build_gfa_table()
 
 Positioner to Fiber Mapping
 ---------------------------

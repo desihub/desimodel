@@ -19,14 +19,11 @@ def build_gfa_table(testdir=None):
     The GFA corners come from the P1-P4 "Reference projection of active area"
     in rows 26-29 of columns C-E of DESI-0530-v14.
 
-    Parameters
-    ----------
-    testdir: If not None, write files here instead of standard locations
-        under $DESIMODEL/data/
+    The saved table has columns PETAL,CORNER,X,Y,Z,Q,S,RADIUS_DEG.
 
-    Returns
-    -------
-    gfatable: table with columns PETAL,CORNER,X,Y,Z,Q,S,RADIUS_DEG
+    Args:
+        testdir: If not None, write files here instead of standard locations
+            under $DESIMODEL/data/
     '''
     from desiutil.log import get_logger
     log = get_logger()
