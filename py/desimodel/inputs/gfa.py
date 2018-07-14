@@ -6,10 +6,12 @@ desimodel.inputs.gfa
 
 Utilities for updating GFA data.
 """
+import os.path
 import numpy as np
 from ..focalplane import get_radius_deg, get_radius_mm, xy2qs
+from ..io import datadir
 
-def build_gfa_table(outfile=None):
+def build_gfa_table(testdir=None):
     '''
     Builds the GFA table given the data from DESI-0530-v14 Excel spreadsheet
     and writes an .ecsv file using the astropy table library.
@@ -19,12 +21,24 @@ def build_gfa_table(outfile=None):
 
     Parameters
     ----------
-    outfile: output ascii ecsv file name (optional)
+    testdir: If not None, write files here instead of standard locations
+        under $DESIMODEL/data/
 
     Returns
     -------
     gfatable: table with columns PETAL,CORNER,X,Y,Z,Q,S,RADIUS_DEG
     '''
+    from desiutil.log import get_logger
+    log = get_logger()
+
+    if testdir is None:
+        outdir = os.path.join(datadir(), 'focalplane')
+    else:
+        outdir = testdir
+
+    if not os.path.isdir(outdir):
+        raise ValueError("Missing directory {}".format(testdir))
+
     # Uses the reference projection of active area to create data table of GFAs
     from astropy.table import Table
     # Initial x and y coordinates for the GFAs
@@ -69,7 +83,6 @@ def build_gfa_table(outfile=None):
             gfatable.add_row([petal, i, xx[i], yy[i], z[i], q[i], s[i], r_deg[i]])
 
     # Saves the table of data as an ecsv file
-    if outfile is not None:
-        gfatable.write(outfile, format='ascii.ecsv')
-
-    return gfatable
+    outfile = os.path.join(outdir, 'gfa.ecsv')
+    gfatable.write(outfile, format='ascii.ecsv')
+    log.info('Wrote {}'.format(outfile))
