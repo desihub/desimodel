@@ -51,9 +51,9 @@ class TestInputs(unittest.TestCase):
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_build_gfa_table(self):
-        gfatable = gfa.build_gfa_table('testname.ecsv')
-        self.assertTrue(os.path.exists('testname.ecsv'), "Test Failed to create a valid file!")
-        os.remove('testname.ecsv')
+        gfa.build_gfa_table(testdir='.')
+        self.assertTrue(os.path.exists('gfa.ecsv'), "Test Failed to create a valid file!")
+        os.remove('gfa.ecsv')
 
 
 def test_suite():
