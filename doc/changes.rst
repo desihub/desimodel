@@ -5,7 +5,12 @@ desimodel Release Notes
 0.9.6 (unreleased)
 ------------------
 
-* Update data and associated code to reflect changes in DESI-347-v13 (PR `#89`_).
+* Update data and associated code to reflect changes in DESI-347-v13 (PR `#89`_):
+  * ``data/throughput/thru-[brz].fits``: new corrector coatings.
+  * ``data/throughput/DESI-0347_blur.ecsv``: new achromatic blurs.
+  * ``data/desi.yaml``: new read noise and dark currents.
+  * ``data/focalplane/gfa.ecsv``: replace ``RADIUS_MM`` with ``S``.
+* Use a new svn branch test-0.9.6 for travis tests (was test-0.9.3).
 
 .. _`#89`: https://github.com/desihub/desimodel/pull/89
 
