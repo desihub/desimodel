@@ -5,7 +5,9 @@ desimodel Release Notes
 0.9.6 (unreleased)
 ------------------
 
-* No changes yet.
+* Update data and associated code to reflect changes in DESI-347-v13 (PR `#89`_).
+
+.. _`#89`: https://github.com/desihub/desimodel/pull/89
 
 0.9.5 (2018-06-27)
 ------------------
