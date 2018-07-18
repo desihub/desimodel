@@ -112,7 +112,7 @@ class TestIO(unittest.TestCase):
         gfa = io.load_gfa()
         # length of the GFA table should be 40 since there are each corner of the 10 GFAs are included
         self.assertEqual(len(gfa), 40)
-        for key in ('PETAL', 'X', 'Y', 'Z', 'Q', 'RADIUS_DEG', 'RADIUS_MM'):
+        for key in ('PETAL', 'CORNER', 'X', 'Y', 'Z', 'Q', 'S', 'RADIUS_DEG'):
             self.assertIn(key, gfa.dtype.names)
 
     @unittest.skipUnless(desimodel_available, desimodel_message)

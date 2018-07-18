@@ -18,24 +18,29 @@ import yaml
 from . import docdb
 from ..io import datadir, findfile
 
-def update(testdir=None):
+def update(testdir=None, desi347_version=13, desi334_version=3):
     '''
     Update thru-\*.fits from DESI-0347 and DESI-0344
 
-    Options:
-        testdir: if not None, write files here instead of standard locations
+    Args:
+        testdir: If not None, write files here instead of standard locations
             under $DESIMODEL/data/
+        desi347_version: version of DESI-347 to use
+        desi334_version: version of DESI-334 to use
     '''
     from desiutil.log import get_logger
     log = get_logger()
 
-    master_thru_file = docdb.download(347, 11, 'DESI-347-v11 Throughput Noise SNR Calcs.xlsx')
-    desi_yaml_file   = docdb.download(347, 11, 'desi.yaml')
+    master_thru_file = docdb.download(
+        347, desi347_version,
+        'DESI-347-v{} Throughput Noise SNR Calcs.xlsx'.format(desi347_version))
+    desi_yaml_file   = docdb.download(
+        347, desi347_version, 'desi.yaml')
 
     ccd_thru_file = dict()
-    ccd_thru_file['b'] = docdb.download(334, 3, 'blue-thru.txt')
-    ccd_thru_file['r'] = docdb.download(334, 3, 'red-thru.txt')
-    ccd_thru_file['z'] = docdb.download(334, 3, 'nir-thru-250.txt')
+    ccd_thru_file['b'] = docdb.download(334, desi334_version, 'blue-thru.txt')
+    ccd_thru_file['r'] = docdb.download(334, desi334_version, 'red-thru.txt')
+    ccd_thru_file['z'] = docdb.download(334, desi334_version, 'nir-thru-250.txt')
 
     with open(desi_yaml_file) as fx:
         params = yaml.load(fx)
@@ -106,7 +111,7 @@ def update(testdir=None):
         hdus.writeto(outfile, overwrite=True)
         log.info('Wrote {}'.format(outfile))
 
-def load_throughput(filename):
+def load_throughput(filename, specthru_row=95, thru_row=114):
     """
     Load throughputs from DESI-0347, removing the spectrograph contributions
     which will be loaded separately from higher resolution data.
@@ -126,11 +131,14 @@ def load_throughput(filename):
         3500 and 9950 Angstroms, even though the inputs are there.
     """
     wave = docdb.xls_read_row(filename, 'Throughput', 3, 'C', 'P')*10
-    thru = docdb.xls_read_row(filename, 'Throughput', 112, 'C', 'P')
-    specthru = docdb.xls_read_row(filename, 'Throughput', 93, 'C', 'P')
 
-    rowlabel = docdb.xls_read_row(filename, 'Throughput', 112, 'A', 'A')[0]
-    assert rowlabel == 'sky throughput:  just in front of telescope to detected photons (does not account for obscuration or seeing)'
+    rowlabel = docdb.xls_read_row(filename, 'Throughput', specthru_row, 'A', 'A')[0]
+    assert rowlabel.startswith('Throughput:  Spectrograph'), 'Has the spectrograph throughput row moved?'
+    specthru = docdb.xls_read_row(filename, 'Throughput', specthru_row, 'C', 'P')
+
+    rowlabel = docdb.xls_read_row(filename, 'Throughput', thru_row, 'A', 'A')[0]
+    assert rowlabel.startswith('sky throughput:'), 'Has the sky throughput row moved?'
+    thru = docdb.xls_read_row(filename, 'Throughput', thru_row, 'C', 'P')
 
     assert len(wave) == 14
     assert len(wave) == len(thru)

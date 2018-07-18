@@ -199,7 +199,7 @@ class TestTrim(unittest.TestCase):
                                call('/in/throughput/fiberloss-star.dat', '/out/throughput/fiberloss-star.dat'),
                                call('/in/throughput/DESI-0347_blur.ecsv', '/out/throughput/DESI-0347_blur.ecsv'),
                                call('/in/throughput/DESI-0347_offset.ecsv', '/out/throughput/DESI-0347_offset.ecsv'),
-                               call('/in/throughput/DESI-0347_random_offset_1.fits', '/out/throughput/DESI-0347_random_offset_1.fits'),
+                               call('/in/throughput/DESI-0347_static_offset_1.fits', '/out/throughput/DESI-0347_static_offset_1.fits'),
                                call('/in/throughput/galsim-fiber-acceptance.fits', '/out/throughput/galsim-fiber-acceptance.fits')])
 
     @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
