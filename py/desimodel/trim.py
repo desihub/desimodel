@@ -158,7 +158,7 @@ def trim_throughput(indir, outdir):
     # galsim-fiber-acceptance.fits is about 230 KB, and it's a fairly
     # complex file, so just copy as-is.
     for filename in ('DESI-0347_blur.ecsv', 'DESI-0347_offset.ecsv',
-                     'DESI-0347_random_offset_1.fits',
+                     'DESI-0347_static_offset_1.fits',
                      'galsim-fiber-acceptance.fits'):
         shutil.copy(os.path.join(indir, filename), os.path.join(outdir, filename))
 
