@@ -34,7 +34,7 @@ How to Create a Test Branch
 1. Create a branch in the standard way::
 
     base=https://desi.lbl.gov/svn/code/desimodel
-    svn copy $base/trunk $base/branches/test-1.0
+    svn copy $base/trunk $base/branches/test-1.0 -m "Start new test branch"
 
 2. Check out the branch, if you did not create it in your own checkout::
 
@@ -63,4 +63,6 @@ How to Create a Test Branch
 
     svn export $base/branches/test-1.0
 
-If you find any problems, just wipe out the branch and start again.
+If you find any problems, just wipe out the branch and start again, e.g.::
+
+    svn rm $base/branches/test-1.0 -m "Starting over"
