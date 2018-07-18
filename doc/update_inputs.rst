@@ -69,7 +69,8 @@ To update a DESI-doc versions, edit the corresponding ``docdb.download(...)`` ca
 Throughput
 ----------
 
-This updates the throughput model from DESI-0347 and DESI-0344.
+This updates the throughput model from DESI-0347 and DESI-0344 and also copies the
+top-level ``desi.yaml`` from DESI-0347:
 
 ::
 
@@ -85,6 +86,26 @@ using the ``specthru_row`` and ``thru_row`` arguments to ``load_throughput()``,
 but check the outputs carefully if you think the spreadsheet structure might
 have changed.
 
+Blur and Offsets
+----------------
+
+Use the notebook ``doc/nb/DESI-0347_Throughput.ipynb`` to update the following
+ouputs derivied from DESI-347:
+
+  * data/inputs/throughput/raytracing.txt
+  * data/throughput/DESI-0347_blur.ecsv
+  * data/throughput/DESI-0347_offset.ecsv
+  * data/throughput/DESI-0347_static_offset_[123].fits
+
+Refer to the instructions in that notebook for details.
+
+Testing
+-------
+
+After changing any outputs that might break a unit test, update the small test
+dataset following :doc:`testing` and edit ``DESIMODEL_VERSION`` in ``.travis.yml``
+to point to the new version.
+
 To Do
 =====
 
@@ -93,11 +114,4 @@ Update methodology and document how to update the following:
   * PSF model from DESI-0334
   * PSF spots -> PSF for quicksim
   * Fiber input loss calculations
-  * desi.yaml
   * desimodel/data/focalplane/platescale.txt
-  * trimming the full files into a small test set (:mod:`desimodel.trim`)
-  * Optical distortions
-
-      * data/inputs/throughput/raytracing.txt
-      * data/throughput/DESI-0347_blur.ecsv
-      * data/throughput/DESI-0347_offset.ecsv
