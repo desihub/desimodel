@@ -2,7 +2,12 @@
 desimodel Release Notes
 =======================
 
-0.9.6 (unreleased)
+0.9.7 (unreleased)
+------------------
+
+* no changes yet
+
+0.9.6 (2018-07-18)
 ------------------
 
 * Update data and associated code to reflect changes in DESI-347-v13 (PR `#89`_):
