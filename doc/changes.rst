@@ -10,6 +10,7 @@ desimodel Release Notes
   * ``data/throughput/DESI-0347_blur.ecsv``: new achromatic blurs.
   * ``data/desi.yaml``: new read noise and dark currents.
   * ``data/focalplane/gfa.ecsv``: replace ``RADIUS_MM`` with ``S``.
+  * ``data/throughput/DESI-0347_static_[123].fits``: replace random offset files (RMS=10.886um) with static offset files (RMS=8.0um).
 * Use a new svn branch test-0.9.6 for travis tests (was test-0.9.3).
 
 .. _`#89`: https://github.com/desihub/desimodel/pull/89
