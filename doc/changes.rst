@@ -2,7 +2,12 @@
 desimodel Release Notes
 =======================
 
-0.9.7 (unreleased)
+0.9.8 (unreleased)
+------------------
+
+* No changes yet.
+
+0.9.7 (2018-07-30)
 ------------------
 
 * Create DESI-3977 in doc/tex/desi3977/ to track ELG SNR with changes to the DESI model.
