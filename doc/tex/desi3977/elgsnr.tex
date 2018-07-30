@@ -114,14 +114,16 @@ Note that with $z \ge 0.6$, the H-$\alpha$ is never detected.
 \begin{figure}[htb]
 \begin{center}
 \includegraphics[width=6in]{elg-sample}
-\caption{Distribution of ELG redshift and profile size and shape used in this note.}
+\caption{Distribution of ELG redshift and profile size and shape used in this note. The mean half-light radius is 0.45 arcseconds.
+The median minor-to-major axis ratio is 0.5.}
 \label{fig:elg-sample}
 \end{center}
 \end{figure}
 
 We assume an exponential (Sersic $n=1$) galaxy profile with a mean half-light radius of 0.45 arcseconds. Profiles are also specified
-by an ellipticity (minor-to-major axis ratio) and position angle on the sky. The assumed (uncorrelated) distributions of half-light radius and ellipticity
-is shown in \fig{elg-sample} and roughly matched to distributions of corresponding catalog quantities from the DESI image survey.
+by an ellipticity (minor-to-major axis ratio, with median value 0.5) and position angle on the sky. The assumed (uncorrelated)
+distributions of half-light radius and ellipticity
+are shown in \fig{elg-sample} and roughly matched to distributions of corresponding catalog quantities from the DESI image survey.
 The half-light radius is assumed to scale with inverse luminosity distance, calculated using a Planck 2015 cosmology. The position angle
 distribution is uniform. Code to sample these distributions is provided in {\tt /doc/nb/ELG-SNR.ipynb}.
 
@@ -150,6 +152,12 @@ We use the {\tt specsim} package version {\tt v0.13} to simulate the expected SN
 We simulate a 1000 second exposure during nominal dark conditions with 100 fibers randomly distributed over the focal plane and observing the identical ELG spectrum
 described above at a fixed redshift.  An outer loop steps through redshifts in the range $0.5 \le z < 1.6$, using $\Delta z = 0.002$ steps,
 and computes the mean expected signal and noise at each fiber, in 0.5~\AA pixels.
+
+The {\tt specsim} package implements several different schemes for computing fiber acceptance fractions.  The {\tt galsim} method is the most accurate and flexible, but
+also the slowest.  The default {\tt fastsim} mode interpolates pre-computed {\tt galsim} results.  For the calculations described here, the {\tt fastsim} mode is roughly
+a factor of two faster but over-estimates the fiber acceptance fraction (and therefore the signal) by about 1\%. The reason for this is that we assume a
+distribution of minor / major axis ratios with a median of 0.5, but the pre-computed results assume a fixed ratio of 0.7.  We use {\tt galsim}
+results consistently in this note (except for the CDR baseline), to avoid the (small) approximation errors inherent to the {\tt fastsim} mode.
 
 \subsection{Figures of Merit}
 
