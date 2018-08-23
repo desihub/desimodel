@@ -262,4 +262,11 @@ def get_gfa_targets(targets, rfluxlim=1000, tiles=None, scale=1.0):
                 tiletargets['TILEID'] = tileid
                 target_tables.append(tiletargets)
 
-    return astropy.table.vstack(target_tables)
+    if len(target_tables)>1:
+        result = astropy.table.vstack(target_tables)
+    else:
+        #- Create blank table with correct dtype
+        result = astropy.table.Table(dtype=targets.dtype)
+        result.add_column(astropy.table.Column(name='TILEID', dtype='i4'))
+
+    return result
