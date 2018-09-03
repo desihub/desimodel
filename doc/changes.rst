@@ -6,6 +6,7 @@ desimodel Release Notes
 ------------------
 
 * Bug fix for GFA target selection when no targets overlap a GFA (PR `#91`_).
+* Implement `weather.dome_close_fractions` to replay daily Mayall weather history.
 
 .. _`#91`: https://github.com/desihub/desimodel/pull/91
 

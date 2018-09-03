@@ -3,6 +3,7 @@
 """Test desimodel.weather.
 """
 import unittest
+import datetime
 import numpy as np
 from .. import weather as w
 
@@ -147,6 +148,16 @@ class TestWeather(unittest.TestCase):
         x = w.sample_transp(n)
         self.assertTrue(np.min(x) >= 0 and np.min(x) < 0.0001)
         self.assertTrue(np.max(x) <= 1 and np.max(x) > 0.9999)
+
+    def test_dome_fracs(self):
+        first = datetime.date(2019, 12, 1)
+        last = datetime.date(2024, 11, 30)
+        n = (last - first).days
+        for yr in range(2007, 2018):
+            probs = w.dome_closed_fractions(first, last, replay=(yr,))
+            assert len(probs) == n
+            mean = probs.mean()
+            assert (mean > 0.25) & (mean < 0.35)
 
 
 def test_suite():
