@@ -158,7 +158,7 @@ class TestWeather(unittest.TestCase):
         last = datetime.date(2024, 11, 30)
         n = (last - first).days
         for yr in range(2007, 2018):
-            probs = w.dome_closed_fractions(first, last, replay=f'Y{yr}')
+            probs = w.dome_closed_fractions(first, last, replay='Y{}'.format(yr))
             self.assertTrue(len(probs) == n)
             mean = probs.mean()
             self.assertTrue((mean > 0.25) & (mean < 0.35))

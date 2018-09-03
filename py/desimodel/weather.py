@@ -404,10 +404,10 @@ def dome_closed_fractions(start_date, stop_date,
     lostfracs = []
     for yr in replay:
         if yr not in years:
-            raise ValueError(f'Replay year "{yr}" not in weather history.')
+            raise ValueError('Replay year "{}" not in weather history.'.format(yr))
         lostfrac = t[yr].data
         if not np.all((lostfrac >= 0) & (lostfrac <= 1)):
-            raise ValueError(f'Invalid weather history for replay year "{yr}".')
+            raise ValueError('Invalid weather history for replay year "{}".'.format(yr))
         lostfracs.append(lostfrac)
     # Replay the specified years (with wrap-around if necessary),
     # overlaid on the actual survey dates.
@@ -419,10 +419,10 @@ def dome_closed_fractions(start_date, stop_date,
         if stop > stop_date:
             stop = stop_date
         n = (stop - start).days
-        if calendar.isleap(year):
-            n -= 1
         if n == 0:
             break
+        if calendar.isleap(year):
+            n -= 1
         idx = (start - start_date).days
         jdx = (start - first).days
         lostfrac = lostfracs[year_num % len(replay)]
