@@ -155,9 +155,9 @@ class TestWeather(unittest.TestCase):
         n = (last - first).days
         for yr in range(2007, 2018):
             probs = w.dome_closed_fractions(first, last, replay=(yr,))
-            assert len(probs) == n
+            self.assertTrue(len(probs) == n)
             mean = probs.mean()
-            assert (mean > 0.25) & (mean < 0.35)
+            self.assertTrue((mean > 0.25) & (mean < 0.35))
 
 
 def test_suite():
