@@ -364,7 +364,8 @@ def sample_transp(n_sample, dt_sec=180., gen=None):
         transp_grid, pdf_grid, _transp_psd, n_sample, dt_sec, gen)
 
 
-def dome_closed_fractions(start_date, stop_date, replay=np.arange(2007,2018)):
+def dome_closed_fractions(start_date, stop_date,
+                          replay='Y2007,Y2008,Y2009,Y2010,Y2011,Y2012,Y2013,Y2014'):
     """Return dome-closed fractions for each night of the survey.
 
     Years can be replayed in any order.  If the number of years to replay is less
@@ -378,8 +379,9 @@ def dome_closed_fractions(start_date, stop_date, replay=np.arange(2007,2018)):
     stop_date : datetime.date or None
         Survey stops on the morning of this date. Use the ``last_day``
         config parameter if None (the default).
-    replay : list
-        List of integer years to replay in the range 2007-2017.
+    replay : str
+        Comma-separated list of years to replay, identified by arbitrary strings
+        that must match column names in the DESIMODEL weather history.
 
     Returns
     -------
@@ -391,18 +393,22 @@ def dome_closed_fractions(start_date, stop_date, replay=np.arange(2007,2018)):
     num_nights = (stop_date - start_date).days
     if num_nights <= 0:
         raise ValueError('Expected start_date < stop_date.')
-    replay = np.asarray(replay)
-    if not np.all((replay >= 2007) & (replay <= 2017)):
-        raise ValueError('Invalid replay years.')
+    replay = replay.split(',')
     # Load tabulated daily weather history.
-    DESIMODEL = os.environ['DESIMODEL']
-    path = os.path.join(DESIMODEL, 'data', 'weather', 'daily-2007-2017.dat')
-    t = astropy.table.Table.read(path, format='ascii')
-    if not len(t) % 365 == 0:
-        raise ValueError('Invalid weather history length.')
-    lostfrac = t['lostfrac'].data
-    if not np.all((lostfrac >= 0) & (lostfrac <= 1)):
-        raise ValueError('Invalid weather history data.')
+    DESIMODEL = os.getenv('DESIMODEL')
+    path = os.path.join(DESIMODEL, 'data', 'weather', 'daily-2007-2017.csv')
+    t = astropy.table.Table.read(path)
+    if not len(t) == 365:
+        raise ValueError('Invalid weather history length (expected 365).')
+    years = t.colnames
+    lostfracs = []
+    for yr in replay:
+        if yr not in years:
+            raise ValueError(f'Replay year "{yr}" not in weather history.')
+        lostfrac = t[yr].data
+        if not np.all((lostfrac >= 0) & (lostfrac <= 1)):
+            raise ValueError(f'Invalid weather history for replay year "{yr}".')
+        lostfracs.append(lostfrac)
     # Replay the specified years (with wrap-around if necessary),
     # overlaid on the actual survey dates.
     probs = np.zeros(num_nights)
@@ -415,9 +421,11 @@ def dome_closed_fractions(start_date, stop_date, replay=np.arange(2007,2018)):
         n = (stop - start).days
         if calendar.isleap(year):
             n -= 1
+        if n == 0:
+            break
         idx = (start - start_date).days
-        offset = 365 * (replay[year_num % len(replay)] - 2007)
-        jdx = offset + (start - first).days
+        jdx = (start - first).days
+        lostfrac = lostfracs[year_num % len(replay)]
         probs[idx:idx + n] = lostfrac[jdx:jdx + n]
         start = stop
     return probs
