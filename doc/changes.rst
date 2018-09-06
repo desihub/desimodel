@@ -6,8 +6,10 @@ desimodel Release Notes
 ------------------
 
 * Bug fix for GFA target selection when no targets overlap a GFA (PR `#91`_).
+* Change default healpy pixel overlap factor from 4 to 128 (PR `#93`_).
 
 .. _`#91`: https://github.com/desihub/desimodel/pull/91
+.. _`#93`: https://github.com/desihub/desimodel/pull/93
 
 0.9.7 (2018-07-30)
 ------------------
