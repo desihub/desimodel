@@ -6,7 +6,7 @@ import unittest
 from os.path import abspath, dirname
 import numpy as np
 from ..trim import (inout, rebin_image, trim_focalplane, trim_footprint, trim_inputs,
-                    trim_sky, trim_targets, trim_data, trim_specpsf, trim_spectra,
+                    trim_sky, trim_weather, trim_targets, trim_data, trim_specpsf, trim_spectra,
                     trim_throughput, trim_psf, trim_quickpsf)
 
 skipMock = False
@@ -43,7 +43,8 @@ class TestTrim(unittest.TestCase):
         with patch.multiple('desimodel.trim', trim_focalplane=DEFAULT,
                             trim_footprint=DEFAULT, trim_inputs=DEFAULT,
                             trim_sky=DEFAULT, trim_specpsf=DEFAULT, trim_spectra=DEFAULT,
-                            trim_targets=DEFAULT, trim_throughput=DEFAULT) as desimodel_trim:
+                            trim_weather=DEFAULT, trim_targets=DEFAULT,
+                            trim_throughput=DEFAULT) as desimodel_trim:
             with patch('os.path.exists') as exists:
                 exists.return_value = False
                 with patch('os.makedirs') as makedirs:
@@ -58,6 +59,7 @@ class TestTrim(unittest.TestCase):
             desimodel_trim['trim_sky'].assert_called_with('/in/sky', '/out/sky')
             desimodel_trim['trim_specpsf'].assert_called_with('/in/specpsf', '/out/specpsf')
             desimodel_trim['trim_spectra'].assert_called_with('/in/spectra', '/out/spectra')
+            desimodel_trim['trim_weather'].assert_called_with('/in/weather', '/out/weather')
             desimodel_trim['trim_targets'].assert_called_with('/in/targets', '/out/targets')
             desimodel_trim['trim_throughput'].assert_called_with('/in/throughput', '/out/throughput')
             with patch('os.path.exists') as exists:
@@ -163,6 +165,14 @@ class TestTrim(unittest.TestCase):
         # print(handle.mock_calls)
         handle.write.assert_has_calls([call('#foo\n'), call('19\n'), call('39\n')], any_order=True)
         # print(handle.write.mock_calls)
+
+    @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
+    def test_trim_weather(self):
+        """Test trim_weather().
+        """
+        with patch('shutil.copytree') as copytree:
+            trim_weather('/in/weather', '/out/weather')
+            copytree.assert_called_with('/in/weather', '/out/weather')
 
     @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
     def test_trim_targets(self):
