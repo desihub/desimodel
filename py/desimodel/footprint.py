@@ -103,7 +103,7 @@ def radec2pix(nside, ra, dec):
     return hp.ang2pix(nside, theta, phi, nest=True)
 
 
-def tiles2pix(nside, tiles=None, radius=None, per_tile=False, fact=4):
+def tiles2pix(nside, tiles=None, radius=None, per_tile=False, fact=2**7):
     '''Returns sorted array of pixels that overlap the tiles.
 
     Args:
@@ -156,7 +156,7 @@ def tileids2pix(nside, tileids, radius=None, per_tile=False):
         raise ValueError('{}/{} TILEID(s) not in DESI footprint: {}'.format(
             len(extra), len(tileids), extra))
 
-def tiles2fracpix(nside, step=1, tiles=None, radius=None, fact=4):
+def tiles2fracpix(nside, step=1, tiles=None, radius=None, fact=2**7):
     '''Returns a sorted array of just the *fractional* pixels that overlap the
     tiles.
 
