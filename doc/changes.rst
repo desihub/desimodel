@@ -2,7 +2,12 @@
 desimodel Release Notes
 =======================
 
-0.9.8 (unreleased)
+0.9.9 (unreleased)
+------------------
+
+* No changes yet.
+
+0.9.8 (2018-09-05)
 ------------------
 
 * Bug fix for GFA target selection when no targets overlap a GFA (PR `#91`_).
