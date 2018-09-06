@@ -3,7 +3,10 @@
 """Test desimodel.weather.
 """
 import unittest
+import datetime
+import os
 import numpy as np
+import astropy.table
 from .. import weather as w
 
 
@@ -147,6 +150,30 @@ class TestWeather(unittest.TestCase):
         x = w.sample_transp(n)
         self.assertTrue(np.min(x) >= 0 and np.min(x) < 0.0001)
         self.assertTrue(np.max(x) <= 1 and np.max(x) > 0.9999)
+
+    def test_dome_frac_means(self):
+        """Check that mean weather fractions are reasonable.
+        """
+        first = datetime.date(2019, 12, 1)
+        last = datetime.date(2024, 11, 30)
+        n = (last - first).days
+        for yr in range(2007, 2018):
+            probs = w.dome_closed_fractions(first, last, replay='Y{}'.format(yr))
+            self.assertTrue(len(probs) == n)
+            mean = probs.mean()
+            self.assertTrue((mean > 0.25) & (mean < 0.35))
+
+    def test_dome_frac_values(self):
+        """Check correct replay of two weather years.
+        """
+        DESIMODEL = os.getenv('DESIMODEL')
+        path = os.path.join(DESIMODEL, 'data', 'weather', 'daily-2007-2017.csv')
+        t = astropy.table.Table.read(path)
+        probs = w.dome_closed_fractions(
+            datetime.date(2021, 1, 1), datetime.date(2023, 1, 1),
+            replay='Y2017,Y2007')
+        self.assertTrue(np.all(probs[:365] == t['Y2017']))
+        self.assertTrue(np.all(probs[365:] == t['Y2007']))
 
 
 def test_suite():
