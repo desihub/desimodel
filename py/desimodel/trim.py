@@ -42,6 +42,7 @@ def trim_data(indir, outdir, overwrite=False):
     trim_spectra(*inout(indir, outdir, 'spectra'))
     trim_targets(*inout(indir, outdir, 'targets'))
     trim_throughput(*inout(indir, outdir, 'throughput'))
+    trim_weather(*inout(indir, outdir, 'weather'))
 
 
 def inout(indir, outdir, filename):
@@ -128,6 +129,12 @@ def trim_spectra(indir, outdir):
                     elif i%20 == 0:
                         outfx.write(line)
                     i += 1
+
+
+def trim_weather(indir, outdir):
+    '''copy everything in weather/'''
+    assert os.path.basename(indir) == 'weather'
+    shutil.copytree(indir, outdir)
 
 
 def trim_targets(indir, outdir):
