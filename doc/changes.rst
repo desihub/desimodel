@@ -5,19 +5,19 @@ desimodel Release Notes
 0.9.9 (unreleased)
 ------------------
 
-* No changes yet.
+* Change default healpy pixel overlap factor from 4 to 128 (PR `#93`_).
+
+.. _`#93`: https://github.com/desihub/desimodel/pull/93
 
 0.9.8 (2018-09-05)
 ------------------
 
-* Change default healpy pixel overlap factor from 4 to 128 (PR `#93`_).
 * Implement `weather.dome_close_fractions` to replay daily Mayall weather history (PR `#92`_).
 * Run tests using new svn branch test-0.9.8.
 * Bug fix for GFA target selection when no targets overlap a GFA (PR `#91`_).
 
 .. _`#91`: https://github.com/desihub/desimodel/pull/91
 .. _`#92`: https://github.com/desihub/desimodel/pull/92
-.. _`#93`: https://github.com/desihub/desimodel/pull/93
 
 0.9.7 (2018-07-30)
 ------------------
