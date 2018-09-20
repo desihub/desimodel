@@ -286,10 +286,10 @@ class TestFootprint(unittest.TestCase):
         hirespixels = partpix64*16+np.arange(16)
         hiresweight = np.mean(pixweight256[hirespixels])
         loresweight = pixweight64[partpix64]
-        #ADM really they should agree to much better than 12%. As "precision" is not set to be
+        #ADM really they should agree to much better than 11%. As "precision" is not set to be
         #ADM very high, this is just to check for catastrophic differences
         #ADM I checked that at precision = 0.04 this doesn't fail after 10000 attempts
-        self.assertTrue(np.all(np.abs(hiresweight-loresweight) < 0.12))
+        self.assertTrue(np.all(np.abs(hiresweight-loresweight) < 0.11))
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_spatial_real_tiles(self):
