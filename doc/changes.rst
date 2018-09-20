@@ -2,10 +2,12 @@
 desimodel Release Notes
 =======================
 
-0.9.9 (unreleased)
-------------------
+0.10.0 (unreleased)
+-------------------
 
-* No changes yet.
+* svn data only: updated `data/footprint/desi-tiles.fits` and
+  `desi-healpix-weights.fits` with new dither pattern; see DESI-0717.
+  Layers 0=GRAY, 1-4=DARK instead of 0-3=DARK, 4=GRAY.
 
 0.9.8 (2018-09-05)
 ------------------
