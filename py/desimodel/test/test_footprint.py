@@ -29,25 +29,25 @@ class TestFootprint(unittest.TestCase):
     def test_pass2program(self):
         '''Test footprint.pass2program().
         '''
-        self.assertEqual(footprint.pass2program(0), 'DARK')
+        self.assertEqual(footprint.pass2program(0), 'GRAY')
         self.assertEqual(footprint.pass2program(1), 'DARK')
         self.assertEqual(footprint.pass2program(2), 'DARK')
         self.assertEqual(footprint.pass2program(3), 'DARK')
-        self.assertEqual(footprint.pass2program(4), 'GRAY')
+        self.assertEqual(footprint.pass2program(4), 'DARK')
         self.assertEqual(footprint.pass2program(5), 'BRIGHT')
         self.assertEqual(footprint.pass2program(6), 'BRIGHT')
         self.assertEqual(footprint.pass2program(7), 'BRIGHT')
 
         passes = [0,1,2,3,4,5,6,7]
-        programs = ['DARK', 'DARK', 'DARK', 'DARK', 'GRAY', 'BRIGHT', 'BRIGHT', 'BRIGHT']
+        programs = ['GRAY', 'DARK', 'DARK', 'DARK', 'DARK', 'BRIGHT', 'BRIGHT', 'BRIGHT']
         tmp = footprint.pass2program(passes)
         self.assertEqual(tmp, programs)
 
         tmp = footprint.pass2program(np.array(passes))
         self.assertEqual(tmp, programs)
 
-        tmp = footprint.pass2program([0,0,1])
-        self.assertEqual(tmp, ['DARK', 'DARK', 'DARK'])
+        tmp = footprint.pass2program([0,0,1,2])
+        self.assertEqual(tmp, ['GRAY', 'GRAY', 'DARK', 'DARK'])
 
         with self.assertRaises(KeyError):
             footprint.pass2program(999)
@@ -55,12 +55,12 @@ class TestFootprint(unittest.TestCase):
     def test_program2pass(self):
         '''Test footprint.program2pass().
         '''
-        self.assertEqual(footprint.program2pass('DARK'), [0,1,2,3])
-        self.assertEqual(footprint.program2pass('GRAY'), [4,])
+        self.assertEqual(footprint.program2pass('DARK'), [1,2,3,4])
+        self.assertEqual(footprint.program2pass('GRAY'), [0,])
         self.assertEqual(footprint.program2pass('BRIGHT'), [5,6,7])
-        self.assertEqual(footprint.program2pass(['DARK', 'GRAY']), [[0,1,2,3], [4,]])
+        self.assertEqual(footprint.program2pass(['DARK', 'GRAY']), [[1,2,3,4], [0,]])
         self.assertEqual(footprint.program2pass(np.array(['DARK', 'GRAY'])),
-                                                [[0,1,2,3], [4,]])
+                                                [[1,2,3,4], [0,]])
         with self.assertRaises(ValueError):
             footprint.program2pass('BLAT')
 
@@ -286,10 +286,10 @@ class TestFootprint(unittest.TestCase):
         hirespixels = partpix64*16+np.arange(16)
         hiresweight = np.mean(pixweight256[hirespixels])
         loresweight = pixweight64[partpix64]
-        #ADM really they should agree to much better than 11%. As "precision" is not set to be
+        #ADM really they should agree to much better than 12%. As "precision" is not set to be
         #ADM very high, this is just to check for catastrophic differences
         #ADM I checked that at precision = 0.04 this doesn't fail after 10000 attempts
-        self.assertTrue(np.all(np.abs(hiresweight-loresweight) < 0.11))
+        self.assertTrue(np.all(np.abs(hiresweight-loresweight) < 0.12))
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_spatial_real_tiles(self):

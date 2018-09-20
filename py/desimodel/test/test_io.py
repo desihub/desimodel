@@ -228,15 +228,20 @@ class TestIO(unittest.TestCase):
         tf = io.load_tiles(onlydesi=False, extra=True)
         tt = Table.read(fitstiles)
         te = Table.read(ecsvtiles, format='ascii.ecsv')
+
         self.assertEqual(sorted(tf.dtype.names), sorted(tt.colnames))
-        self.assertEqual(sorted(tf.dtype.names), sorted(te.colnames))
+
+        #- ECSV is a subset of the columns
+        missing = set(te.colnames) - set(tf.dtype.names)
+        self.assertEqual(len(missing), 0)
 
         for col in tt.colnames:
             self.assertTrue(np.all(tf[col]==tt[col]), 'fits[{col}] != table[{col}]'.format(col=col))
-            if np.issubdtype(tf[col].dtype, np.floating):
-                self.assertTrue(np.allclose(tf[col], te[col], atol=1e-4, rtol=1e-4), 'fits[{col}] != ecsv[{col}]'.format(col=col))
-            else:
-                self.assertTrue(np.all(tf[col]==te[col]), 'fits[{col}] != ecsv[{col}]'.format(col=col))
+            if col in te.colnames:
+                if np.issubdtype(tf[col].dtype, np.floating):
+                    self.assertTrue(np.allclose(tf[col], te[col], atol=1e-4, rtol=1e-4), 'fits[{col}] != ecsv[{col}]'.format(col=col))
+                else:
+                    self.assertTrue(np.all(tf[col]==te[col]), 'fits[{col}] != ecsv[{col}]'.format(col=col))
 
         for program in set(tf['PROGRAM']):
             self.assertTrue((program[-1] != ' ') and (program[-1] != b' '))
