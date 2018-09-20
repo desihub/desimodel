@@ -72,6 +72,12 @@ def trim_footprint(indir, outdir):
     ii = (35 < t['RA']) & (t['RA'] < 55) & (-10 < t['DEC']) & (t['DEC'] < 20)
     tx = t[ii]
     tx.write(outfile, format='fits')
+
+    #- Remove multidimensional columns before writing ecsv
+    for colname in ['BRIGHTRA', 'BRIGHTDEC', 'BRIGHTVTMAG']:
+        if colname in tx.colnames:
+            tx.remove_column(colname)
+
     tx.write(outfile.replace('.fits', '.ecsv'), format='ascii.ecsv')
     infile, outfile = inout(indir, outdir, 'desi-healpix-weights.fits')
     # Use a low precision to speed up the calculation.  Use lower nside
