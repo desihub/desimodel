@@ -262,6 +262,13 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, outfile=None, outp
     '''
     t0 = time()
 
+    # ADM if tiles or radius is None, load the DESI model defaults.
+    if tiles is None:
+        tiles = load_tiles()
+
+    if radius is None:
+        radius = get_tile_radius_deg()
+
     #ADM create an array that is zero for each integer pixel at this nside
     import healpy as hp
     npix = hp.nside2npix(nside)
@@ -352,7 +359,7 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, outfile=None, outp
 
     #ADM find which random points in the fractional pixels are in the DESI footprint
     log.info('Start integration over fractional pixels at edges of DESI footprint...')
-    indesi = is_point_in_desi(load_tiles(),rainmask,decinmask)
+    indesi = is_point_in_desi(tiles,rainmask,decinmask)
     log.info('...{} of the random points in fractional pixels are in DESI...t={:.1f}s'
              .format(np.sum(indesi),time()-t0))
 
