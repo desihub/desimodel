@@ -263,6 +263,7 @@ def pixweight(nside, tiles=None, radius=None, precision=0.01, outfile=None, outp
     t0 = time()
 
     # ADM if tiles or radius is None, load the DESI model defaults.
+    from .focalplane import get_tile_radius_deg
     if tiles is None:
         tiles = load_tiles()
 
