@@ -248,7 +248,7 @@ class TestFootprint(unittest.TestCase):
         #ADM I found a full (170) partial (406) and empty (1000) HEALPixel at nside=256
         #ADM that are also full, partial, empty at nside=64.
         #ADM You can find these with, e.g.:
-        #ADM pixweight256 = footprint.pixweight(256,tiles=tiles,radius=radius,precision=0.04)
+        #ADM pixweight256 = footprint.pixweight(256,tiles=tiles,radius=radius,precision=0.01)
         #ADM np.where(pixweight256 == 1)
         fullpix256 = np.array([170])
         partpix256 = np.array([406])
@@ -275,8 +275,8 @@ class TestFootprint(unittest.TestCase):
         radius = 1.605
 
         #ADM determine the weight array for pixels at nsides of 64 and 256
-        pixweight64 = footprint.pixweight(64,tiles=tiles,radius=radius,precision=0.04)
-        pixweight256 = footprint.pixweight(256,tiles=tiles,radius=radius,precision=0.04)
+        pixweight64 = footprint.pixweight(64,tiles=tiles,radius=radius,precision=0.01)
+        pixweight256 = footprint.pixweight(256,tiles=tiles,radius=radius,precision=0.01)
 
         #ADM check that the full pixel is assigned a weight of 1 at each nside
         self.assertTrue(np.all(pixweight64[fullpix64]==1))
@@ -290,11 +290,11 @@ class TestFootprint(unittest.TestCase):
         hirespixels = partpix64*16+np.arange(16)
         hiresweight = np.mean(pixweight256[hirespixels])
         loresweight = pixweight64[partpix64]
-        #ADM really they should agree to much better than 10%. As "precision" is not set to be
+        #ADM really they should agree to much better than 2%. As "precision" is not set to be
         #ADM very high, this is just to check for catastrophic differences
-        #ADM I checked that at precision = 0.04 this doesn't fail after 1000 attempts
-        #ADM (the largest difference I encountered was 0.078)
-        self.assertTrue(np.all(np.abs(hiresweight-loresweight) < 0.1))
+        #ADM I checked that at precision = 0.01 this doesn't fail after 1000 attempts
+        #ADM (the largest difference I encountered was 0.015)
+        self.assertTrue(np.all(np.abs(hiresweight-loresweight) < 0.02))
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_spatial_real_tiles(self):
