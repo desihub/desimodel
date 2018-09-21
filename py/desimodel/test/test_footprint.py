@@ -245,8 +245,12 @@ class TestFootprint(unittest.TestCase):
                                       ('PROGRAM', (str, 6)),
                                   ])
 
-        #ADM I found a full (180) partial (406) and empty (1000) HEALPixel at nside=256
-        fullpix256 = np.array([180])
+        #ADM I found a full (170) partial (406) and empty (1000) HEALPixel at nside=256
+        #ADM that are also full, partial, empty at nside=64.
+        #ADM You can find these with, e.g.:
+        #ADM pixweight256 = footprint.pixweight(256,tiles=tiles,radius=radius,precision=0.04)
+        #ADM np.where(pixweight256 == 1)
+        fullpix256 = np.array([170])
         partpix256 = np.array([406])
         emptypix256 = np.array([1000])
         #ADM In the nested scheme you can traverse from 256 to 64 by integer division
@@ -286,10 +290,11 @@ class TestFootprint(unittest.TestCase):
         hirespixels = partpix64*16+np.arange(16)
         hiresweight = np.mean(pixweight256[hirespixels])
         loresweight = pixweight64[partpix64]
-        #ADM really they should agree to much better than 11%. As "precision" is not set to be
+        #ADM really they should agree to much better than 10%. As "precision" is not set to be
         #ADM very high, this is just to check for catastrophic differences
-        #ADM I checked that at precision = 0.04 this doesn't fail after 10000 attempts
-        self.assertTrue(np.all(np.abs(hiresweight-loresweight) < 0.11))
+        #ADM I checked that at precision = 0.04 this doesn't fail after 1000 attempts
+        #ADM (the largest difference I encountered was 0.078)
+        self.assertTrue(np.all(np.abs(hiresweight-loresweight) < 0.1))
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_spatial_real_tiles(self):
