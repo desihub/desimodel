@@ -2,9 +2,12 @@
 desimodel Release Notes
 =======================
 
-0.9.9 (unreleased)
-------------------
+0.10.0 (unreleased)
+-------------------
 
+* svn data only: updated `data/footprint/desi-tiles.fits` and
+  `desi-healpix-weights.fits` with new dither pattern; see DESI-0717.
+  Layers 0=GRAY, 1-4=DARK instead of 0-3=DARK, 4=GRAY.
 * Change default healpy pixel overlap factor from 4 to 128 (PR `#93`_).
 
 .. _`#93`: https://github.com/desihub/desimodel/pull/93

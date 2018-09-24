@@ -18,9 +18,9 @@ Created 06-May-2015 by Andreu Font-Ribera (afont@lbl.gov)
 Modified Jan-2018 by J. Guy
 """
 
-import time
+import datetime,time
 import argparse
-import os
+import os,sys
 import os.path
 import numpy as np
 import astropy.units as units
@@ -85,7 +85,7 @@ def sim_spectra(wave, flux, program, obsconditions=None,
     frame_fibermap.meta["EXPID"]=expid
     
     # add DESI_TARGET 
-    tm = desitarget.desi_mask    
+    tm = desitarget.targetmask.desi_mask    
     frame_fibermap['DESI_TARGET'][sourcetype=="lrg"]=tm.LRG
     frame_fibermap['DESI_TARGET'][sourcetype=="elg"]=tm.ELG
     frame_fibermap['DESI_TARGET'][sourcetype=="qso"]=tm.QSO
@@ -238,6 +238,16 @@ def main():
     parser.add_argument('--prefix', type = str, default = "sn-spec-lya",
                         help = 'prefix for output S/N files')
     
+
+    header_string="# using {}".format(os.path.basename(sys.argv[0]))
+    for arg in sys.argv[1:] :
+        header_string += " "+arg
+    header_string+="\n"
+    if "USER" in os.environ :
+        header_string+="# run by {}\n".format(os.environ["USER"])
+    header_string+="# on {}".format(datetime.date.today())
+    print(header_string)
+    
     
     args = parser.parse_args()
     
@@ -333,6 +343,7 @@ def main():
         log.info('Saving results to %s' % fname)
         # Try opening the requested output file.
         with open(fname,'w') as out:
+            print(header_string,file=out)
             print('# Lyman-alpha forest S/N per Ang for mean quasar with '
                                                       +'mean forest',file=out)
             print('# INFILE=',infile,file=out)
