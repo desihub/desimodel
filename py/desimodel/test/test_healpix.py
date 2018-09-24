@@ -55,7 +55,7 @@ class TestHealpix(unittest.TestCase):
         self.assertTrue( np.all(pix == np.array([196,197,208,302,303])) )
 
         pix = tiles2pix(nside=16, tiles=tiles, radius=1.6)
-        self.assertTrue( np.all(pix == np.array([785,788,789,791,832,1209,1211,1214,1215])) )
+        self.assertTrue( np.all(pix == np.array([785,788,789,832,1211,1214])) )
 
     @unittest.skipIf(nohealpy, 'healpy not installed')
     def test_radec2pix(self):
