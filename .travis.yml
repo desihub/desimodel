@@ -37,22 +37,22 @@ env:
         # to repeat them for all configurations.
         # - NUMPY_VERSION=1.9
         # - SCIPY_VERSION=0.14
-        - ASTROPY_VERSION=2.0.4
+        - ASTROPY_VERSION=2.0.8
         # - SPHINX_VERSION=1.6.6
-        - DESIUTIL_VERSION=1.9.9
-        - SPECTER_VERSION=0.8.3
+        - DESIUTIL_VERSION=1.9.13
+        - SPECTER_VERSION=0.9.0
         # This is the version of the svn data product to export.
-        # - DESIMODEL_VERSION=branches/test-0.9.8
-        - DESIMODEL_VERSION=branches/newtiles
+        - DESIMODEL_VERSION=branches/test-0.9.9
+        # - DESIMODEL_VERSION=trunk
         - MAIN_CMD='python setup.py'
         # These packages will always be installed.
         - CONDA_DEPENDENCIES=''
         # These packages will only be installed if we really need them.
-        - CONDA_ALL_DEPENDENCIES='requests pyyaml scipy healpy numba fitsio'
+        - CONDA_ALL_DEPENDENCIES='requests pyyaml scipy healpy numba'
         # These packages will always be installed.
         - PIP_DEPENDENCIES=''
         # These packages will only be installed if we really need them.
-        - PIP_ALL_DEPENDENCIES=''
+        - PIP_ALL_DEPENDENCIES='coveralls fitsio'
         # These pip packages need to be installed in a certain order, so we
         # do that separately from the astropy/ci-helpers scripts.
         - DESIHUB_PIP_DEPENDENCIES="desiutil=${DESIUTIL_VERSION} specter=${SPECTER_VERSION}"
@@ -61,7 +61,7 @@ env:
     matrix:
         - SETUP_CMD='egg_info'
         - SETUP_CMD='bdist_egg'
-        - SETUP_CMD='test' CONDA_DEPENDENCIES=${CONDA_ALL_DEPENDENCIES}
+        - SETUP_CMD='test' CONDA_DEPENDENCIES=${CONDA_ALL_DEPENDENCIES} PIP_DEPENDENCIES=${PIP_ALL_DEPENDENCIES}
 
 matrix:
     # Don't wait for allowed failures.
@@ -75,7 +75,7 @@ matrix:
           env: ASTROPY_VERSION=3.0
                SETUP_CMD='test'
                CONDA_DEPENDENCIES=${CONDA_ALL_DEPENDENCIES}
-
+               PIP_DEPENDENCIES=${PIP_ALL_DEPENDENCIES}
     include:
 
         # Check for sphinx doc build warnings.
@@ -84,7 +84,6 @@ matrix:
         - os: linux
           python: 3.5
           env: SETUP_CMD='build_sphinx --warning-is-error'
-               CONDA_DEPENDENCIES=${CONDA_ALL_DEPENDENCIES}
 
         # Coverage test.  Note that installing the coverage software can
         # change the set of packages installed by conda, so we do
@@ -93,12 +92,14 @@ matrix:
           python: 3.5
           env: SETUP_CMD='test --coverage'
                CONDA_DEPENDENCIES=${CONDA_ALL_DEPENDENCIES}
+               PIP_DEPENDENCIES=${PIP_ALL_DEPENDENCIES}
 
         - os: linux
           python: 3.6
           env: ASTROPY_VERSION=3.0
                SETUP_CMD='test'
                CONDA_DEPENDENCIES=${CONDA_ALL_DEPENDENCIES}
+               PIP_DEPENDENCIES=${PIP_ALL_DEPENDENCIES}
 
         # - os: osx
         #   env: PYTHON_VERSION=2.7 SETUP_CMD='test'
