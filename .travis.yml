@@ -42,7 +42,8 @@ env:
         - DESIUTIL_VERSION=1.9.13
         - SPECTER_VERSION=0.9.0
         # This is the version of the svn data product to export.
-        - DESIMODEL_VERSION=branches/test-0.9.9
+        # - DESIMODEL_VERSION=branches/test-0.9.9
+        - DESIMODEL_VERSION=branches/newtiles
         # - DESIMODEL_VERSION=trunk
         - MAIN_CMD='python setup.py'
         # These packages will always be installed.
