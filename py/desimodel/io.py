@@ -164,7 +164,8 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
     global _tiles
 
     if tilesfile is None:
-        tilesfile = 'desi-tiles.fits'
+        tilesfile = os.path.join(
+            os.environ['DESIMODEL'], 'data', 'footprint', 'desi-tiles.fits')
     else:
         if not os.path.isfile(tilesfile):
             # This is not an actual path, see if we have a path relative to
