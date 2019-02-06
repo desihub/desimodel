@@ -165,11 +165,20 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
 
     if tilesfile is None:
         tilesfile = 'desi-tiles.fits'
-
-    #- Check if tilesfile includes a path (absolute or relative)
-    tilespath, filename = os.path.split(tilesfile)
-    if tilespath == '':
-        tilesfile = os.path.join(os.environ['DESIMODEL'],'data','footprint',filename)
+    else:
+        if not os.path.isfile(tilesfile):
+            # This is not an actual path, see if we have a path relative to
+            # the data directory
+            tilespath, filename = os.path.split(tilesfile)
+            if filename == tilesfile:
+                # This is a relative path
+                tilesfile = os.path.join(
+                    os.environ['DESIMODEL'], 'data', 'footprint', filename)
+            else:
+                # This is an error
+                raise RuntimeError(
+                    "The tilesfile must be the path to an existing file OR"
+                    " a file name relative to the desimodel data directory.")
 
     #- standarize path location
     tilesfile = os.path.abspath(tilesfile.format(**os.environ))
