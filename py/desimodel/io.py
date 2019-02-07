@@ -164,22 +164,31 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
     global _tiles
 
     if tilesfile is None:
+        # Use the default
         tilesfile = os.path.join(
             os.environ['DESIMODEL'], 'data', 'footprint', 'desi-tiles.fits')
     else:
-        if not os.path.isfile(tilesfile):
-            # This is not an actual path, see if we have a path relative to
-            # the data directory
-            tilespath, filename = os.path.split(tilesfile)
-            if filename == tilesfile:
-                # This is a relative path
-                tilesfile = os.path.join(
-                    os.environ['DESIMODEL'], 'data', 'footprint', filename)
-            else:
-                # This is an error
-                raise RuntimeError(
-                    "The tilesfile must be the path to an existing file OR"
-                    " a file name relative to the desimodel data directory.")
+        # Check if the file name exists locally
+        have_local = False
+        if os.path.isfile(tilesfile):
+            have_local = True
+        # Check if the file name exists in the package data directory
+        have_dmdata = False
+        check = os.path.join(os.environ['DESIMODEL'], 'data', 'footprint',
+                             tilesfile)
+        if os.path.isfile(check):
+            have_dmdata = True
+        # Choose the file
+        if have_dmdata:
+            if have_local:
+                msg = 'File "{}" in $DESIMODEL/data is shadowed by a local'\
+                    ' file.  Choosing $DESIMODEL file.'.format(tilesfile)
+                warnings.warn(msg)
+            tilesfile = check
+        elif not have_local:
+            msg = 'File "{}" does not exist locally or in $DESIMODEL/data'\
+                .format(tilesfile)
+            raise RuntimeError(msg)
 
     #- standarize path location
     tilesfile = os.path.abspath(tilesfile.format(**os.environ))
