@@ -188,7 +188,7 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
         elif not have_local:
             msg = 'File "{}" does not exist locally or in $DESIMODEL/data'\
                 .format(tilesfile)
-            raise RuntimeError(msg)
+            raise FileNotFoundError(msg)
 
     #- standarize path location
     tilesfile = os.path.abspath(tilesfile.format(**os.environ))
