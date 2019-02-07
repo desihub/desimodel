@@ -7,6 +7,7 @@ desimodel.io
 I/O utility functions for files in desimodel.
 """
 import os
+import sys
 from astropy.io import fits
 import yaml
 import numpy as np
@@ -188,7 +189,10 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
         elif not have_local:
             msg = 'File "{}" does not exist locally or in $DESIMODEL/data'\
                 .format(tilesfile)
-            raise FileNotFoundError(msg)
+            if sys.version_info.major == 2:
+                raise IOError(msg)
+            else:
+                raise FileNotFoundError(msg)
 
     #- standarize path location
     tilesfile = os.path.abspath(tilesfile.format(**os.environ))
