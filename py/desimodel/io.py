@@ -7,6 +7,7 @@ desimodel.io
 I/O utility functions for files in desimodel.
 """
 import os
+import sys
 from astropy.io import fits
 import yaml
 import numpy as np
@@ -164,12 +165,34 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
     global _tiles
 
     if tilesfile is None:
-        tilesfile = 'desi-tiles.fits'
-
-    #- Check if tilesfile includes a path (absolute or relative)
-    tilespath, filename = os.path.split(tilesfile)
-    if tilespath == '':
-        tilesfile = os.path.join(os.environ['DESIMODEL'],'data','footprint',filename)
+        # Use the default
+        tilesfile = os.path.join(
+            os.environ['DESIMODEL'], 'data', 'footprint', 'desi-tiles.fits')
+    else:
+        # Check if the file name exists locally
+        have_local = False
+        if os.path.isfile(tilesfile):
+            have_local = True
+        # Check if the file name exists in the package data directory
+        have_dmdata = False
+        check = os.path.join(os.environ['DESIMODEL'], 'data', 'footprint',
+                             tilesfile)
+        if os.path.isfile(check):
+            have_dmdata = True
+        # Choose the file
+        if have_dmdata:
+            if have_local:
+                msg = 'File "{}" in $DESIMODEL/data is shadowed by a local'\
+                    ' file.  Choosing $DESIMODEL file.'.format(tilesfile)
+                warnings.warn(msg)
+            tilesfile = check
+        elif not have_local:
+            msg = 'File "{}" does not exist locally or in $DESIMODEL/data'\
+                .format(tilesfile)
+            if sys.version_info.major == 2:
+                raise IOError(msg)
+            else:
+                raise FileNotFoundError(msg)
 
     #- standarize path location
     tilesfile = os.path.abspath(tilesfile.format(**os.environ))
