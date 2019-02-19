@@ -169,33 +169,33 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
         tilesfile = os.path.join(
             os.environ['DESIMODEL'], 'data', 'footprint', 'desi-tiles.fits')
     else:
-        # Check if the file name exists locally
-        have_local = False
-        if os.path.isfile(tilesfile):
-            have_local = True
-        # Check if the file name exists in the package data directory
-        have_dmdata = False
-        check = os.path.join(os.environ['DESIMODEL'], 'data', 'footprint',
-                             tilesfile)
-        if os.path.isfile(check):
-            have_dmdata = True
-        # Choose the file
-        if have_dmdata:
-            if have_local:
-                msg = 'File "{}" in $DESIMODEL/data is shadowed by a local'\
-                    ' file.  Choosing $DESIMODEL file.'.format(tilesfile)
-                warnings.warn(msg)
-            tilesfile = check
-        elif not have_local:
-            msg = 'File "{}" does not exist locally or in $DESIMODEL/data'\
-                .format(tilesfile)
-            if sys.version_info.major == 2:
-                raise IOError(msg)
-            else:
-                raise FileNotFoundError(msg)
+        # If full path isn't included, check local vs $DESIMODEL/data/footprint
+        tilepath, filename = os.path.split(tilesfile)
+        if tilepath == '':
+            have_local = os.path.isfile(tilesfile)
+            checkfile = os.path.join(os.environ['DESIMODEL'],
+                                     'data', 'footprint', tilesfile)
+            have_dmdata = os.path.isfile(checkfile)
+            if have_dmdata:
+                if have_local:
+                    msg = '$DESIMODEL/data/footprint/{} is shadowed by a local'\
+                          ' file. Choosing $DESIMODEL file.'\
+                          ' Use tilesfile="./{}" if you want the local copy'\
+                          ' instead'.format(tilesfile, tilesfile)
+                    warnings.warn(msg)
+                tilesfile = checkfile
+
+            if not (have_local or have_dmdata):
+                msg = 'File "{}" does not exist locally or in '\
+                      '$DESIMODEL/data/footprint/'.format(tilesfile)
+                if sys.version_info.major == 2:
+                    raise IOError(msg)
+                else:
+                    raise FileNotFoundError(msg)
 
     #- standarize path location
     tilesfile = os.path.abspath(tilesfile.format(**os.environ))
+    log.debug('Loading tiles from %s', tilesfile)
 
     if cache and tilesfile in _tiles:
         tiledata = _tiles[tilesfile]
