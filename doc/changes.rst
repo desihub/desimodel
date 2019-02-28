@@ -2,12 +2,24 @@
 desimodel Release Notes
 =======================
 
-0.10.0 (unreleased)
--------------------
+0.10.0 (planned)
+----------------
 
 * svn data only: updated ``data/footprint/desi-tiles.fits`` and
   ``desi-healpix-weights.fits`` with new dither pattern; see DESI-0717.
   Layers 0=GRAY, 1-4=DARK instead of 0-3=DARK, 4=GRAY.
+
+0.9.10 (2019-02-28)
+-------------------
+
+* `io.load_tiles(tilesfile)` warns if local copy exists, but DESIMODEL
+  version wins (PR `#98`_ and `#101`_).
+* Update default tile radius (max radius, not typical outer pos radius)
+  (PR `#102`_).
+
+.. _`#98`: https://github.com/desihub/desimodel/pull/98
+.. _`#101`: https://github.com/desihub/desimodel/pull/101
+.. _`#102`: https://github.com/desihub/desimodel/pull/102
 
 0.9.9 (2018-09-27)
 ------------------
