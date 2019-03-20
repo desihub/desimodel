@@ -106,6 +106,21 @@ After changing any outputs that might break a unit test, update the small test
 dataset following :doc:`testing` and edit ``DESIMODEL_VERSION`` in ``.travis.yml``
 to point to the new version.
 
+Commissioning Instrument corners
+--------------------------------
+
+This updates the CI as-measured corner locations from DESI-4633v11 Corners.txt
+and reformats them into the GFA-corners format needed by desimodel, writing
+the results into ``$$DESIMODEL/data/focalplane/ci-corners.ecsv``:
+
+::
+
+    import desimodel.inputs.ci
+    desimodel.inputs.ci.update()
+
+We don't anticipate needing to update this again, so this section is just
+documenting the provenance of that file.
+
 To Do
 =====
 
