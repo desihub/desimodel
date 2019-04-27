@@ -8,13 +8,18 @@ I/O utility functions for files in desimodel.
 """
 import os
 import sys
-from astropy.io import fits
+import re
+import warnings
+from datetime import datetime
+
 import yaml
 import numpy as np
-import warnings
+from astropy.io import fits
+from astropy.table import Table
 
 from desiutil.log import get_logger
 log = get_logger()
+
 
 _thru = dict()
 def load_throughput(channel):
@@ -255,9 +260,90 @@ def load_platescale():
     _platescale = np.loadtxt(infile, usecols=[0,1,6,7], dtype=columns)
     return _platescale
 
+
+_focalplane = None
+def load_focalplane(time):
+    """Load the focalplane state that is valid for the given time.
+
+    Args:
+        time (datetime):  The time to query.
+
+    Returns:
+        (tuple):  The (focalplane layout, exclusion polygons, state log)
+
+    """
+    global _focalplane
+    if _focalplane is None:
+        # First call, load all data files.
+        fpdir = os.path.join(datadir(), "focalplane")
+        fppat = re.compile(r"desi-focalplane_(.*)\.ecsv")
+        stpat = re.compile(r"desi-state_(.*)\.ecsv")
+        expat = re.compile(r"desi-exclusion_(.*)\.yaml")
+        fpraw = dict()
+        for root, dirs, files in os.walk(fpdir):
+            for f in files:
+                fpmat = fppat.match(f)
+                if fpmat is not None:
+                    dt = fpmat.group(1)
+                    if dt not in fpraw:
+                        fpraw[dt] = dict()
+                    fpraw[dt]["fp"] = os.path.join(root, f)
+                    continue
+                stmat = stpat.match(f)
+                if stmat is not None:
+                    dt = stmat.group(1)
+                    if dt not in fpraw:
+                        fpraw[dt] = dict()
+                    fpraw[dt]["st"] = os.path.join(root, f)
+                    continue
+                exmat = expat.match(f)
+                if exmat is not None:
+                    dt = exmat.group(1)
+                    if dt not in fpraw:
+                        fpraw[dt] = dict()
+                    fpraw[dt]["ex"] = os.path.join(root, f)
+            break
+        # Check that we have all 3 files needed for each timestamp
+        for ts, files in fpraw.items():
+            print("Checking time {}".format(ts), flush=True)
+            for key in ["fp", "st", "ex"]:
+                if key not in files:
+                    msg = "Focalplane state for time {} is missing one of \
+                          the 3 required files (focalplane, state, exclusion)"\
+                          .format(ts)
+                    raise RuntimeError(msg)
+        # Now load the files for each time into our cached global variable.
+        _focalplane = list()
+        for ts in sorted(fpraw.keys()):
+            dt = datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S")
+            fp = Table.read(fpraw[ts]["fp"], format="ascii.ecsv")
+            st = Table.read(fpraw[ts]["st"], format="ascii.ecsv")
+            ex = None
+            with open(fpraw[ts]["ex"], "r") as f:
+                ex = yaml.load(f)
+            _focalplane.append((dt, fp, ex, st))
+
+    # Search the list of states for the most recent time that is before our
+    # requested time.  There should not be too many different states, or else
+    # we are using the wrong format for storing these.  Therefore, a linear
+    # search should be fast enough.
+    fp_data = None
+    excl_data = None
+    state_data = None
+    for dt, fp, ex, st in _focalplane:
+        if time > dt:
+            fp_data = fp
+            excl_data = ex
+            state_data = st
+        else:
+            break
+    return (fp_data, excl_data, state_data)
+
+
 def reset_cache():
     '''Reset I/O cache'''
-    global _thru, _psf, _params, _gfa, _fiberpos, _tiles, _platescale
+    global _thru, _psf, _params, _gfa, _fiberpos, _tiles, _platescale,\
+        _focalplane
     _thru = dict()
     _psf = dict()
     _params = None
@@ -265,6 +351,7 @@ def reset_cache():
     _fiberpos = None
     _tiles = dict()
     _platescale = None
+    _focalplane = None
 
 def load_target_info():
     '''
