@@ -305,7 +305,6 @@ def load_focalplane(time):
             break
         # Check that we have all 3 files needed for each timestamp
         for ts, files in fpraw.items():
-            print("Checking time {}".format(ts), flush=True)
             for key in ["fp", "st", "ex"]:
                 if key not in files:
                     msg = "Focalplane state for time {} is missing one of \
