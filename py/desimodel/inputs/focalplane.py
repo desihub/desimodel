@@ -236,14 +236,14 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
 
     # First the THETA arm.
     circs = [
-        ((3.0, 0.0), 2.095)
+        [[3.0, 0.0], 2.095]
     ]
     seg = [
-        (5.095, -0.474),
-        (4.358, -2.5),
-        (2.771, -2.5),
-        (1.759, -2.792),
-        (0.905, -0.356)
+        [5.095, -0.474],
+        [4.358, -2.5],
+        [2.771, -2.5],
+        [1.759, -2.792],
+        [0.905, -0.356]
     ]
     segs = [seg]
     shp_theta = dict()
@@ -252,18 +252,18 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
 
     # Now the PHI arm
     circs = [
-        ((0.0, 0.0), 0.967)
+        [[0.0, 0.0], 0.967]
     ]
     seg_upper = [
-        (-3.0, 0.990),
-        (0.0, 0.990)
+        [-3.0, 0.990],
+        [0.0, 0.990]
     ]
     seg_lower = [
-        (-2.944, -1.339),
-        (-2.944, -2.015),
-        (-1.981, -1.757),
-        (-1.844, -0.990),
-        (0.0, -0.990)
+        [-2.944, -1.339],
+        [-2.944, -2.015],
+        [-1.981, -1.757],
+        [-1.844, -0.990],
+        [0.0, -0.990]
     ]
     segs = [seg_upper, seg_lower]
     shp_phi = dict()
@@ -281,16 +281,16 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
         ktheta_raw = np.transpose(np.array(exprops["KEEPOUT_THETA"]))
         ktheta_x = ktheta_raw[:, 0]
         ktheta_y = ktheta_raw[:, 1]
-        ktheta = [(float(x), float(y)) for x, y in zip(ktheta_x, ktheta_y)]
-        kstart = tuple(ktheta[0])
+        ktheta = [[float(x), float(y)] for x, y in zip(ktheta_x, ktheta_y)]
+        kstart = list(ktheta[0])
         ktheta.append(kstart)
         poly["default"]["theta"] = dict()
         poly["default"]["theta"]["segments"] = [ktheta]
         kphi_raw = np.transpose(np.array(exprops["KEEPOUT_PHI"]))
         kphi_x = kphi_raw[:, 0]
         kphi_y = kphi_raw[:, 1]
-        kphi = [(float(x), float(y)) for x, y in zip(kphi_x, kphi_y)]
-        kstart = tuple(kphi[0])
+        kphi = [[float(x), float(y)] for x, y in zip(kphi_x, kphi_y)]
+        kstart = list(kphi[0])
         kphi.append(kstart)
         poly["default"]["phi"] = dict()
         poly["default"]["phi"]["segments"] = [kphi]
@@ -429,8 +429,10 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
                description="Petal location [0-9]"),
         Column(name="DEVICE", length=nrows, dtype=np.int32,
                description="Device location on the petal"),
+        Column(name="LOCATION", length=nrows, dtype=np.int32,
+               description="Global device location (PETAL * 1000 + DEVICE)"),
         Column(name="STATE", length=nrows, dtype=np.uint32,
-               description="Bit field"),
+               description="State bit field (good == 0)"),
     ]
 
     out_state = Table()
@@ -442,6 +444,7 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
         for dev in devlist:
             out_state[row]["TIME"] = file_date
             out_state[row]["PETAL"] = fp[petal][dev]["PETAL"]
+            out_state[row]["LOCATION"] = fp[petal][dev]["PETAL"] * 1000 + dev
             out_state[row]["DEVICE"] = dev
             out_state[row]["STATE"] = 0
             row += 1

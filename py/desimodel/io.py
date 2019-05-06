@@ -15,7 +15,7 @@ from datetime import datetime
 import yaml
 import numpy as np
 from astropy.io import fits
-from astropy.table import Table
+from astropy.table import Table, Column
 
 from desiutil.log import get_logger
 log = get_logger()
@@ -329,14 +329,51 @@ def load_focalplane(time):
     # search should be fast enough.
     fp_data = None
     excl_data = None
-    state_data = None
+    fullstate = None
     for dt, fp, ex, st in _focalplane:
         if time > dt:
             fp_data = fp
             excl_data = ex
-            state_data = st
+            fullstate = st
         else:
             break
+
+    # Now "replay" the state up to our requested time.
+    locstate = dict()
+    for row in range(len(fullstate)):
+        tm = datetime.strptime(fullstate[row]["TIME"], "%Y-%m-%dT%H:%M:%S")
+        if tm <= time:
+            loc = fullstate[row]["LOCATION"]
+            pet = fullstate[row]["PETAL"]
+            dev = fullstate[row]["DEVICE"]
+            st = fullstate[row]["STATE"]
+            if loc not in locstate:
+                locstate[loc] = dict()
+            locstate[loc]["PETAL"] = pet
+            locstate[loc]["DEVICE"] = dev
+            locstate[loc]["STATE"] = st
+
+    nloc = len(locstate)
+    state_cols = [
+        Column(name="PETAL", length=nloc, dtype=np.int32,
+               description="Petal location [0-9]"),
+        Column(name="DEVICE", length=nloc, dtype=np.int32,
+               description="Device location on the petal"),
+        Column(name="LOCATION", length=nloc, dtype=np.int32,
+               description="Global device location (PETAL * 1000 + DEVICE)"),
+        Column(name="STATE", length=nloc, dtype=np.uint32,
+               description="State bit field (good == 0)"),
+    ]
+    state_data = Table()
+    state_data.add_columns(state_cols)
+    row = 0
+    for loc in sorted(locstate.keys()):
+        state_data[row]["PETAL"] = locstate[loc]["PETAL"]
+        state_data[row]["DEVICE"] = locstate[loc]["DEVICE"]
+        state_data[row]["LOCATION"] = loc
+        state_data[row]["STATE"] = locstate[loc]["STATE"]
+        row += 1
+
     return (fp_data, excl_data, state_data)
 
 
