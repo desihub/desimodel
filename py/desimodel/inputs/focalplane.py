@@ -44,7 +44,7 @@ def _compute_theta_phi_range(phys_t, phys_p):
 
 
 def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
-          petalloc=None, petalspec=None, startvalid=None):
+          petalloc=None, petalspec=None, startvalid=None, fillfake=False):
     """Construct DESI focalplane and state files.
 
     This function gathers information from the following sources:
@@ -229,6 +229,30 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
             devlist = list(sorted(fp[petal].keys()))
             for dev in devlist:
                 fp[petal][dev]["SPECTROGRAPH"] = petalspec[petal]
+
+    # If the fillfake option is specified, fill all device locations of POS and
+    # ETC type with a fake positioner if there is none there.
+
+    if fillfake:
+        for petal in sorted(allpetals):
+            devlist = list(sorted(fp[petal].keys()))
+            for dev in devlist:
+                if fp[petal][dev]["DEVICE_ID"] == "NONE":
+
+
+
+            t_min, t_max, p_min, p_max = _compute_theta_phi_range(
+                props["PHYSICAL_RANGE_T"], props["PHYSICAL_RANGE_P"])
+            fp[pet][dev]["OFFSET_X"] = props["OFFSET_X"]
+            fp[pet][dev]["OFFSET_Y"] = props["OFFSET_Y"]
+            fp[pet][dev]["OFFSET_T"] = props["OFFSET_T"]
+            fp[pet][dev]["OFFSET_P"] = props["OFFSET_P"]
+            fp[pet][dev]["LENGTH_R1"] = props["LENGTH_R1"]
+            fp[pet][dev]["LENGTH_R2"] = props["LENGTH_R2"]
+            fp[pet][dev]["MIN_T"] = t_min
+            fp[pet][dev]["MAX_T"] = t_max
+            fp[pet][dev]["MIN_P"] = p_min
+            fp[pet][dev]["MAX_P"] = p_max
 
     # Now load the file(s) with the exclusion polygons
     # Add the legacy polygons to the dictionary for reference.
