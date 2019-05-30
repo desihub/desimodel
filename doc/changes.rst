@@ -9,6 +9,14 @@ desimodel Release Notes
   ``desi-healpix-weights.fits`` with new dither pattern; see DESI-0717.
   Layers 0=GRAY, 1-4=DARK instead of 0-3=DARK, 4=GRAY.
 
+0.9.11 (2019-05-30)
+-------------------
+
+* Added data/footprint/ci-tiles-v7.fits, data/focalplane/ci-corners.ecsv
+  to svn and docs to github (PR `#103`_).
+
+.. _`#103`: https://github.com/desihub/desimodel/pull/103
+
 0.9.10 (2019-02-28)
 -------------------
 
