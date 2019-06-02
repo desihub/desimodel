@@ -1,0 +1,71 @@
+#!/usr/bin/env python
+"""Commandline script to create a focalplane model.
+"""
+
+import argparse
+
+from desimodel.inputs.focalplane import create
+
+
+def main():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--pos_settings", type=str, required=True,
+                        help="The directory containing the positioner "
+                        "settings files.  For example, DESI svn "
+                        "fp_settings/pos_settings.  The file names are "
+                        "assumed to have the form unit_<name>.conf.  Only "
+                        "devices with an assigned PETAL_ID and DEVICE_LOC "
+                        "are considered.")
+
+    parser.add_argument("--collision", type=str, required=True,
+                        help="The text config file containing the exclusion "
+                        "polygons to use.  For example, "
+                        "'_collision_settings_DEFAULT.conf'")
+
+    parser.add_argument("--petal_id2loc", type=str, required=False,
+                        help="Mapping of petal ID to focalplane location, "
+                        "specified as '<id0>:<loc0>,<id1>:<loc1>,...'.  If"
+                        " not specified, petals will be placed in ID order"
+                        " starting at location 0.")
+
+    parser.add_argument("--petal_loc2spec", type=str, required=False,
+                        help="Mapping of petal location to spectrograph, "
+                        "specified as '<loc0>:<spec0>,<loc1>:<spec1>,...'.  If"
+                        " not specified, petal locations which are populated"
+                        " by petal IDs will be assigned to spectrographs in"
+                        " numerical order.")
+
+    parser.add_argument("--fillfake", required=False, default=False,
+                        action="store_true",
+                        help="For simulations, fill empty device locations"
+                        " with fake positioners")
+
+    parser.add_argument("--test", type=str, required=False, default=None,
+                        help="Override the output directory for testing.")
+
+    args = parser.parse_args()
+
+    petalloc = None
+    if args.petal_id2loc is not None:
+        petalloc = dict()
+        kv = args.petal_id2loc.split(",")
+        for k, v in kv.items():
+            petalloc[k] = v
+
+    petalspec = None
+    if args.petal_loc2spec is not None:
+        petalspec = dict()
+        kv = args.petal_loc2spec.split(",")
+        for k, v in kv.items():
+            petalspec[k] = v
+
+    create(testdir=args.test, posdir=args.pos_settings,
+           polyfile=args.collision, fibermaps=None, petalloc=petalloc,
+           petalspec=petalspec, startvalid=None, fillfake=args.fillfake)
+
+    return
+
+
+if __name__ == "__main__":
+    main()

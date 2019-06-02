@@ -48,8 +48,28 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     """Construct DESI focalplane and state files.
 
     This function gathers information from the following sources:
+        - Petal verification files on DocDB
+        - Positioner device configuration files (e.g. from svn)
+        - DESI-0530, to get the mapping from device ID to device type as well
+          as the nominal device X/Y offsets on petal 0 (for fillfake option).
+        - A "collision" file containing the exclusion polygons to use.
 
+    Args:
+        testdir (str):  Override the output directory for testing.
+        posdir (str):  Directory containing the many positioner conf files.
+        polyfile (str):  File containing the exclusion polygons.
+        fibermaps (list):  Override list of tuples (DocDB number,
+            DocDB version, DocDB csv file) of where to find the petal mapping
+            files.
+        petalloc (dict):  Mapping of petal ID to petal location.
+        petalspec (dict):  Mapping of petal location to spectrograph.
+        startvalid (str):  The first time when this focalplane model is valid.
+            ISO 8601 format string.
+        fillfake (bool):  If True, fill missing device locations with fake
+            positioners with nominal values for use in simulations.
 
+    Returns:
+        None
 
     """
     log = get_logger()
@@ -108,6 +128,11 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
                     pet = int(row[cols["PETAL_ID"]])
                     allpetals.add(pet)
                     dev = int(row[cols["DEVICE_LOC"]])
+                    cable = int(row[cols["Cable_ID"]])
+                    conduit = row[cols["Conduit"]]
+                    fwhm = float(row[cols["FWHM@f/3.9"]])
+                    fthrough = float(row[cols["FRD_Throughput"]])
+                    athrough = float(row[cols["Abs_Throuhgput"]])
                     blkfib = row[cols["slit_position"]].split(":")
                     blk = int(blkfib[0])
                     fib = int(blkfib[1])
@@ -119,6 +144,11 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
                         fp[pet][dev] = empty
                     fp[pet][dev]["SLITBLOCK"] = blk
                     fp[pet][dev]["BLOCKFIBER"] = fib
+                    fp[pet][dev]["CABLE"] = cable
+                    fp[pet][dev]["CONDUIT"] = conduit
+                    fp[pet][dev]["FWHM"] = fwhm
+                    fp[pet][dev]["FRD"] = fthrough
+                    fp[pet][dev]["ABS"] = athrough
 
     # Parse all the positioner files.
     pos = dict()
@@ -162,6 +192,11 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
             fp[pet][dev] = dict()
             fp[pet][dev]["SLITBLOCK"] = -1
             fp[pet][dev]["BLOCKFIBER"] = -1
+            fp[pet][dev]["CABLE"] = -1
+            fp[pet][dev]["CONDUIT"] = "NA"
+            fp[pet][dev]["FWHM"] = 0.0
+            fp[pet][dev]["FRD"] = 0.0
+            fp[pet][dev]["ABS"] = 0.0
         fp[pet][dev]["DEVICE_ID"] = devid
         t_min, t_max, p_min, p_max = _compute_theta_phi_range(
             props["PHYSICAL_RANGE_T"], props["PHYSICAL_RANGE_P"])
@@ -191,9 +226,16 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
         xls_fp_layout, xls_sheet, "B", rowmin, rowmax, dtype=int)
     xls_devtype = docdb.xls_read_col(
         xls_fp_layout, xls_sheet, "C", rowmin, rowmax, dtype=str)
+    xls_dev_nominal_x = docdb.xls_read_col(
+        xls_fp_layout, xls_sheet, "D", rowmin, rowmax, dtype=int)
+    xls_dev_nominal_y = docdb.xls_read_col(
+        xls_fp_layout, xls_sheet, "E", rowmin, rowmax, dtype=int)
     devtype = dict()
+    dev_nominal_xy = dict()
     for loc, typ in zip(xls_devloc, xls_devtype):
         devtype[int(loc)] = typ
+    for loc, x, y in zip(xls_devloc, xls_dev_nominal_x, xls_dev_nominal_y):
+        dev_nominal_xy[int(loc)] = (x, y)
 
     for petal in sorted(allpetals):
         devlist = list(sorted(fp[petal].keys()))
@@ -234,25 +276,28 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     # ETC type with a fake positioner if there is none there.
 
     if fillfake:
+        t_min, t_max, p_min, p_max = _compute_theta_phi_range(380.0, 200.0)
         for petal in sorted(allpetals):
             devlist = list(sorted(fp[petal].keys()))
             for dev in devlist:
                 if fp[petal][dev]["DEVICE_ID"] == "NONE":
-
-
-
-            t_min, t_max, p_min, p_max = _compute_theta_phi_range(
-                props["PHYSICAL_RANGE_T"], props["PHYSICAL_RANGE_P"])
-            fp[pet][dev]["OFFSET_X"] = props["OFFSET_X"]
-            fp[pet][dev]["OFFSET_Y"] = props["OFFSET_Y"]
-            fp[pet][dev]["OFFSET_T"] = props["OFFSET_T"]
-            fp[pet][dev]["OFFSET_P"] = props["OFFSET_P"]
-            fp[pet][dev]["LENGTH_R1"] = props["LENGTH_R1"]
-            fp[pet][dev]["LENGTH_R2"] = props["LENGTH_R2"]
-            fp[pet][dev]["MIN_T"] = t_min
-            fp[pet][dev]["MAX_T"] = t_max
-            fp[pet][dev]["MIN_P"] = p_min
-            fp[pet][dev]["MAX_P"] = p_max
+                    # Petal 0 is at the "bottom"; See DESI-0530.  Here we
+                    # rotate the nominal X/Y positions on petal 0 to the
+                    # petal being considered.
+                    xnom, ynom = dev_nominal_xy[dev]
+                    phi = np.radians((7 * 36 + 36 * petal) % 360)
+                    fp[pet][dev]["OFFSET_X"] = np.cos(phi) * xnom \
+                        - np.sin(phi) * ynom
+                    fp[pet][dev]["OFFSET_Y"] = np.sin(phi) * xnom \
+                        + np.cos(phi) * ynom
+                    fp[pet][dev]["OFFSET_T"] = -170.0
+                    fp[pet][dev]["OFFSET_P"] = -5.0
+                    fp[pet][dev]["LENGTH_R1"] = 3.0
+                    fp[pet][dev]["LENGTH_R2"] = 3.0
+                    fp[pet][dev]["MIN_T"] = t_min
+                    fp[pet][dev]["MAX_T"] = t_max
+                    fp[pet][dev]["MIN_P"] = p_min
+                    fp[pet][dev]["MAX_P"] = p_max
 
     # Now load the file(s) with the exclusion polygons
     # Add the legacy polygons to the dictionary for reference.
@@ -364,10 +409,20 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
                description="The slit block where this fiber goes"),
         Column(name="BLOCKFIBER", length=nrows, dtype=np.int32,
                description="The fiber index within the slit block"),
+        Column(name="CABLE", length=nrows, dtype=np.int32,
+               description="The cable ID"),
+        Column(name="CONDUIT", length=nrows, dtype=np.dtype("a3"),
+               description="The conduit"),
         Column(name="SPECTROGRAPH", length=nrows, dtype=np.int32,
                description="The spectrograph connected to this petal"),
         Column(name="FIBER", length=nrows, dtype=np.int32,
                description="SPECTROGRAPH * 500 + SLITBLOCK * 25 + BLOCKFIBER"),
+        Column(name="FWHM", length=nrows, dtype=np.float64,
+               description="FWHM at f/3.9"),
+        Column(name="FRD", length=nrows, dtype=np.float64,
+               description="FRD Throughput"),
+        Column(name="ABS", length=nrows, dtype=np.float64,
+               description="ABS Throughput"),
         Column(name="OFFSET_X", length=nrows, dtype=np.float64,
                description="X location of positioner center", unit="mm"),
         Column(name="OFFSET_Y", length=nrows, dtype=np.float64,
@@ -426,6 +481,11 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
             out_fp[row]["SLITBLOCK"] = fp[petal][dev]["SLITBLOCK"]
             out_fp[row]["BLOCKFIBER"] = fp[petal][dev]["BLOCKFIBER"]
             out_fp[row]["SPECTROGRAPH"] = fp[petal][dev]["SPECTROGRAPH"]
+            out_fp[row]["CABLE"] = fp[petal][dev]["CABLE"]
+            out_fp[row]["CONDUIT"] = fp[petal][dev]["CONDUIT"]
+            out_fp[row]["FWHM"] = fp[petal][dev]["FWHM"]
+            out_fp[row]["FRD"] = fp[petal][dev]["FRD"]
+            out_fp[row]["ABS"] = fp[petal][dev]["ABS"]
             out_fp[row]["EXCLUSION"] = fp[petal][dev]["EXCLUSION"]
             if fp[pet][dev]["SLITBLOCK"] < 0:
                 # This must not be a POS device
@@ -435,7 +495,7 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
                     fp[petal][dev]["SPECTROGRAPH"] * 500 \
                     + fp[petal][dev]["SLITBLOCK"] * 25 \
                     + fp[petal][dev]["BLOCKFIBER"]
-            if fp[petal][dev]["DEVICE_ID"] != "NONE":
+            if (fp[petal][dev]["DEVICE_ID"] != "NONE") or fillfake:
                 for col in dev_cols:
                     if col in fp[petal][dev]:
                         out_fp[row][col] = fp[petal][dev][col]
