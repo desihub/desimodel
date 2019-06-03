@@ -44,12 +44,12 @@ def _compute_theta_phi_range(phys_t, phys_p):
 
 
 def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
-          petalloc=None, petalspec=None, startvalid=None, fillfake=False):
+          petalloc=None, startvalid=None, fillfake=False, exclusion="legacy"):
     """Construct DESI focalplane and state files.
 
     This function gathers information from the following sources:
         - Petal verification files on DocDB
-        - Positioner device configuration files (e.g. from svn)
+        - Positioner device configuration files (e.g. from svn).
         - DESI-0530, to get the mapping from device ID to device type as well
           as the nominal device X/Y offsets on petal 0 (for fillfake option).
         - A "collision" file containing the exclusion polygons to use.
@@ -57,16 +57,19 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     Args:
         testdir (str):  Override the output directory for testing.
         posdir (str):  Directory containing the many positioner conf files.
-        polyfile (str):  File containing the exclusion polygons.
+            If None, simulate identical, nominal positioners.  A None value
+            will force fillfake=True.
+        polyfile (str):  File containing the exclusion polygons.  If None,
+            Use the "legacy" polygons historically included in fiberassign.
         fibermaps (list):  Override list of tuples (DocDB number,
             DocDB version, DocDB csv file) of where to find the petal mapping
             files.
         petalloc (dict):  Mapping of petal ID to petal location.
-        petalspec (dict):  Mapping of petal location to spectrograph.
         startvalid (str):  The first time when this focalplane model is valid.
             ISO 8601 format string.
         fillfake (bool):  If True, fill missing device locations with fake
             positioners with nominal values for use in simulations.
+        exclusion (str):  The name of the default exclusion polygons.
 
     Returns:
         None
@@ -77,9 +80,9 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     outdir = testdir
     if outdir is None:
         outdir = os.path.join(datadir(), "focalplane")
+
     if posdir is None:
-        msg = "you must specify the local directory of positioner conf files"
-        raise RuntimeError(msg)
+        fillfake = True
 
     if startvalid is None:
         startvalid = datetime.utcnow()
@@ -153,33 +156,34 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     # Parse all the positioner files.
     pos = dict()
     pospat = re.compile(r"unit_(.*).conf")
-    for root, dirs, files in os.walk(posdir):
-        for f in files:
-            posmat = pospat.match(f)
-            if posmat is not None:
-                file_dev = posmat.group(1)
-                pfile = os.path.join(root, f)
-                print("parsing {}".format(pfile), flush=True)
-                cnf = configobj.ConfigObj(pfile, unrepr=True)
-                # Is this device used?
-                if ("DEVICE_LOC" not in cnf) \
-                        or (int(cnf["DEVICE_LOC"]) < 0):
-                    continue
-                if ("PETAL_ID" not in cnf):
-                    continue
-                pet = int(cnf["PETAL_ID"])
-                if (pet < 0) or (pet not in fp):
-                    continue
-                # Check that the positioner ID in the file name matches
-                # the file contents.
-                if file_dev != cnf["POS_ID"]:
-                    msg = "positioner file {} has device {} in its name "\
-                        "but contains POS_ID={}"\
-                        .format(f, file_dev, cnf["POS_ID"])
-                    raise RuntimeError(msg)
-                # Add properties to dictionary
-                pos[file_dev] = cnf
-        break
+    if posdir is not None:
+        for root, dirs, files in os.walk(posdir):
+            for f in files:
+                posmat = pospat.match(f)
+                if posmat is not None:
+                    file_dev = posmat.group(1)
+                    pfile = os.path.join(root, f)
+                    print("parsing {}".format(pfile), flush=True)
+                    cnf = configobj.ConfigObj(pfile, unrepr=True)
+                    # Is this device used?
+                    if ("DEVICE_LOC" not in cnf) \
+                            or (int(cnf["DEVICE_LOC"]) < 0):
+                        continue
+                    if ("PETAL_ID" not in cnf):
+                        continue
+                    pet = int(cnf["PETAL_ID"])
+                    if (pet < 0) or (pet not in fp):
+                        continue
+                    # Check that the positioner ID in the file name matches
+                    # the file contents.
+                    if file_dev != cnf["POS_ID"]:
+                        msg = "positioner file {} has device {} in its name "\
+                            "but contains POS_ID={}"\
+                            .format(f, file_dev, cnf["POS_ID"])
+                        raise RuntimeError(msg)
+                    # Add properties to dictionary
+                    pos[file_dev] = cnf
+            break
 
     # Extract and organize the information we are tracking
 
@@ -211,10 +215,8 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
         fp[pet][dev]["MIN_P"] = p_min
         fp[pet][dev]["MAX_P"] = p_max
 
-    # This is awkward- we have no source of information about the mapping
-    # from device location on a petal to "device type" (i.e. whether that
-    # location is a normal positioner or something else).  We resort to
-    # fetching docdb 0530 just to get this one column...
+    # Use DocDB 0530 to get the mapping of device location to type.  Also use
+    # this for X/Y offsets in case we are simulating positioners.
     xls_fp_layout = docdb.download(
         530, 14, "DESI-0530-v14 (Focal Plane Layout).xlsx")
     xls_sheet = "PositionerAndFiducialLocations"
@@ -257,21 +259,6 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
             for dev in devlist:
                 fp[petal][dev]["PETAL"] = petalloc[petal]
 
-    # If we have a map of petal ID to spectrograph, then use it.  Otherwise
-    # just assign them in petal ID order.
-    if petalspec is None:
-        spec = 0
-        for petal in sorted(allpetals):
-            devlist = list(sorted(fp[petal].keys()))
-            for dev in devlist:
-                fp[petal][dev]["SPECTROGRAPH"] = spec
-            spec += 1
-    else:
-        for petal in allpetals:
-            devlist = list(sorted(fp[petal].keys()))
-            for dev in devlist:
-                fp[petal][dev]["SPECTROGRAPH"] = petalspec[petal]
-
     # If the fillfake option is specified, fill all device locations of POS and
     # ETC type with a fake positioner if there is none there.
 
@@ -286,18 +273,18 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
                     # petal being considered.
                     xnom, ynom = dev_nominal_xy[dev]
                     phi = np.radians((7 * 36 + 36 * petal) % 360)
-                    fp[pet][dev]["OFFSET_X"] = np.cos(phi) * xnom \
+                    fp[petal][dev]["OFFSET_X"] = np.cos(phi) * xnom \
                         - np.sin(phi) * ynom
-                    fp[pet][dev]["OFFSET_Y"] = np.sin(phi) * xnom \
+                    fp[petal][dev]["OFFSET_Y"] = np.sin(phi) * xnom \
                         + np.cos(phi) * ynom
-                    fp[pet][dev]["OFFSET_T"] = -170.0
-                    fp[pet][dev]["OFFSET_P"] = -5.0
-                    fp[pet][dev]["LENGTH_R1"] = 3.0
-                    fp[pet][dev]["LENGTH_R2"] = 3.0
-                    fp[pet][dev]["MIN_T"] = t_min
-                    fp[pet][dev]["MAX_T"] = t_max
-                    fp[pet][dev]["MIN_P"] = p_min
-                    fp[pet][dev]["MAX_P"] = p_max
+                    fp[petal][dev]["OFFSET_T"] = -170.0
+                    fp[petal][dev]["OFFSET_P"] = -5.0
+                    fp[petal][dev]["LENGTH_R1"] = 3.0
+                    fp[petal][dev]["LENGTH_R2"] = 3.0
+                    fp[petal][dev]["MIN_T"] = t_min
+                    fp[petal][dev]["MAX_T"] = t_max
+                    fp[petal][dev]["MIN_P"] = p_min
+                    fp[petal][dev]["MAX_P"] = p_max
 
     # Now load the file(s) with the exclusion polygons
     # Add the legacy polygons to the dictionary for reference.
@@ -364,14 +351,6 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
         poly["default"]["phi"] = dict()
         poly["default"]["phi"]["segments"] = [kphi]
 
-    # Here is where we could assign exclusion polygons to each device ID,
-    # based on how a given positioner is moving.  For now we assign them all
-    # to the same set of polygons.
-    for petal in sorted(allpetals):
-        devlist = list(sorted(fp[petal].keys()))
-        for dev in devlist:
-            fp[petal][dev]["EXCLUSION"] = "legacy"
-
     # Now write out all of this collected information.  Also write out an
     # initial "state" log as a starting point.  Note that by having log
     # files (which contain datestamps) also have a "starting" date, it means
@@ -413,10 +392,8 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
                description="The cable ID"),
         Column(name="CONDUIT", length=nrows, dtype=np.dtype("a3"),
                description="The conduit"),
-        Column(name="SPECTROGRAPH", length=nrows, dtype=np.int32,
-               description="The spectrograph connected to this petal"),
         Column(name="FIBER", length=nrows, dtype=np.int32,
-               description="SPECTROGRAPH * 500 + SLITBLOCK * 25 + BLOCKFIBER"),
+               description="PETAL * 500 + SLITBLOCK * 25 + BLOCKFIBER"),
         Column(name="FWHM", length=nrows, dtype=np.float64,
                description="FWHM at f/3.9"),
         Column(name="FRD", length=nrows, dtype=np.float64,
@@ -447,8 +424,6 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
         Column(name="MIN_P", length=nrows, dtype=np.float64,
                description="Minimum PHI angle relative to OFFSET_P",
                unit="degrees"),
-        Column(name="EXCLUSION", length=nrows, dtype=np.dtype("a9"),
-               description="The exclusion polygon for this device"),
     ]
 
     out_fp = Table()
@@ -480,19 +455,17 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
             out_fp[row]["DEVICE_TYPE"] = fp[petal][dev]["DEVICE_TYPE"]
             out_fp[row]["SLITBLOCK"] = fp[petal][dev]["SLITBLOCK"]
             out_fp[row]["BLOCKFIBER"] = fp[petal][dev]["BLOCKFIBER"]
-            out_fp[row]["SPECTROGRAPH"] = fp[petal][dev]["SPECTROGRAPH"]
             out_fp[row]["CABLE"] = fp[petal][dev]["CABLE"]
             out_fp[row]["CONDUIT"] = fp[petal][dev]["CONDUIT"]
             out_fp[row]["FWHM"] = fp[petal][dev]["FWHM"]
             out_fp[row]["FRD"] = fp[petal][dev]["FRD"]
             out_fp[row]["ABS"] = fp[petal][dev]["ABS"]
-            out_fp[row]["EXCLUSION"] = fp[petal][dev]["EXCLUSION"]
-            if fp[pet][dev]["SLITBLOCK"] < 0:
+            if fp[petal][dev]["SLITBLOCK"] < 0:
                 # This must not be a POS device
                 out_fp[row]["FIBER"] = -1
             else:
                 out_fp[row]["FIBER"] = \
-                    fp[petal][dev]["SPECTROGRAPH"] * 500 \
+                    fp[petal][dev]["PETAL"] * 500 \
                     + fp[petal][dev]["SLITBLOCK"] * 25 \
                     + fp[petal][dev]["BLOCKFIBER"]
             if (fp[petal][dev]["DEVICE_ID"] != "NONE") or fillfake:
@@ -517,6 +490,8 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
                description="Global device location (PETAL * 1000 + DEVICE)"),
         Column(name="STATE", length=nrows, dtype=np.uint32,
                description="State bit field (good == 0)"),
+        Column(name="EXCLUSION", length=nrows, dtype=np.dtype("a9"),
+               description="The exclusion polygon for this device"),
     ]
 
     out_state = Table()
@@ -531,6 +506,7 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
             out_state[row]["LOCATION"] = fp[petal][dev]["PETAL"] * 1000 + dev
             out_state[row]["DEVICE"] = dev
             out_state[row]["STATE"] = 0
+            out_state[row]["EXCLUSION"] = exclusion
             row += 1
 
     out_state.write(out_state_file, format='ascii.ecsv')
