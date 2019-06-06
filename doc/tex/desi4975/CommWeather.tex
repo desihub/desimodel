@@ -26,11 +26,10 @@ during DESI Commissioning\\
 \section{Introduction}
 
 This note documents the observing conditions during the DESI Commissioning Run at the Mayall, and compares them
-with the forecast model used for the survey margin estimates in DESI-4355~\cite{desi4355}.
-
+with the forecast model used for the survey margin estimates in DESI-4355~\cite{desi-4355}.
 The periods of continuous observing during commissioning that we consider are:
 \begin{itemize}
-\item Apr 1 -- May 5, 2019: Commissioning Instrument.
+\item April 1 -- May 5, 2019: Commissioning Instrument.
 \item May 16 -- June 2, 2019: Commissioning Instrument.
 \end{itemize}
 
@@ -38,35 +37,32 @@ The latex source for this note is maintained in {\tt /doc/tex/desi4975/} of the 
 with an accompanying juypter notebook in {\tt /doc/nb/CommWeather.ipynb}. This version of the document corresponds to
 version {\tt 0.9.10} of the {\tt desimodel} package.
 
-\section{Methodology}
-
-This section describes the methodology used to estimate the following observing conditions: dome-closed fraction,
+Below we describe the methods and results used to estimate the following observing conditions: dome-closed fraction,
 delivered image quality, and sky transparency.  Details on the forecast models used for these quantities are in
-DESI-3087~\cite{desi3087} and DESI-3577~\cite{desi3577}.
+DESI-3087~\cite{desi-3087}.
 
-\subsection{Dome-Closed Fraction}
+\section{Dome-Closed Fraction}
 
-...
+{\it Describe how the dome-closed fractions were estimated here...}
 
-\subsection{Delivered Image Quality}
+The predicted dome-closed fraction is based on the historical record for 2007--17 given in DESI-3577~\cite{desi-3577}.
+We calculated the average dome-closed fraction for the nights of the CI run, April 1 -- May 5 and May 16 -- June 2, 2019.
+The average of the 2007--17 predictions is 16.4\%, compared with the actual CI dome-closed fraction of 17.4\%%.
+The actual weather is very consistent with the model predictions. Details are in \fig{CIdome}.
+
+\begin{figure}[htb]
+\begin{center}
+\includegraphics[width=6in]{CIdome}
+\caption{Actual (red) and predicted (blue) dome-closed fraction for the dates corresponding to the CI run.}
+\label{fig:CIdome}
+\end{center}
+\end{figure}
+
+\section{Delivered Image Quality}
 
 To be completed in a future version of this document.
 
-\subsection{Sky Transparency}
-
-To be completed in a future version of this document.
-
-\section{Results}
-
-\subsection{Dome-Closed Fraction}
-
-...
-
-\subsection{Delivered Image Quality}
-
-To be completed in a future version of this document.
-
-\subsection{Sky Transparency}
+\section{Sky Transparency}
 
 To be completed in a future version of this document.
 
