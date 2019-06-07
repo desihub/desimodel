@@ -8,6 +8,7 @@ desimodel Release Notes
 * svn data only: updated ``data/footprint/desi-tiles.fits`` and
   ``desi-healpix-weights.fits`` with new dither pattern; see DESI-0717.
   Layers 0=GRAY, 1-4=DARK instead of 0-3=DARK, 4=GRAY.
+* Add notebook and latex source for DESI-4975 (Commissioning Weather).
 
 0.9.11 (2019-05-30)
 -------------------
