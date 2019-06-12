@@ -44,6 +44,13 @@ def main():
     parser.add_argument("--test", type=str, required=False, default=None,
                         help="Override the output directory for testing.")
 
+    parser.add_argument("--fakeoffset", required=False, default=False,
+                        action="store_true",
+                        help="Set theta / phi offsets to zero for fake"
+                        " positioners.  This is *only* for consistency tests"
+                        " with legacy fiberassignment and should not be used"
+                        " for anything else.")
+
     args = parser.parse_args()
 
     petalloc = None
@@ -55,7 +62,8 @@ def main():
 
     create(testdir=args.test, posdir=args.pos_settings,
            polyfile=args.collision, fibermaps=None, petalloc=petalloc,
-           startvalid=None, fillfake=args.fillfake, exclusion=args.exclusion)
+           startvalid=None, fillfake=args.fillfake, exclusion=args.exclusion,
+           fakeoffset=args.fakeoffset)
 
     return
 

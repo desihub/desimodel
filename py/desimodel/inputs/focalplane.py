@@ -44,7 +44,8 @@ def _compute_theta_phi_range(phys_t, phys_p):
 
 
 def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
-          petalloc=None, startvalid=None, fillfake=False, exclusion="legacy"):
+           petalloc=None, startvalid=None, fillfake=False, exclusion="legacy",
+           fakeoffset=False):
     """Construct DESI focalplane and state files.
 
     This function gathers information from the following sources:
@@ -70,6 +71,9 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
         fillfake (bool):  If True, fill missing device locations with fake
             positioners with nominal values for use in simulations.
         exclusion (str):  The name of the default exclusion polygons.
+        fakeoffset (bool):  If True, artificially sets the theta / phi angle
+            offsets to zero.  This replicates the behavior of legacy
+            fiberassign and should only be used for testing.
 
     Returns:
         None
@@ -277,8 +281,12 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
                         - np.sin(phi) * ynom
                     fp[petal][dev]["OFFSET_Y"] = np.sin(phi) * xnom \
                         + np.cos(phi) * ynom
-                    fp[petal][dev]["OFFSET_T"] = -170.0
-                    fp[petal][dev]["OFFSET_P"] = -5.0
+                    if fakeoffset:
+                        fp[petal][dev]["OFFSET_T"] = 0.0
+                        fp[petal][dev]["OFFSET_P"] = 0.0
+                    else:
+                        fp[petal][dev]["OFFSET_T"] = -170.0
+                        fp[petal][dev]["OFFSET_P"] = -5.0
                     fp[petal][dev]["LENGTH_R1"] = 3.0
                     fp[petal][dev]["LENGTH_R2"] = 3.0
                     fp[petal][dev]["MIN_T"] = t_min
@@ -342,6 +350,7 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
         ktheta.append(kstart)
         poly["default"]["theta"] = dict()
         poly["default"]["theta"]["segments"] = [ktheta]
+        poly["default"]["theta"]["circles"] = list()
         kphi_raw = np.transpose(np.array(exprops["KEEPOUT_PHI"]))
         kphi_x = kphi_raw[:, 0]
         kphi_y = kphi_raw[:, 1]
@@ -350,6 +359,7 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
         kphi.append(kstart)
         poly["default"]["phi"] = dict()
         poly["default"]["phi"]["segments"] = [kphi]
+        poly["default"]["phi"]["circles"] = list()
 
     # Now write out all of this collected information.  Also write out an
     # initial "state" log as a starting point.  Note that by having log

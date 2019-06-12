@@ -346,11 +346,13 @@ def load_focalplane(time):
             pet = fullstate[row]["PETAL"]
             dev = fullstate[row]["DEVICE"]
             st = fullstate[row]["STATE"]
+            excl = fullstate[row]["EXCLUSION"]
             if loc not in locstate:
                 locstate[loc] = dict()
             locstate[loc]["PETAL"] = pet
             locstate[loc]["DEVICE"] = dev
             locstate[loc]["STATE"] = st
+            locstate[loc]["EXCLUSION"] = excl
 
     nloc = len(locstate)
     state_cols = [
@@ -362,6 +364,8 @@ def load_focalplane(time):
                description="Global device location (PETAL * 1000 + DEVICE)"),
         Column(name="STATE", length=nloc, dtype=np.uint32,
                description="State bit field (good == 0)"),
+        Column(name="EXCLUSION", length=nloc, dtype=np.dtype("a9"),
+               description="The exclusion polygon for this device"),
     ]
     state_data = Table()
     state_data.add_columns(state_cols)
@@ -371,6 +375,7 @@ def load_focalplane(time):
         state_data[row]["DEVICE"] = locstate[loc]["DEVICE"]
         state_data[row]["LOCATION"] = loc
         state_data[row]["STATE"] = locstate[loc]["STATE"]
+        state_data[row]["EXCLUSION"] = locstate[loc]["EXCLUSION"]
         row += 1
 
     return (fp_data, excl_data, state_data)
