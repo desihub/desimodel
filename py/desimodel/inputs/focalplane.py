@@ -96,15 +96,15 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     if fibermaps is None:
         fibermaps = [
             (4042, 5, "Petal_2_final_verification.csv"),
-            (4043, 6, "Petal_3_final_verification.csv"),
+            (4043, 7, "Petal_3_final_verification.csv"),
             (4807, 2, "Petal_4_final_verification.csv"),
             (4808, 3, "Petal_5_final_verification.csv"),
             (4809, 2, "Petal_6_final_verification.csv"),
             (4190, 6, "Petal_7_final_verification.csv"),
             (4806, 4, "Petal_8_final_verification.csv"),
             (4810, 3, "Petal_9_final_verification.csv"),
-            (4868, 3, "Petal_10_final_verification.csv"),
-            (4883, 3, "Petal_11_final_verification.csv")
+            (4868, 5, "Petal_10_final_verification.csv"),
+            (4883, 4, "Petal_11_final_verification.csv")
         ]
 
     # Process the fibermap files from DocDB.  We start with this step so that
