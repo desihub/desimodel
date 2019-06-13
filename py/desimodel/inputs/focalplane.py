@@ -284,15 +284,19 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
                     if fakeoffset:
                         fp[petal][dev]["OFFSET_T"] = 0.0
                         fp[petal][dev]["OFFSET_P"] = 0.0
+                        fp[petal][dev]["MIN_T"] = 0.0
+                        fp[petal][dev]["MAX_T"] = 380.0
+                        fp[petal][dev]["MIN_P"] = 0.0
+                        fp[petal][dev]["MAX_P"] = 200.0
                     else:
                         fp[petal][dev]["OFFSET_T"] = -170.0
                         fp[petal][dev]["OFFSET_P"] = -5.0
+                        fp[petal][dev]["MIN_T"] = t_min
+                        fp[petal][dev]["MAX_T"] = t_max
+                        fp[petal][dev]["MIN_P"] = p_min
+                        fp[petal][dev]["MAX_P"] = p_max
                     fp[petal][dev]["LENGTH_R1"] = 3.0
                     fp[petal][dev]["LENGTH_R2"] = 3.0
-                    fp[petal][dev]["MIN_T"] = t_min
-                    fp[petal][dev]["MAX_T"] = t_max
-                    fp[petal][dev]["MIN_P"] = p_min
-                    fp[petal][dev]["MAX_P"] = p_max
 
     # Now load the file(s) with the exclusion polygons
     # Add the legacy polygons to the dictionary for reference.
@@ -300,14 +304,14 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
 
     # First the THETA arm.
     circs = [
-        [[3.0, 0.0], 2.095]
+        [[0.0+3.0, 0.0], 2.095]
     ]
     seg = [
-        [5.095, -0.474],
-        [4.358, -2.5],
-        [2.771, -2.5],
-        [1.759, -2.792],
-        [0.905, -0.356]
+        [2.095+3.0, -0.474],
+        [1.358+3.0, -2.5],
+        [-0.229+3.0, -2.5],
+        [-1.241+3.0, -2.792],
+        [-2.095+3.0, -0.356]
     ]
     segs = [seg]
     shp_theta = dict()
@@ -316,18 +320,18 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
 
     # Now the PHI arm
     circs = [
-        [[0.0, 0.0], 0.967]
+        [[0.0+3.0, 0.0], 0.967]
     ]
     seg_upper = [
-        [-3.0, 0.990],
-        [0.0, 0.990]
+        [-3.0+3.0, 0.990],
+        [0.0+3.0, 0.990]
     ]
     seg_lower = [
-        [-2.944, -1.339],
-        [-2.944, -2.015],
-        [-1.981, -1.757],
-        [-1.844, -0.990],
-        [0.0, -0.990]
+        [-2.944+3.0, -1.339],
+        [-2.944+3.0, -2.015],
+        [-1.981+3.0, -1.757],
+        [-1.844+3.0, -0.990],
+        [0.0+3.0, -0.990]
     ]
     segs = [seg_upper, seg_lower]
     shp_phi = dict()
@@ -339,7 +343,7 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     poly["legacy"]["phi"] = shp_phi
 
     if polyfile is not None:
-        # Add shapes from other files
+        # Add shapes from other files.  The convention used here for
         exprops = configobj.ConfigObj(polyfile, unrepr=True)
         poly["default"] = dict()
         ktheta_raw = np.transpose(np.array(exprops["KEEPOUT_THETA"]))
