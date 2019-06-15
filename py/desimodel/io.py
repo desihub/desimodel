@@ -329,11 +329,13 @@ def load_focalplane(time):
     fp_data = None
     excl_data = None
     fullstate = None
+    tmstr = None
     for dt, fp, ex, st in _focalplane:
         if time > dt:
             fp_data = fp
             excl_data = ex
             fullstate = st
+            tmstr = dt.isoformat(timespec="seconds")
         else:
             break
 
@@ -378,7 +380,7 @@ def load_focalplane(time):
         state_data[row]["EXCLUSION"] = locstate[loc]["EXCLUSION"]
         row += 1
 
-    return (fp_data, excl_data, state_data)
+    return (fp_data, excl_data, state_data, tmstr)
 
 
 def reset_cache():

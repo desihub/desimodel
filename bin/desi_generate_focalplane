@@ -27,7 +27,7 @@ def main():
 
     parser.add_argument("--exclusion", type=str, default="legacy",
                         required=False,
-                        help="The name of the default exclusion polynomials"
+                        help="The name of the default exclusion polygon"
                         " to use (e.g. 'legacy', 'default', etc)")
 
     parser.add_argument("--petal_id2loc", type=str, required=False,
@@ -35,6 +35,11 @@ def main():
                         "specified as '<id0>:<loc0>,<id1>:<loc1>,...'.  If"
                         " not specified, petals will be placed in ID order"
                         " starting at location 0.")
+
+    parser.add_argument("--startvalid", type=str, required=False, default=None,
+                        help="Optional start date (default is current "
+                        "date/time) when the focalplane becomes valid. "
+                        "Format is YYYY-MM-DDTHH:mm:ss in UTC time.")
 
     parser.add_argument("--fillfake", required=False, default=False,
                         action="store_true",
@@ -51,6 +56,11 @@ def main():
                         " with legacy fiberassignment and should not be used"
                         " for anything else.")
 
+    parser.add_argument("--fakefiberpos", required=False, default=False,
+                        action="store_true",
+                        help="Use the old fiberpos file for the device "
+                        "mapping.  Only for testing.")
+
     args = parser.parse_args()
 
     petalloc = None
@@ -62,8 +72,9 @@ def main():
 
     create(testdir=args.test, posdir=args.pos_settings,
            polyfile=args.collision, fibermaps=None, petalloc=petalloc,
-           startvalid=None, fillfake=args.fillfake, exclusion=args.exclusion,
-           fakeoffset=args.fakeoffset)
+           startvalid=args.startvalid, fillfake=args.fillfake,
+           exclusion=args.exclusion, fakeoffset=args.fakeoffset,
+           fakefiberpos=args.fakefiberpos)
 
     return
 

@@ -20,7 +20,7 @@ from desiutil.log import get_logger
 
 from . import docdb
 
-from ..io import datadir
+from ..io import datadir, load_fiberpos
 
 
 def _compute_theta_phi_range(phys_t, phys_p):
@@ -45,7 +45,7 @@ def _compute_theta_phi_range(phys_t, phys_p):
 
 def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
            petalloc=None, startvalid=None, fillfake=False, exclusion="legacy",
-           fakeoffset=False):
+           fakeoffset=False, fakefiberpos=False):
     """Construct DESI focalplane and state files.
 
     This function gathers information from the following sources:
@@ -74,6 +74,8 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
         fakeoffset (bool):  If True, artificially sets the theta / phi angle
             offsets to zero.  This replicates the behavior of legacy
             fiberassign and should only be used for testing.
+        fakefiberpos (bool):  If True, ignore the real fibermaps and load the
+            old fiberpos file to get the mapping.  Only useful for testing.
 
     Returns:
         None
@@ -114,48 +116,69 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     allpetals = set()
     fp = dict()
 
-    for docnum, docver, docname in fibermaps:
-        fmfile = None
-        try:
-            fmfile = docdb.download(docnum, docver, docname)
-        except IOError:
-            msg = "Could not download {}".format(docname)
-            log.error(msg)
-        firstline = True
-        with open(fmfile, newline="") as csvfile:
-            reader = csv.reader(csvfile, delimiter=",")
-            cols = dict()
-            for row in reader:
-                if firstline:
-                    for cnum, elem in enumerate(row):
-                        nm = elem.strip().rstrip()
-                        cols[nm] = cnum
-                    firstline = False
-                else:
-                    pet = int(row[cols["PETAL_ID"]])
-                    allpetals.add(pet)
-                    dev = int(row[cols["DEVICE_LOC"]])
-                    cable = int(row[cols["Cable_ID"]])
-                    conduit = row[cols["Conduit"]]
-                    fwhm = float(row[cols["FWHM@f/3.9"]])
-                    fthrough = float(row[cols["FRD_Throughput"]])
-                    athrough = float(row[cols["Abs_Throuhgput"]])
-                    blkfib = row[cols["slit_position"]].split(":")
-                    blk = int(blkfib[0])
-                    fib = int(blkfib[1])
-                    if pet not in fp:
-                        fp[pet] = dict()
-                    if dev not in fp[pet]:
-                        empty = dict()
-                        empty["DEVICE_ID"] = "NONE"
-                        fp[pet][dev] = empty
-                    fp[pet][dev]["SLITBLOCK"] = blk
-                    fp[pet][dev]["BLOCKFIBER"] = fib
-                    fp[pet][dev]["CABLE"] = cable
-                    fp[pet][dev]["CONDUIT"] = conduit
-                    fp[pet][dev]["FWHM"] = fwhm
-                    fp[pet][dev]["FRD"] = fthrough
-                    fp[pet][dev]["ABS"] = athrough
+    if fakefiberpos:
+        # Get the mapping from the fiberpos instead
+        fpos = load_fiberpos()
+        # There is no "PETAL_ID" for the fake fiberpos, so we use PETAL
+        for pet, dev, blk, fib in zip(fpos["PETAL"], fpos["DEVICE"],
+                                      fpos["SLITBLOCK"], fpos["BLOCKFIBER"]):
+            allpetals.add(pet)
+            if pet not in fp:
+                fp[pet] = dict()
+            if dev not in fp[pet]:
+                empty = dict()
+                empty["DEVICE_ID"] = "NONE"
+                fp[pet][dev] = empty
+            fp[pet][dev]["SLITBLOCK"] = blk
+            fp[pet][dev]["BLOCKFIBER"] = fib
+            fp[pet][dev]["CABLE"] = 0
+            fp[pet][dev]["CONDUIT"] = "NA"
+            fp[pet][dev]["FWHM"] = 0.0
+            fp[pet][dev]["FRD"] = 0.0
+            fp[pet][dev]["ABS"] = 0.0
+    else:
+        for docnum, docver, docname in fibermaps:
+            fmfile = None
+            try:
+                fmfile = docdb.download(docnum, docver, docname)
+            except IOError:
+                msg = "Could not download {}".format(docname)
+                log.error(msg)
+            firstline = True
+            with open(fmfile, newline="") as csvfile:
+                reader = csv.reader(csvfile, delimiter=",")
+                cols = dict()
+                for row in reader:
+                    if firstline:
+                        for cnum, elem in enumerate(row):
+                            nm = elem.strip().rstrip()
+                            cols[nm] = cnum
+                        firstline = False
+                    else:
+                        pet = int(row[cols["PETAL_ID"]])
+                        allpetals.add(pet)
+                        dev = int(row[cols["DEVICE_LOC"]])
+                        cable = int(row[cols["Cable_ID"]])
+                        conduit = row[cols["Conduit"]]
+                        fwhm = float(row[cols["FWHM@f/3.9"]])
+                        fthrough = float(row[cols["FRD_Throughput"]])
+                        athrough = float(row[cols["Abs_Throuhgput"]])
+                        blkfib = row[cols["slit_position"]].split(":")
+                        blk = int(blkfib[0])
+                        fib = int(blkfib[1])
+                        if pet not in fp:
+                            fp[pet] = dict()
+                        if dev not in fp[pet]:
+                            empty = dict()
+                            empty["DEVICE_ID"] = "NONE"
+                            fp[pet][dev] = empty
+                        fp[pet][dev]["SLITBLOCK"] = blk
+                        fp[pet][dev]["BLOCKFIBER"] = fib
+                        fp[pet][dev]["CABLE"] = cable
+                        fp[pet][dev]["CONDUIT"] = conduit
+                        fp[pet][dev]["FWHM"] = fwhm
+                        fp[pet][dev]["FRD"] = fthrough
+                        fp[pet][dev]["ABS"] = athrough
 
     # Parse all the positioner files.
     pos = dict()
