@@ -20,7 +20,7 @@ from desiutil.log import get_logger
 
 from . import docdb
 
-from ..io import datadir, load_fiberpos
+from ..io import datadir, findfile
 
 
 def _compute_theta_phi_range(phys_t, phys_p):
@@ -122,12 +122,19 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     fp = dict()
 
     if fakefiberpos:
-        # Get the mapping AND device info from the fiberpos instead
-        fpos = load_fiberpos()
+        # Get the mapping AND device info from the fiberpos instead.
+        # We CANNOT use the desimodel "load_fiberpos()" function here, since
+        # it seems to strip out the ETC devices.  Manually read the file.
+        fiberpos_file = findfile('focalplane/fiberpos-all.fits')
+        fpos = Table.read(fiberpos_file)
+
         # There is no "PETAL_ID" for the fake fiberpos, so we use PETAL
-        for pet, dev, blk, fib, xoff, yoff in zip(
-                fpos["PETAL"], fpos["DEVICE"], fpos["SLITBLOCK"],
-                fpos["BLOCKFIBER"], fpos["X"], fpos["Y"]):
+        for pet, dev, devtyp, blk, fib, xoff, yoff in zip(
+                fpos["PETAL"], fpos["DEVICE"], fpos["DEVICE_TYPE"],
+                fpos["SLITBLOCK"], fpos["BLOCKFIBER"], fpos["X"], fpos["Y"]):
+            if (devtyp != "POS") and (devtyp != "ETC"):
+                # only consider science positioners and sky monitors.
+                continue
             allpetals.add(pet)
             if pet not in fp:
                 fp[pet] = dict()
