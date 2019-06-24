@@ -90,6 +90,11 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     if posdir is None:
         fillfake = True
 
+    if fakefiberpos and (posdir is not None):
+        raise RuntimeError(
+            "Cannot specify both fake positioners from fiberpos and real"
+            " devices from posdir")
+
     if startvalid is None:
         startvalid = datetime.utcnow()
     else:
@@ -117,17 +122,18 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     fp = dict()
 
     if fakefiberpos:
-        # Get the mapping from the fiberpos instead
+        # Get the mapping AND device info from the fiberpos instead
         fpos = load_fiberpos()
         # There is no "PETAL_ID" for the fake fiberpos, so we use PETAL
-        for pet, dev, blk, fib in zip(fpos["PETAL"], fpos["DEVICE"],
-                                      fpos["SLITBLOCK"], fpos["BLOCKFIBER"]):
+        for pet, dev, blk, fib, xoff, yoff in zip(
+                fpos["PETAL"], fpos["DEVICE"], fpos["SLITBLOCK"],
+                fpos["BLOCKFIBER"], fpos["X"], fpos["Y"]):
             allpetals.add(pet)
             if pet not in fp:
                 fp[pet] = dict()
             if dev not in fp[pet]:
                 empty = dict()
-                empty["DEVICE_ID"] = "NONE"
+                empty["DEVICE_ID"] = "FAKE"
                 fp[pet][dev] = empty
             fp[pet][dev]["SLITBLOCK"] = blk
             fp[pet][dev]["BLOCKFIBER"] = fib
@@ -136,6 +142,17 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
             fp[pet][dev]["FWHM"] = 0.0
             fp[pet][dev]["FRD"] = 0.0
             fp[pet][dev]["ABS"] = 0.0
+            fp[pet][dev]["DEVICE_ID"] = "FAKE"
+            fp[pet][dev]["OFFSET_X"] = xoff
+            fp[pet][dev]["OFFSET_Y"] = yoff
+            fp[pet][dev]["OFFSET_T"] = 0.0
+            fp[pet][dev]["OFFSET_P"] = 0.0
+            fp[pet][dev]["MIN_T"] = 0.0
+            fp[pet][dev]["MAX_T"] = 380.0
+            fp[pet][dev]["MIN_P"] = 0.0
+            fp[pet][dev]["MAX_P"] = 200.0
+            fp[pet][dev]["LENGTH_R1"] = 3.0
+            fp[pet][dev]["LENGTH_R2"] = 3.0
     else:
         for docnum, docver, docname in fibermaps:
             fmfile = None
