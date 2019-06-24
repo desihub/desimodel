@@ -1,0 +1,109 @@
+#!/usr/bin/env python
+"""Commandline script to update the state log for a focalplane.
+"""
+import os
+import shutil
+import argparse
+
+from datetime import datetime
+
+from astropy.table import Table
+
+from desimodel.io import load_focalplane, datadir
+
+
+def main():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--location", type=int, required=False, default=None,
+                        help="The device location (petal * 1000 + device loc)"
+                        " modified by this event.")
+
+    parser.add_argument("--petal", type=int, required=False, default=None,
+                        help="The petal (focalplane location, not petal ID)"
+                        " modified by this event (--device must also be used)")
+
+    parser.add_argument("--device", type=int, required=False, default=None,
+                        help="The device location (--petal must also be given)"
+                        " modified by this event.")
+
+    parser.add_argument("--state", type=int, default=None, required=False,
+                        help="The new state to assign to the device.")
+
+    parser.add_argument("--exclusion", type=str, default=None, required=False,
+                        help="The new exclusion polygon to assign to the"
+                        " device (e.g. 'legacy', 'default', etc)")
+
+    parser.add_argument("--time", type=str, required=False, default=None,
+                        help="Optional date/time (default is current "
+                        "date/time) when this event happens. "
+                        "Format is YYYY-MM-DDTHH:mm:ss in UTC time.")
+
+    args = parser.parse_args()
+
+    if args.location is None:
+        if (args.petal is None) or (args.device is None):
+            raise RuntimeError(
+                "must specify either location or petal and device")
+    else:
+        if (args.petal is not None) or (args.device is not None):
+            raise RuntimeError(
+                "must specify either location or petal and device, not both")
+
+    # The timestamp for this event.
+
+    event = None
+    if args.time is None:
+        event = datetime.utcnow()
+    else:
+        event = datetime.strptime(args.time, "%Y-%m-%dT%H:%M:%S")
+    timestr = event.isoformat(timespec="seconds")
+
+    # First, load the current state
+
+    fp, exclude, state, tmstr = load_focalplane(event)
+
+    # Find the properties of the specified device.
+
+    new_pet = args.petal
+    new_dev = args.device
+    new_loc = args.location
+    new_st = args.state
+    new_excl = args.exclusion
+    if args.location is not None:
+        for row in state:
+            if row["LOCATION"] == args.location:
+                new_pet = row["PETAL"]
+                new_dev = row["DEVICE"]
+                if new_st is None:
+                    new_st = row["STATE"]
+                if new_excl is None:
+                    new_excl = row["EXCLUSION"]
+    else:
+        for row in state:
+            if (row["PETAL"] == args.petal) and (row["DEVICE"] == args.device):
+                new_loc = row["LOCATION"]
+                if new_st is None:
+                    new_st = row["STATE"]
+                if new_excl is None:
+                    new_excl = row["EXCLUSION"]
+
+    fpdir = os.path.join(datadir(), "focalplane")
+    state_file = os.path.join(fpdir, "desi-state_{}.ecsv".format(tmstr))
+    tmp_state = "{}.tmp".format(state_file)
+    prev_state = "{}.previous".format(state_file)
+
+    # Now read the full state file and append
+    st = Table.read(state_file, format="ascii.ecsv")
+    st.add_row([timestr, new_pet, new_loc, new_dev, new_st, new_excl])
+    st.write(tmp_state, format='ascii.ecsv')
+
+    # now move the temp file into place
+    shutil.copy2(state_file, prev_state)
+    os.rename(tmp_state, state_file)
+
+    return
+
+
+if __name__ == "__main__":
+    main()
