@@ -23,7 +23,7 @@ dist: trusty
 addons:
     apt:
         packages:
-            - graphviz
+            # - graphviz
             - texlive-latex-extra
             - dvipng
 python:
