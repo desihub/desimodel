@@ -48,7 +48,7 @@ env:
         # These packages will always be installed.
         - CONDA_DEPENDENCIES=''
         # These packages will only be installed if we really need them.
-        - CONDA_ALL_DEPENDENCIES='requests pyyaml scipy numba'
+        - CONDA_ALL_DEPENDENCIES='requests pyyaml scipy numba blas=1.0=openblas'
         # These packages will always be installed.
         - PIP_DEPENDENCIES=''
         # These packages will only be installed if we really need them.
