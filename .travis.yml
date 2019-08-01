@@ -23,11 +23,11 @@ dist: trusty
 addons:
     apt:
         packages:
-            - graphviz
+            # - graphviz
             - texlive-latex-extra
             - dvipng
 python:
-    - 2.7
+    # - 2.7
     - 3.5
     - 3.6
 env:
@@ -35,9 +35,9 @@ env:
         # The following versions are the 'default' for tests, unless
         # overidden underneath. They are defined here in order to save having
         # to repeat them for all configurations.
-        # - NUMPY_VERSION=1.9
+        - NUMPY_VERSION=1.15
         # - SCIPY_VERSION=0.14
-        - ASTROPY_VERSION=2.0.8
+        - ASTROPY_VERSION=2.0.14
         # - SPHINX_VERSION=1.6.6
         - DESIUTIL_VERSION=1.9.13
         - SPECTER_VERSION=0.9.0
@@ -72,7 +72,7 @@ matrix:
         - os: osx
         - os: linux
           python: 3.6
-          env: ASTROPY_VERSION=3.0
+          env: ASTROPY_VERSION='<4.0'
                SETUP_CMD='test'
                CONDA_DEPENDENCIES=${CONDA_ALL_DEPENDENCIES}
                PIP_DEPENDENCIES=${PIP_ALL_DEPENDENCIES}
@@ -96,7 +96,7 @@ matrix:
 
         - os: linux
           python: 3.6
-          env: ASTROPY_VERSION=3.0
+          env: ASTROPY_VERSION='<4.0'
                SETUP_CMD='test'
                CONDA_DEPENDENCIES=${CONDA_ALL_DEPENDENCIES}
                PIP_DEPENDENCIES=${PIP_ALL_DEPENDENCIES}
@@ -133,6 +133,7 @@ install:
     # egg_info causes the astropy/ci-helpers script to exit before the pip
     # packages are installed, thus desiutil is not installed in that script.
     - for p in $DESIHUB_PIP_DEPENDENCIES; do r=$(echo $p | cut -d= -f1); v=$(echo $p | cut -d= -f2); pip install git+https://github.com/desihub/${r}.git@${v}#egg=${r}; done
+    # - "if [[ $SETUP_CMD == test* ]]; then pip install --no-binary :all: healpy; fi"
     - if [[ $SETUP_CMD == test* ]]; then source etc/desimodel_data.sh; fi
 
 script:

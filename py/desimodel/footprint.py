@@ -480,6 +480,9 @@ def is_point_in_desi(tiles, ra, dec, radius=None, return_tile_index=False):
     # radius to 3d distance
     threshold = 2.0 * np.sin(np.radians(radius) * 0.5)
     xyz = _embed_sphere(ra, dec)
+    if not xyz.flags['C_CONTIGUOUS']:
+        xyz = xyz.copy()
+
     d, i = tree.query(xyz, k=1)
 
     indesi = d < threshold
@@ -514,6 +517,9 @@ def find_tiles_over_point(tiles, ra, dec, radius=None):
     # radius to 3d distance
     threshold = 2.0 * np.sin(np.radians(radius) * 0.5)
     xyz = _embed_sphere(ra, dec)
+    if not xyz.flags['C_CONTIGUOUS']:
+        xyz = xyz.copy()
+
     indices = tree.query_ball_point(xyz, threshold)
     return indices
 
@@ -567,6 +573,9 @@ def find_points_radec(telra, teldec, ra, dec, radius = None):
     # radius to 3d distance
     threshold = 2.0 * np.sin(np.radians(radius) * 0.5)
     xyz = _embed_sphere(telra, teldec)
+    if not xyz.flags['C_CONTIGUOUS']:
+        xyz = xyz.copy()
+
     indices = tree.query_ball_point(xyz, threshold)
     return indices
 
