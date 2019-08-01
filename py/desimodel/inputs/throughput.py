@@ -43,7 +43,7 @@ def update(testdir=None, desi347_version=13, desi334_version=3):
     ccd_thru_file['z'] = docdb.download(334, desi334_version, 'nir-thru-250.txt')
 
     with open(desi_yaml_file) as fx:
-        params = yaml.load(fx)
+        params = yaml.safe_load(fx)
 
     if testdir is None:
         outfile_desiyaml = os.path.join(datadir(), 'desi.yaml')

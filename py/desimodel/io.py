@@ -67,7 +67,7 @@ def load_desiparams():
     if _params is None:
         desiparamsfile = os.path.join(os.environ['DESIMODEL'],'data','desi.yaml')
         with open(desiparamsfile) as par:
-            _params = yaml.load(par)
+            _params = yaml.safe_load(par)
 
         #- for temporary backwards compability after 'exptime' -> 'exptime_dark'
         if ('exptime' not in _params) and ('exptime_dark' in _params):
@@ -319,7 +319,7 @@ def load_focalplane(time):
             st = Table.read(fpraw[ts]["st"], format="ascii.ecsv")
             ex = None
             with open(fpraw[ts]["ex"], "r") as f:
-                ex = yaml.load(f)
+                ex = yaml.safe_load(f)
             _focalplane.append((dt, fp, ex, st))
 
     # Search the list of states for the most recent time that is before our
@@ -409,7 +409,7 @@ def load_target_info():
         targetsfile = os.path.join(datadir(),'targets','targets.dat')
 
     with open(targetsfile) as fx:
-        data = yaml.load(fx)
+        data = yaml.safe_load(fx)
 
     return data
 
