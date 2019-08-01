@@ -35,7 +35,7 @@ env:
         # The following versions are the 'default' for tests, unless
         # overidden underneath. They are defined here in order to save having
         # to repeat them for all configurations.
-        # - NUMPY_VERSION=1.9
+        - NUMPY_VERSION=1.15
         # - SCIPY_VERSION=0.14
         - ASTROPY_VERSION=2.0.14
         # - SPHINX_VERSION=1.6.6
@@ -48,7 +48,7 @@ env:
         # These packages will always be installed.
         - CONDA_DEPENDENCIES=''
         # These packages will only be installed if we really need them.
-        - CONDA_ALL_DEPENDENCIES='requests pyyaml scipy numba'
+        - CONDA_ALL_DEPENDENCIES='requests pyyaml scipy'
         # These packages will always be installed.
         - PIP_DEPENDENCIES=''
         # These packages will only be installed if we really need them.
