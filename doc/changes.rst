@@ -10,6 +10,19 @@ desimodel Release Notes
   Layers 0=GRAY, 1-4=DARK instead of 0-3=DARK, 4=GRAY.
 * Add notebook and latex source for DESI-4975 (Commissioning Weather).
 
+0.9.12 (2019-08-09)
+-------------------
+
+* Support for time-varying focal plane state (e.g. broken fibers) (PR `#105`_).
+* Documentation about CI weather vs. model (PR `#107`_).
+* Fix `find_points_radec` for scipy 1.3 (PR `#109`_).
+* Replace deprecated `yaml.load` with `yaml.safe_load` (PR `#110`_).
+
+.. _`#105`: https://github.com/desihub/desimodel/pull/105
+.. _`#107`: https://github.com/desihub/desimodel/pull/107
+.. _`#109`: https://github.com/desihub/desimodel/pull/109
+.. _`#110`: https://github.com/desihub/desimodel/pull/110
+
 0.9.11 (2019-05-30)
 -------------------
 
