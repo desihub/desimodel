@@ -255,8 +255,10 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
         fp[pet][dev]["DEVICE_ID"] = devid
         t_min, t_max, p_min, p_max = _compute_theta_phi_range(
             props["PHYSICAL_RANGE_T"], props["PHYSICAL_RANGE_P"])
-        fp[pet][dev]["OFFSET_X"] = props["OFFSET_X"]
-        fp[pet][dev]["OFFSET_Y"] = props["OFFSET_Y"]
+        # These values are incorrect in many cases.  Use nominal values
+        # instead (see below).
+        fp[pet][dev]["OFFSET_X"] = 0.0
+        fp[pet][dev]["OFFSET_Y"] = 0.0
         fp[pet][dev]["OFFSET_T"] = props["OFFSET_T"]
         fp[pet][dev]["OFFSET_P"] = props["OFFSET_P"]
         fp[pet][dev]["LENGTH_R1"] = props["LENGTH_R1"]
@@ -276,13 +278,13 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     assert headers[0] == "device_location_id"
     assert headers[1] == "device_type"
     xls_devloc = docdb.xls_read_col(
-        xls_fp_layout, xls_sheet, "B", rowmin, rowmax, dtype=int)
+        xls_fp_layout, xls_sheet, "B", rowmin, rowmax, dtype=np.int32)
     xls_devtype = docdb.xls_read_col(
         xls_fp_layout, xls_sheet, "C", rowmin, rowmax, dtype=str)
     xls_dev_nominal_x = docdb.xls_read_col(
-        xls_fp_layout, xls_sheet, "D", rowmin, rowmax, dtype=int)
+        xls_fp_layout, xls_sheet, "D", rowmin, rowmax, dtype=np.float64)
     xls_dev_nominal_y = docdb.xls_read_col(
-        xls_fp_layout, xls_sheet, "E", rowmin, rowmax, dtype=int)
+        xls_fp_layout, xls_sheet, "E", rowmin, rowmax, dtype=np.float64)
     devtype = dict()
     dev_nominal_xy = dict()
     for loc, typ in zip(xls_devloc, xls_devtype):
@@ -318,16 +320,11 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
         for petal in sorted(allpetals):
             devlist = list(sorted(fp[petal].keys()))
             for dev in devlist:
+                # The petal location of this petal ID
+                petal_loc = fp[petal][dev]["PETAL"]
                 if fp[petal][dev]["DEVICE_ID"] == "NONE":
-                    # Petal 0 is at the "bottom"; See DESI-0530.  Here we
-                    # rotate the nominal X/Y positions on petal 0 to the
-                    # petal being considered.
-                    xnom, ynom = dev_nominal_xy[dev]
-                    phi = np.radians((7 * 36 + 36 * petal) % 360)
-                    fp[petal][dev]["OFFSET_X"] = np.cos(phi) * xnom \
-                        - np.sin(phi) * ynom
-                    fp[petal][dev]["OFFSET_Y"] = np.sin(phi) * xnom \
-                        + np.cos(phi) * ynom
+                    fp[petal][dev]["OFFSET_X"] = 0.0
+                    fp[petal][dev]["OFFSET_Y"] = 0.0
                     if fakeoffset:
                         fp[petal][dev]["OFFSET_T"] = 0.0
                         fp[petal][dev]["OFFSET_P"] = 0.0
@@ -344,6 +341,40 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
                         fp[petal][dev]["MAX_P"] = p_max
                     fp[petal][dev]["LENGTH_R1"] = 3.0
                     fp[petal][dev]["LENGTH_R2"] = 3.0
+
+    # The pos_settings files seem to have incorrect / unreliable
+    # X / Y offsets.  Override these with the nominal values for now
+    # and investigate this more when moving to the DB.
+    for petal in sorted(allpetals):
+        devlist = list(sorted(fp[petal].keys()))
+        for dev in devlist:
+            if dev in dev_nominal_xy:
+                xnom, ynom = dev_nominal_xy[dev]
+                fp[petal][dev]["OFFSET_X"] = xnom
+                fp[petal][dev]["OFFSET_Y"] = ynom
+
+    # Now rotate the X / Y offsets based on the petal location.
+    for petal in sorted(allpetals):
+        devlist = list(sorted(fp[petal].keys()))
+        for dev in devlist:
+            # The petal location of this petal ID
+            petal_loc = fp[petal][dev]["PETAL"]
+            # Petal 0 is at the "bottom"; See DESI-0530.  Here we
+            # rotate the nominal X/Y positions on petal 0 to the
+            # petal being considered.
+            phi = np.radians((float(7 + petal_loc) * 36.0) % 360.0)
+            x = fp[petal][dev]["OFFSET_X"]
+            y = fp[petal][dev]["OFFSET_Y"]
+            fp[petal][dev]["OFFSET_X"] = np.cos(phi) * x - np.sin(phi) * y
+            fp[petal][dev]["OFFSET_Y"] = np.sin(phi) * x + np.cos(phi) * y
+            # print(
+            #     "Petal {}, location {}, phi {}, ({}, {}) --> ({}, {})"
+            #     .format(
+            #         petal, petal_loc, phi, x, y, fp[petal][dev]["OFFSET_X"],
+            #         fp[petal][dev]["OFFSET_Y"]
+            #     ),
+            #     flush=True
+            # )
 
     # Now load the file(s) with the exclusion polygons
     # Add the legacy polygons to the dictionary for reference.
@@ -389,28 +420,37 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     poly["legacy"]["theta"] = shp_theta
     poly["legacy"]["phi"] = shp_phi
 
+    def collision_to_segments(raw):
+        rx = raw[:, 0]
+        ry = raw[:, 1]
+        sg = [[float(x), float(y)] for x, y in zip(rx, ry)]
+        start = list(sg[0])
+        sg.append(start)
+        return [sg]
+
     if polyfile is not None:
         # Add shapes from other files.  The convention used here for
         exprops = configobj.ConfigObj(polyfile, unrepr=True)
         poly["default"] = dict()
         ktheta_raw = np.transpose(np.array(exprops["KEEPOUT_THETA"]))
-        ktheta_x = ktheta_raw[:, 0]
-        ktheta_y = ktheta_raw[:, 1]
-        ktheta = [[float(x), float(y)] for x, y in zip(ktheta_x, ktheta_y)]
-        kstart = list(ktheta[0])
-        ktheta.append(kstart)
         poly["default"]["theta"] = dict()
-        poly["default"]["theta"]["segments"] = [ktheta]
+        poly["default"]["theta"]["segments"] = \
+            collision_to_segments(ktheta_raw)
         poly["default"]["theta"]["circles"] = list()
         kphi_raw = np.transpose(np.array(exprops["KEEPOUT_PHI"]))
-        kphi_x = kphi_raw[:, 0]
-        kphi_y = kphi_raw[:, 1]
-        kphi = [[float(x), float(y)] for x, y in zip(kphi_x, kphi_y)]
-        kstart = list(kphi[0])
-        kphi.append(kstart)
         poly["default"]["phi"] = dict()
-        poly["default"]["phi"]["segments"] = [kphi]
+        poly["default"]["phi"]["segments"] = collision_to_segments(kphi_raw)
         poly["default"]["phi"]["circles"] = list()
+        kpetal_raw = np.transpose(np.array(exprops["KEEPOUT_PTL"]))
+        poly["default"]["petal"] = dict()
+        poly["default"]["petal"]["segments"] = \
+            collision_to_segments(kpetal_raw)
+        poly["default"]["petal"]["circles"] = list()
+        kgfa_raw = np.transpose(np.array(exprops["KEEPOUT_GFA"]))
+        poly["default"]["gfa"] = dict()
+        poly["default"]["gfa"]["segments"] = \
+            collision_to_segments(kgfa_raw)
+        poly["default"]["gfa"]["circles"] = list()
 
     # Now write out all of this collected information.  Also write out an
     # initial "state" log as a starting point.  Note that by having log

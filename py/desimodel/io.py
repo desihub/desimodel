@@ -280,6 +280,8 @@ def load_focalplane(time):
         stpat = re.compile(r"desi-state_(.*)\.ecsv")
         expat = re.compile(r"desi-exclusion_(.*)\.yaml")
         fpraw = dict()
+        msg = "Loading focalplanes from {}".format(fpdir)
+        log.debug(msg)
         for root, dirs, files in os.walk(fpdir):
             for f in files:
                 fpmat = fppat.match(f)
@@ -338,6 +340,10 @@ def load_focalplane(time):
             tmstr = dt.isoformat(timespec="seconds")
         else:
             break
+
+    if fullstate is None:
+        msg = "Cannot find focalplane for time {}".format(time)
+        raise RuntimeError(msg)
 
     # Now "replay" the state up to our requested time.
     locstate = dict()
