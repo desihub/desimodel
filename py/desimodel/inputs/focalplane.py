@@ -257,6 +257,8 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
             props["PHYSICAL_RANGE_T"], props["PHYSICAL_RANGE_P"])
         # These values are incorrect in many cases.  Use nominal values
         # instead (see below).
+        # fp[pet][dev]["OFFSET_X"] = props["OFFSET_X"]
+        # fp[pet][dev]["OFFSET_Y"] = props["OFFSET_Y"]
         fp[pet][dev]["OFFSET_X"] = 0.0
         fp[pet][dev]["OFFSET_Y"] = 0.0
         fp[pet][dev]["OFFSET_T"] = props["OFFSET_T"]
