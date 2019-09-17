@@ -66,9 +66,10 @@ def main():
     petalloc = None
     if args.petal_id2loc is not None:
         petalloc = dict()
-        kv = args.petal_id2loc.split(",")
-        for k, v in kv.items():
-            petalloc[k] = v
+        ptl = args.petal_id2loc.split(",")
+        for pt in ptl:
+            k, v = pt.split(':')
+            petalloc[int(k)] = int(v)
 
     create(testdir=args.test, posdir=args.pos_settings,
            polyfile=args.collision, fibermaps=None, petalloc=petalloc,
