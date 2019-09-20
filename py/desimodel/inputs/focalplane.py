@@ -168,6 +168,7 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
             except IOError:
                 msg = "Could not download {}".format(docname)
                 log.error(msg)
+            fmslitcheck = dict()
             firstline = True
             with open(fmfile, newline="") as csvfile:
                 reader = csv.reader(csvfile, delimiter=",")
@@ -190,6 +191,16 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
                         blkfib = row[cols["slit_position"]].split(":")
                         blk = int(blkfib[0])
                         fib = int(blkfib[1])
+                        if blk not in fmslitcheck:
+                            fmslitcheck[blk] = dict()
+                        if fib in fmslitcheck[blk]:
+                            msg = "Petal ID {}, slitblock {}, blockfiber {}" \
+                                " already assigned to device {}.  " \
+                                "Reassigning to device {}".format(
+                                    pet, blk, fib, fmslitcheck[blk][fib], dev
+                                )
+                            log.warning(msg)
+                        fmslitcheck[blk][fib] = dev
                         if pet not in fp:
                             fp[pet] = dict()
                         if dev not in fp[pet]:
