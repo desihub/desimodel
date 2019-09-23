@@ -337,7 +337,14 @@ def load_focalplane(time):
             fp_data = fp
             excl_data = ex
             fullstate = st
-            tmstr = dt.isoformat(timespec="seconds")
+            try:
+                tmstr = dt.isoformat(timespec="seconds")
+            except TypeError:
+                # This must be python < 3.6, with no timespec option.
+                # Since the focalplane time is read from the file name without
+                # microseconds, the microseconds should be zero and so the
+                # default return string will be correct.
+                tmstr = dt.isoformat()
         else:
             break
 
