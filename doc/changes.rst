@@ -2,33 +2,35 @@
 desimodel Release Notes
 =======================
 
-0.10.0 (planned)
+0.11.0 (planned)
 ----------------
 
 * svn data only: updated ``data/footprint/desi-tiles.fits`` and
   ``desi-healpix-weights.fits`` with new dither pattern; see DESI-0717.
   Layers 0=GRAY, 1-4=DARK instead of 0-3=DARK, 4=GRAY.
-* Add notebook and latex source for DESI-4975 (Commissioning Weather).
 
-0.9.13 (2019-09-25)
+0.10.0 (2019-09-25)
 -------------------
 
 * Store petal and gfa keepouts in the focalplane model (PR `#112`_).
 * When generating a focalplane, check for device locations assigned to the
   same slitblock and fiber (PR `#113`_).
 * Fix support for ``datetime.isoformat()`` in Python 3.5 (PR `#114`_).
+* Update tests and documentation to be consistent with latest desiutil versions (PR `#115`_).
 
 .. _`#112`: https://github.com/desihub/desimodel/pull/112
 .. _`#113`: https://github.com/desihub/desimodel/pull/113
 .. _`#114`: https://github.com/desihub/desimodel/pull/114
+.. _`#115`: https://github.com/desihub/desimodel/pull/115
+
 
 0.9.12 (2019-08-09)
 -------------------
 
-* Support for time-varying focal plane state (e.g. broken fibers) (PR `#105`_).
-* Documentation about CI weather vs. model (PR `#107`_).
-* Fix `find_points_radec` for scipy 1.3 (PR `#109`_).
-* Replace deprecated `yaml.load` with `yaml.safe_load` (PR `#110`_).
+* Support for time-varying focal plane state (*e.g.* broken fibers) (PR `#105`_).
+* Documentation about CI weather *versus* model (PR `#107`_).
+* Fix :func:`~desimodel.footprint.find_points_radec` for scipy 1.3 (PR `#109`_).
+* Replace deprecated ``yaml.load`` with ``yaml.safe_load`` (PR `#110`_).
 
 .. _`#105`: https://github.com/desihub/desimodel/pull/105
 .. _`#107`: https://github.com/desihub/desimodel/pull/107
@@ -39,14 +41,14 @@ desimodel Release Notes
 -------------------
 
 * Added data/footprint/ci-tiles-v7.fits, data/focalplane/ci-corners.ecsv
-  to svn and docs to github (PR `#103`_).
+  to svn and docs to GitHub (PR `#103`_).
 
 .. _`#103`: https://github.com/desihub/desimodel/pull/103
 
 0.9.10 (2019-02-28)
 -------------------
 
-* `io.load_tiles(tilesfile)` warns if local copy exists, but DESIMODEL
+* ``io.load_tiles(tilesfile)`` warns if local copy exists, but :envvar:`DESIMODEL`
   version wins (PR `#98`_ and `#101`_).
 * Update default tile radius (max radius, not typical outer pos radius)
   (PR `#102`_).
@@ -65,7 +67,7 @@ desimodel Release Notes
 0.9.8 (2018-09-05)
 ------------------
 
-* Implement `weather.dome_close_fractions` to replay daily Mayall weather history (PR `#92`_).
+* Implement :func:`~desimodel.weather.dome_close_fractions` to replay daily Mayall weather history (PR `#92`_).
 * Run tests using new svn branch test-0.9.8.
 * Bug fix for GFA target selection when no targets overlap a GFA (PR `#91`_).
 
@@ -95,7 +97,7 @@ desimodel Release Notes
 ------------------
 
 * Increase test coverage, especially for :mod:`desimodel.trim` (PR `#82`_).
-* Reorganize desimodel.focalplane and add more GFA selection code (PR `#85`_).
+* Reorganize :mod:`desimodel.focalplane` and add more GFA selection code (PR `#85`_).
 * Allow an environment variable in the tilesfile filename (PR `#87`_).
 
 .. _`#82`: https://github.com/desihub/desimodel/pull/82
