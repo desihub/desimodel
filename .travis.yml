@@ -39,8 +39,8 @@ env:
         # - SCIPY_VERSION=0.14
         - ASTROPY_VERSION=2.0.14
         # - SPHINX_VERSION=1.6.6
-        - DESIUTIL_VERSION=1.9.13
-        - SPECTER_VERSION=0.9.0
+        - DESIUTIL_VERSION=2.0.1
+        - SPECTER_VERSION=0.9.1
         # This is the version of the svn data product to export.
         - DESIMODEL_VERSION=branches/test-0.9.9
         # - DESIMODEL_VERSION=trunk
