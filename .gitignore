@@ -48,13 +48,25 @@ coverage.xml
 *.log
 
 # Sphinx documentation
-docs/_build/
+doc/_build/
 
 # PyBuilder
 target/
 
 # data directory may be installed, but it is not part of git.
 data
+
+# Temporary files produced by Jupyter Notebooks
+doc/nb/*.png
+doc/nb/*.ecsv
+doc/nb/.ipynb_checkpoints
+
+# Temporary files produced by LaTeX documents.
+doc/tex/*/*.aux
+doc/tex/*/*.bbl
+doc/tex/*/*.blg
+doc/tex/*/*.out
+# doc/tex/*.pdf
 
 # Editor files
 .vscode
