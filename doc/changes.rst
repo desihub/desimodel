@@ -10,6 +10,18 @@ desimodel Release Notes
   Layers 0=GRAY, 1-4=DARK instead of 0-3=DARK, 4=GRAY.
 * Add notebook and latex source for DESI-4975 (Commissioning Weather).
 
+0.9.13 (2019-09-25)
+-------------------
+
+* Store petal and gfa keepouts in the focalplane model (PR `#112`_).
+* When generating a focalplane, check for device locations assigned to the
+  same slitblock and fiber (PR `#113`_).
+* Fix support for ``datetime.isoformat()`` in Python 3.5 (PR `#114`_).
+
+.. _`#112`: https://github.com/desihub/desimodel/pull/112
+.. _`#113`: https://github.com/desihub/desimodel/pull/113
+.. _`#114`: https://github.com/desihub/desimodel/pull/114
+
 0.9.12 (2019-08-09)
 -------------------
 
