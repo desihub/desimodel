@@ -59,7 +59,7 @@ setup_keywords['cmdclass'] = {'module_file': ds.DesiModule,
                               'test': ds.DesiTest,
                               'api': ds.DesiAPI,
                               'sdist': DistutilsSdist}
-setup_keywords['test_suite']='{name}.test.{name}_test_suite.{name}_test_suite'.format(**setup_keywords)
+setup_keywords['test_suite']='{name}.test.{name}_test_suite'.format(**setup_keywords)
 #
 # Autogenerate command-line scripts.
 #
