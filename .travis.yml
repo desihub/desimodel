@@ -39,10 +39,10 @@ env:
         # - SCIPY_VERSION=0.14
         - ASTROPY_VERSION=2.0.14
         # - SPHINX_VERSION=1.6.6
-        - DESIUTIL_VERSION=1.9.13
-        - SPECTER_VERSION=0.9.0
+        - DESIUTIL_VERSION=2.0.1
+        - SPECTER_VERSION=0.9.1
         # This is the version of the svn data product to export.
-        - DESIMODEL_VERSION=branches/test-0.9.9
+        - DESIMODEL_VERSION=branches/test-0.10
         # - DESIMODEL_VERSION=trunk
         - MAIN_CMD='python setup.py'
         # These packages will always be installed.
@@ -76,6 +76,10 @@ matrix:
                SETUP_CMD='test'
                CONDA_DEPENDENCIES=${CONDA_ALL_DEPENDENCIES}
                PIP_DEPENDENCIES=${PIP_ALL_DEPENDENCIES}
+        - os: linux
+          python: 3.6
+          env: MAIN_CMD='pycodestyle' SETUP_CMD='--count py/desimodel'
+
     include:
 
         # Check for sphinx doc build warnings.
@@ -123,9 +127,10 @@ matrix:
         # - python: 2.7
         #   env: NUMPY_VERSION=1.6 SETUP_CMD='test'
 
-        # Do a PEP8 test
-        # - python: 2.7
-        #   env: MAIN_CMD='pep8 astropy --count' SETUP_CMD=''
+        # PEP 8 compliance.
+        - os: linux
+          python: 3.6
+          env: MAIN_CMD='pycodestyle' SETUP_CMD='--count py/desimodel'
 
 install:
     - git clone git://github.com/astropy/ci-helpers.git
@@ -134,6 +139,7 @@ install:
     # packages are installed, thus desiutil is not installed in that script.
     - for p in $DESIHUB_PIP_DEPENDENCIES; do r=$(echo $p | cut -d= -f1); v=$(echo $p | cut -d= -f2); pip install git+https://github.com/desihub/${r}.git@${v}#egg=${r}; done
     # - "if [[ $SETUP_CMD == test* ]]; then pip install --no-binary :all: healpy; fi"
+    - if [[ $MAIN_CMD == 'pycodestyle' ]]; then pip install pycodestyle; fi
     - if [[ $SETUP_CMD == test* ]]; then source etc/desimodel_data.sh; fi
 
 script:
