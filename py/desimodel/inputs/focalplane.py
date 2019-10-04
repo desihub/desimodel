@@ -214,6 +214,44 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
                         fp[pet][dev]["FWHM"] = fwhm
                         fp[pet][dev]["FRD"] = fthrough
                         fp[pet][dev]["ABS"] = athrough
+        # HARD-CODED modifications.  These changes are to work around features
+        # in the files on DocDB.  Remove these as they are fixed upstream.
+        # Note that once we get information from the database, then these may
+        # no longer be needed.
+        # ---------------------------
+        # DESI-4807v2-Petal_4_final_verification.csv
+        # Petal ID 04 has a typo.  Device location 357 should be slitblock
+        # 19 and blockfiber 23 (it is marked as 24)
+        fp[4][357]["SLITBLOCK"] = 19
+        fp[4][357]["BLOCKFIBER"] = 23
+        # ---------------------------
+        # DESI-4809v2-Petal_6_final_verification.csv
+        # Petal ID 06 is missing an entry for device location 261.  This device
+        # location is assigned to positioner M03120 in the pos_settings files.
+        # Assign it to the one missing fiber location.
+        fp[6][261] = dict()
+        fp[6][261]["DEVICE_ID"] = "NONE" # Populated below from pos_settings
+        fp[6][261]["SLITBLOCK"] = 19
+        fp[6][261]["BLOCKFIBER"] = 22
+        fp[6][261]["CABLE"] = 6
+        fp[6][261]["CONDUIT"] = "E0"     # This conduit has one fewer than F3
+        fp[6][261]["FWHM"] = 0.0         # No information from file
+        fp[6][261]["FRD"] = 0.0          # No information from file
+        fp[6][261]["ABS"] = 0.0          # No information from file
+        # ---------------------------
+        # DESI-4883v4-Petal_11_final_verification.csv
+        # Petal ID 11 is missing an entry for device location 484.  This
+        # device location is assigned to positioner M06847 in the pos_settings
+        # files.  Assign it to the one missing fiber location.
+        fp[11][484] = dict()
+        fp[11][484]["DEVICE_ID"] = "NONE"  # Populated below from pos_settings
+        fp[11][484]["SLITBLOCK"] = 3
+        fp[11][484]["BLOCKFIBER"] = 3
+        fp[11][484]["CABLE"] = 4
+        fp[11][484]["CONDUIT"] = "G0"     # This conduit has one fewer than G1
+        fp[11][484]["FWHM"] = 0.0         # No information from file
+        fp[11][484]["FRD"] = 0.0          # No information from file
+        fp[11][484]["ABS"] = 0.0          # No information from file
 
     # Parse all the positioner files.
     pos = dict()
@@ -372,22 +410,18 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
         for dev in devlist:
             # The petal location of this petal ID
             petal_loc = fp[petal][dev]["PETAL"]
-            # Petal 0 is at the "bottom"; See DESI-0530.  Here we
-            # rotate the nominal X/Y positions on petal 0 to the
-            # petal being considered.
-            phi = np.radians((float(7 + petal_loc) * 36.0) % 360.0)
+            # Petal 0 is at the "bottom"; See DESI-0530.  The X/Y and
+            # positioner theta offset are defined with the petal in location 3.
+            # We need to rotate from petal location 3 to desired location.
+            petalrot_deg = (float(7 + petal_loc) * 36.0) % 360.0
+            petalrot_rad = np.radians(petalrot_deg)
             x = fp[petal][dev]["OFFSET_X"]
             y = fp[petal][dev]["OFFSET_Y"]
-            fp[petal][dev]["OFFSET_X"] = np.cos(phi) * x - np.sin(phi) * y
-            fp[petal][dev]["OFFSET_Y"] = np.sin(phi) * x + np.cos(phi) * y
-            # print(
-            #     "Petal {}, location {}, phi {}, ({}, {}) --> ({}, {})"
-            #     .format(
-            #         petal, petal_loc, phi, x, y, fp[petal][dev]["OFFSET_X"],
-            #         fp[petal][dev]["OFFSET_Y"]
-            #     ),
-            #     flush=True
-            # )
+            fp[petal][dev]["OFFSET_X"] = \
+                np.cos(petalrot_rad) * x - np.sin(petalrot_rad) * y
+            fp[petal][dev]["OFFSET_Y"] = \
+                np.sin(petalrot_rad) * x + np.cos(petalrot_rad) * y
+            fp[petal][dev]["OFFSET_T"] += petalrot_deg
 
     # Now load the file(s) with the exclusion polygons
     # Add the legacy polygons to the dictionary for reference.
