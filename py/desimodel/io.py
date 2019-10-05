@@ -262,16 +262,19 @@ def load_platescale():
 
 
 _focalplane = None
-def load_focalplane(time):
+def load_focalplane(time=None):
     """Load the focalplane state that is valid for the given time.
 
-    Args:
-        time (datetime):  The time to query.
+    Options:
+        time (datetime):  The time to query. default to current time.
 
     Returns:
-        (tuple):  The (focalplane layout, exclusion polygons, state log)
+        (tuple):  The (FP layout, exclusion polygons, state log, time string)
 
     """
+    if time is None:
+        time = datetime.now()
+
     global _focalplane
     if _focalplane is None:
         # First call, load all data files.
