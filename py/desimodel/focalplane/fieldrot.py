@@ -7,10 +7,20 @@ desimodel.focalplane.fieldrot
 Routines to estimate the field rotation in the DESI focal plane.
 The rotation angle is defined in DESI-5190.
 
-1) The CS5 system is defined in DESI-481. It is a plane tangent to the focal plane surface, attached to the petals. It has the axis X pointing to the physical west (increasing HA, decreasing RA), Y to the physical north (increasing Dec), and Z towards the mirror.
-2) The ICRS is the sky coordinate system of the DESI target catalogs, the same as Gaia astrometry. RA Dec will always be in the ICRS system.
-3) The Field rotation angle 'Theta' measures the rotation of the star images in the CS5 plane (not a rotation of the instrument, opposite sign!), tangent to the focal plane, assumed for assigning fibers.
-4) Theta=0 corresponds to zero rotation after the coordinate transformation from the ICRS RA,Dec sky coordinates to the CS5, with Y pointing to the north (increasing Dec).
+1) The CS5 system is defined in DESI-481. It is a plane tangent to the focal
+   plane surface, attached to the petals. It has the axis X pointing to the
+   physical east (and thus due to the mirror, sees targets on the sky to
+   the physical west = increasing HA, decreasing RA), Y to the physical
+   south (and thus due to the mirror, sees targets on the sky to the physical
+   north = increasing Dec), and Z towards the mirror.
+2) The ICRS is the sky coordinate system of the DESI target catalogs,
+   the same as Gaia astrometry. RA Dec will always be in the ICRS system.
+3) The Field rotation angle 'Theta' measures the rotation of the star images
+   in the CS5 plane (not a rotation of the instrument, opposite sign!),
+   tangent to the focal plane, assumed for assigning fibers.
+4) Theta=0 corresponds to zero rotation after the coordinate transformation
+   from the ICRS RA,Dec sky coordinates to the CS5, with Y pointing to the
+   north (increasing Dec).
 5) Theta is increasing from North to East (or from X(West) to Y(North)).
 
 
@@ -122,7 +132,7 @@ def field_rotation_angle(ra,dec,mjd,use_astropy=False) :
     Parameters
     ---------- 
     ra : Right ascension of center of focal plane in ICRS, in degrees
-    dec : Declinaison  of center of focal plane in ICRS, in degrees
+    dec : Declination  of center of focal plane in ICRS, in degrees
     mjd : Modified Julian Date, decimal number, of the observation
     
     Returns

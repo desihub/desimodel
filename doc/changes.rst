@@ -13,8 +13,11 @@ desimodel Release Notes
 -------------------
 
 * Workaround upstream bugs in positioner locations (PR `#118`_).
+* Added `desimodel.focalplate.fieldrot.field_rotation_angle` with
+  field rotation CS5 vs. ICRS due to precession (PR `#119`_).
 
 .. _`#118`: https://github.com/desihub/desimodel/pull/118
+.. _`#119`: https://github.com/desihub/desimodel/pull/119
 
 0.10.0 (2019-09-25)
 -------------------
