@@ -269,7 +269,11 @@ def load_focalplane(time=None):
         time (datetime):  The time to query. default to current time.
 
     Returns:
-        (tuple):  The (FP layout, exclusion polygons, state log, time string)
+        (tuple):  The (FP layout, exclusion polygons, state, time string).
+            The FP layout is a Table.  The exclusion polygons are a dictionary
+            indexed by names that are referenced in the state.  The state
+            is a Table.  The time string is the resulting UTC ISO format
+            time string used by the lookup.
 
     """
     if time is None:
