@@ -17,6 +17,7 @@ Contents
     api.rst
     update_inputs.rst
     testing.rst
+    focalplane.rst
     fiberpos.rst
     footprint.rst
     psfspots.rst
