@@ -9,15 +9,17 @@ desimodel Release Notes
   ``desi-healpix-weights.fits`` with new dither pattern; see DESI-0717.
   Layers 0=GRAY, 1-4=DARK instead of 0-3=DARK, 4=GRAY.
 
-0.10.1 (unreleased)
+0.10.1 (2019-10-17)
 -------------------
 
 * Workaround upstream bugs in positioner locations (PR `#118`_).
 * Added `desimodel.focalplate.fieldrot.field_rotation_angle` with
   field rotation CS5 vs. ICRS due to precession (PR `#119`_).
+* Add focalplane model documentation (PR `#125`_).
 
 .. _`#118`: https://github.com/desihub/desimodel/pull/118
 .. _`#119`: https://github.com/desihub/desimodel/pull/119
+.. _`#125`: https://github.com/desihub/desimodel/pull/125
 
 0.10.0 (2019-09-25)
 -------------------
