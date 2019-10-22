@@ -104,6 +104,7 @@ def load_gfa():
 #
 _deviceloc = None
 def load_deviceloc():
+    log.warning('load_deviceloc is deprecated; please use desimodel.io.load_focalplane instead')
     global _deviceloc
     from astropy.table import Table
     if _deviceloc is None:
@@ -122,6 +123,7 @@ _fiberpos = None
 def load_fiberpos():
     """Returns fiberpos table from desimodel/data/focalplane/fiberpos.fits.
     """
+    log.warning('load_fiberpos is deprecated; please use desimodel.io.load_focalplane instead')
     global _fiberpos
     from astropy.table import Table
     if _fiberpos is None:

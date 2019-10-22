@@ -249,6 +249,25 @@ class TestFocalplane(unittest.TestCase):
         del targets['TARGET_DEC']
         with self.assertRaises(ValueError):
             ok = f.targets_on_gfa(telra, teldec, targets)  #- no ra/dec
+    
+    def test_fiberpos(self):
+        '''fiberpos.fits is deprecated, but test consistency while it is here'''
+        fiberpos = io.load_fiberpos()
+        fiberpos.sort('LOCATION')
+        fp = io.load_focalplane()[0]
+        fp = fp[fp['DEVICE_TYPE'] == 'POS']
+        fp.sort('LOCATION')
+        
+        self.assertEqual(len(fiberpos), len(fp))
+        
+        #- Test columns that have the same name
+        for key in ['BLOCKFIBER', 'SLITBLOCK', 'DEVICE', 'DEVICE_TYPE',
+            'FIBER', 'LOCATION', 'PETAL']:
+            self.assertTrue(np.all(fiberpos[key] == fp[key]), 'fiberpos:focalplane {} mismatch'.format(key))
+
+        self.assertTrue(np.all(fp['OFFSET_X'] == fiberpos['X']))
+        self.assertTrue(np.all(fp['OFFSET_Y'] == fiberpos['Y']))
+        
 
 def test_suite():
     """Allows testing of only this module with the command::
