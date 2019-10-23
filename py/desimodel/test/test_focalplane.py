@@ -265,6 +265,7 @@ class TestFocalplane(unittest.TestCase):
             'FIBER', 'LOCATION', 'PETAL']:
             self.assertTrue(np.all(fiberpos[key] == fp[key]), 'fiberpos:focalplane {} mismatch'.format(key))
 
+        #- Test columns with different names
         self.assertTrue(np.all(fp['OFFSET_X'] == fiberpos['X']))
         self.assertTrue(np.all(fp['OFFSET_Y'] == fiberpos['Y']))
         

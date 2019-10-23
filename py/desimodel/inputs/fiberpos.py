@@ -29,6 +29,10 @@ def update(testdir=None, seed=2):
     '''
     from desiutil.log import get_logger
     log = get_logger()
+    log.error('THIS IS DEPRECATED; USE desimodel.io.load_focalplane() INSTEAD')
+    return
+
+    ### KEEP THE REST OF THE CODE FOR THE RECORD UNTIL FIBERPOS IS FULLY DEPRECATED
 
     #- Download input files from DocDB
     cassette_file = docdb.download(2721, 2, 'cassette_order.txt')
@@ -231,7 +235,11 @@ def update(testdir=None, seed=2):
     log.info('Wrote {}'.format(fitsallout))
     log.info('Wrote {}'.format(ecsvallout))
 
+def plot_fiberpos(fiberpos, pngout):
     #- Visualize mapping
+    from desiutil.log import get_logger
+    log = get_logger()
+
     POS = (fiberpos['DEVICE_TYPE'] == 'POS')
     FIF = (fiberpos['DEVICE_TYPE'] == 'FIF')
     ETC = (fiberpos['DEVICE_TYPE'] == 'ETC')
@@ -241,6 +249,14 @@ def update(testdir=None, seed=2):
     P.scatter(fiberpos['X'][POS], fiberpos['Y'][POS], c=fiberpos['FIBER'][POS]%500, edgecolor='none', s=20)
     # P.scatter(fiberpos['x'][FIF], fiberpos['y'][FIF], s=5, color='k')
     # P.plot(fiberpos['x'][ETC], fiberpos['y'][ETC], 'kx', ms=3)
+
+    # label GFAs using DEVICE_LOC 498 which is a NON in the middle of the GFAs
+    for p in range(10):
+        ii = (fiberpos['PETAL'] == p) & (fiberpos['DEVICE'] == 497)
+        x = fiberpos['X'][ii][0]
+        y = fiberpos['Y'][ii][0]
+        P.text(x, y, str(p), ha='center', va='center')
+
     P.grid(alpha=0.2, color='k')
     P.xlim(-420,420)
     P.ylim(-420,420)
@@ -250,21 +266,40 @@ def update(testdir=None, seed=2):
     P.savefig(pngout, dpi=80)
     log.info('Wrote {}'.format(pngout))
 
-def _focalplane_to_fiberpos():
+def focalplane_to_deviceloc(focalplane=None, deviceloc=None, write_outputs=False):
     """
-    Converting new focalplane model to old fiberpos format, using a fiberpos
-    file as a starting point...
+    Convert a new focalplane model to old fiberpos/deviceloc format
+
+    Options:
+        focalplane Table from io.load_focalplane()[0]
+        deviceloc Table from io.load_deviceloc()
+        write_outputs: if True, write fiberpos*.*
+
+    Returns updated deviceloc table (fiberpos + ETC fiber)
     """
     import desimodel.io
     import desimodel.focalplane
     import numpy as np
 
+    from desiutil.log import get_logger
+    log = get_logger()
+
     #- Load device locations, including POS, ETC, FIF, GIF, NON, and OPT
-    dv = desimodel.io.load_deviceloc()
+    if deviceloc is None:
+        log.info('loading deviceloc')
+        dv = desimodel.io.load_deviceloc()
+    else:
+        dv = deviceloc.copy()
+
     dv.sort('LOCATION')
 
     #- Load focalplane model that only has POS and ETC
-    fp = desimodel.io.load_focalplane()[0]
+    if focalplane is None:
+        log.info('loading focalplane')
+        fp = desimodel.io.load_focalplane()[0]
+    else:
+        fp = focalplane.copy()
+
     fp.sort('LOCATION')
 
     #- Cache z vs. r for later use
@@ -295,40 +330,19 @@ def _focalplane_to_fiberpos():
     dv['Z'] = np.interp(rr, r, z)
 
     #- all locations into fiberpos-all
-    dv.write('fiberpos-all.fits', format='fits', overwrite=True)
-    dv.write('fiberpos-all.ecsv', format='ascii.ecsv')
+    if write_outputs:
+        dv.write('fiberpos-all.fits', format='fits', overwrite=True)
+        dv.write('fiberpos-all.ecsv', format='ascii.ecsv', overwrite=True)
 
-    #- just the POS into fiberpos
-    pos = dv['DEVICE_TYPE'] == 'POS'
-    dv[pos].write('fiberpos.fits', format='fits')
-    dv[pos].write('fiberpos.ecsv', format='ascii.ecsv')
+        #- just the POS into fiberpos
+        pos = dv['DEVICE_TYPE'] == 'POS'
+        dv[pos].write('fiberpos.fits', format='fits', overwrite=True)
+        dv[pos].write('fiberpos.ecsv', format='ascii.ecsv', overwrite=True)
+        write_text_fiberpos('fiberpos.txt', dv[pos])
 
-    #- Remake plot (from desimodel.inputs.fiberpos)
-    import pylab as P
-    fiberpos = dv
-    POS = (fiberpos['DEVICE_TYPE'] == 'POS')
-    FIF = (fiberpos['DEVICE_TYPE'] == 'FIF')
-    ETC = (fiberpos['DEVICE_TYPE'] == 'ETC')
-    P.jet()     #- With apologies to viridis
-    P.figure(figsize=(7,7))
-    P.scatter(fiberpos['X'][POS], fiberpos['Y'][POS], c=fiberpos['FIBER'][POS]%500, edgecolor='none', s=20)
-    # P.scatter(fiberpos['X'][FIF], fiberpos['Y'][FIF], s=5, color='k')
-    # P.plot(fiberpos['X'][ETC], fiberpos['Y'][ETC], 'kx', ms=3)
+        plot_fiberpos(dv, 'fiberpos.png')
 
-    # label GFAs using DEVICE_LOC 498 which is a NON in the middle of the GFAs
-    for p in range(10):
-        ii = (fiberpos['PETAL'] == p) & (fiberpos['DEVICE'] == 497)
-        x = fiberpos['X'][ii][0]
-        y = fiberpos['Y'][ii][0]
-        P.text(x, y, str(p), ha='center', va='center')
-
-    P.grid(alpha=0.2, color='k')
-    P.xlim(-420,420)
-    P.ylim(-420,420)
-    P.xlabel('x [mm]')
-    P.ylabel('y [mm]')
-    P.title('Focal plane color coded by fiber location on slithead')
-    P.savefig('fiberpos.png', dpi=80)
+    return dv
 
 def write_text_fiberpos(filename, fiberpos):
     '''
