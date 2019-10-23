@@ -52,7 +52,7 @@ def _create_device():
     props["PETAL_ID"] = -1
     props["DEVICE_ID"] = "NONE"
     props["DEVICE_TYPE"] = "NONE"
-    props["CABLE"] = 0
+    props["CABLE"] = -1
     props["CONDUIT"] = "NA"
     props["FWHM"] = 0.0
     props["FRD"] = 0.0
@@ -165,8 +165,8 @@ def _create_nominal(petal_loc):
         for loc in device_locs:
             # Create an empty device
             props = _create_device()
-            props["PETAL"] = petal
-            props["PETAL_ID"] = petal_loc[petal]
+            props["PETAL"] = petal_loc[petal]
+            props["PETAL_ID"] = petal
             props["DEVICE_TYPE"] = devtype[loc]
             x, y = dev_nominal_xy[loc]
             props["OFFSET_X"] = x
