@@ -43,9 +43,404 @@ def _compute_theta_phi_range(phys_t, phys_p):
     return (t_min, t_max, p_min, p_max)
 
 
+def _create_device():
+    """Create an empty device property dictionary.
+    """
+    props = dict()
+    props["PETAL"] = -1
+    props["DEVICE"] = -1
+    props["PETAL_ID"] = -1
+    props["DEVICE_ID"] = "NONE"
+    props["DEVICE_TYPE"] = "NONE"
+    props["CABLE"] = -1
+    props["CONDUIT"] = "NA"
+    props["FWHM"] = 0.0
+    props["FRD"] = 0.0
+    props["ABS"] = 0.0
+    props["OFFSET_X"] = 0.0
+    props["OFFSET_Y"] = 0.0
+    props["SLITBLOCK"] = -1
+    props["BLOCKFIBER"] = -1
+    props["OFFSET_T"] = 0.0
+    props["OFFSET_P"] = 0.0
+    props["MIN_T"] = 0.0
+    props["MAX_T"] = 0.0
+    props["MIN_P"] = 0.0
+    props["MAX_P"] = 0.0
+    props["LENGTH_R1"] = 0.0
+    props["LENGTH_R2"] = 0.0
+    return props
+
+
+def _rotate_petals(fp):
+    """Rotate the X/Y offsets according to petal location.
+
+    The X / Y offsets of each device are rotated to the petal
+    location for that device.  The focalplane dictionary is
+    modified in place.
+
+    Args:
+        fp (dict):  The focalplane dictionary.
+
+    Returns:
+        None
+
+    """
+    # Now rotate the X / Y offsets based on the petal location.
+    petals = list(sorted(fp.keys()))
+    for petal in petals:
+        devlist = list(sorted(fp[petal].keys()))
+        for dev in devlist:
+            # The petal location of this petal ID
+            petal_loc = fp[petal][dev]["PETAL"]
+            # Petal 0 is at the "bottom"; See DESI-0530.  The X/Y and
+            # positioner theta offset are defined with the petal in location 3
+            # We need to rotate from petal location 3 to desired location.
+            petalrot_deg = (float(7 + petal_loc) * 36.0) % 360.0
+            petalrot_rad = np.radians(petalrot_deg)
+            x = fp[petal][dev]["OFFSET_X"]
+            y = fp[petal][dev]["OFFSET_Y"]
+            fp[petal][dev]["OFFSET_X"] = \
+                np.cos(petalrot_rad) * x - np.sin(petalrot_rad) * y
+            fp[petal][dev]["OFFSET_Y"] = \
+                np.sin(petalrot_rad) * x + np.cos(petalrot_rad) * y
+            fp[petal][dev]["OFFSET_T"] += petalrot_deg
+    return
+
+
+def _create_nominal(petal_loc):
+    """Create a nominal focalplane layout.
+
+    This uses DocDB 0530 to construct a nominal focalplane.  All
+    positioner devices are assigned to their nominal X/Y locations,
+    nominal theta / phi offsets and ranges, and nominal arm lengths.
+
+    Quantities not specified in 0530, such as physical petal and device IDs,
+    are set to -1.
+
+    The input petal_loc dictionary is required, and only petal IDs in this
+    dictionary will be created.
+
+    Note:  The X/Y offsets used are those relative to the petal
+    when placed at location 3.  After modifying these with data
+    from other sources, the final offsets are rotated into place.
+
+    Args:
+        petal_loc (dict):  Dictionary of petal ID to petal location.
+
+    Returns:
+        (dict):  Dictionary of petal location properties, containing
+            dictionaries of device properties.
+
+    """
+    log = get_logger()
+    fp = dict()
+
+    xls_fp_layout = docdb.download(
+        530, 14, "DESI-0530-v14 (Focal Plane Layout).xlsx")
+    xls_sheet = "PositionerAndFiducialLocations"
+    rowmin, rowmax = 49, 591
+    headers = docdb.xls_read_row(xls_fp_layout, xls_sheet, rowmin-1, "B", "S")
+    assert headers[0] == "device_location_id"
+    assert headers[1] == "device_type"
+    xls_devloc = docdb.xls_read_col(
+        xls_fp_layout, xls_sheet, "B", rowmin, rowmax, dtype=np.int32)
+    xls_devtype = docdb.xls_read_col(
+        xls_fp_layout, xls_sheet, "C", rowmin, rowmax, dtype=str)
+    xls_dev_nominal_x = docdb.xls_read_col(
+        xls_fp_layout, xls_sheet, "D", rowmin, rowmax, dtype=np.float64)
+    xls_dev_nominal_y = docdb.xls_read_col(
+        xls_fp_layout, xls_sheet, "E", rowmin, rowmax, dtype=np.float64)
+    devtype = dict()
+    dev_nominal_xy = dict()
+    for loc, typ in zip(xls_devloc, xls_devtype):
+        devtype[int(loc)] = typ
+    for loc, x, y in zip(xls_devloc, xls_dev_nominal_x, xls_dev_nominal_y):
+        dev_nominal_xy[int(loc)] = (x, y)
+
+    petals = list(sorted(petal_loc.keys()))
+    device_locs = list(sorted(devtype.keys()))
+    for petal in petals:
+        pt = dict()
+        for loc in device_locs:
+            # Create an empty device
+            props = _create_device()
+            props["PETAL"] = petal_loc[petal]
+            props["PETAL_ID"] = petal
+            props["DEVICE_TYPE"] = devtype[loc]
+            x, y = dev_nominal_xy[loc]
+            props["OFFSET_X"] = x
+            props["OFFSET_Y"] = y
+            pt[loc] = props
+        fp[petal] = pt
+    return fp
+
+
+def _devices_from_fiberpos(fp):
+    """Populate focalplane properties from a fiberpos file.
+
+    This is only used for testing consistency with the previous fiberpos
+    files.  It should not be used for work with the real instrument.  The
+    focalplane properties are modified in place.
+
+    Args:
+        fp (dict):  The focalplane dictionary.
+
+    Returns:
+        None
+
+    """
+    # Get the mapping AND device info from the fiberpos instead.
+    # We CANNOT use the desimodel "load_fiberpos()" function here, since
+    # it seems to strip out the ETC devices.  Manually read the file.
+    fiberpos_file = findfile("focalplane/fiberpos-all.fits")
+    fpos = Table.read(fiberpos_file)
+
+    # There is no "PETAL_ID" for the fake fiberpos, so we use PETAL
+    for pet, dev, devtyp, blk, fib, xoff, yoff in zip(
+            fpos["PETAL"], fpos["DEVICE"], fpos["DEVICE_TYPE"],
+            fpos["SLITBLOCK"], fpos["BLOCKFIBER"], fpos["X"], fpos["Y"]):
+        fp[pet][dev]["DEVICE_ID"] = "FAKE"
+        fp[pet][dev]["DEVICE_TYPE"] = devtyp
+        fp[pet][dev]["CABLE"] = 0
+        fp[pet][dev]["CONDUIT"] = "NA"
+        fp[pet][dev]["FWHM"] = 0.0
+        fp[pet][dev]["FRD"] = 0.0
+        fp[pet][dev]["ABS"] = 0.0
+        fp[pet][dev]["SLITBLOCK"] = blk
+        fp[pet][dev]["BLOCKFIBER"] = fib
+        fp[pet][dev]["OFFSET_X"] = xoff
+        fp[pet][dev]["OFFSET_Y"] = yoff
+        fp[pet][dev]["OFFSET_T"] = 0.0
+        fp[pet][dev]["OFFSET_P"] = 0.0
+        fp[pet][dev]["MIN_T"] = 0.0
+        fp[pet][dev]["MIN_P"] = 0.0
+        fp[pet][dev]["LENGTH_R1"] = 0.0
+        fp[pet][dev]["LENGTH_R2"] = 0.0
+        if (devtyp != "POS") and (devtyp != "ETC"):
+            # This is a positioner.
+            fp[pet][dev]["MAX_T"] = 380.0
+            fp[pet][dev]["MAX_P"] = 200.0
+            fp[pet][dev]["LENGTH_R1"] = 3.0
+            fp[pet][dev]["LENGTH_R2"] = 3.0
+    return
+
+
+def _devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
+                        fibermaps=None):
+    """Populate focalplane properties from information in files.
+
+    This populates the focalplane with device information gathered from
+    the "pos_settings" files in svn and from the "Petal verification"
+    files on DocDB.
+
+    The focalplane dictionary is modified in place.
+
+    Args:
+        fp (dict):  The focalplane dictionary.
+        posdir (str):  Directory containing the many positioner conf files.
+        fillfake (bool):  If true, fill missing POS and ETC locations with
+            a fake nominal positioner.
+        fakeoffset (bool):  If true, use theta / phi offsets that matched very
+            old versions of fiberassign.
+        fibermaps (list):  (optional) Override list of tuples (DocDB number,
+            DocDB version, DocDB csv file) of where to find the petal mapping
+            files.
+
+    Returns:
+        None
+
+    """
+    log = get_logger()
+    if fibermaps is None:
+        fibermaps = [
+            (4042, 5, "Petal_2_final_verification.csv"),
+            (4043, 7, "Petal_3_final_verification.csv"),
+            (4807, 2, "Petal_4_final_verification.csv"),
+            (4808, 3, "Petal_5_final_verification.csv"),
+            (4809, 2, "Petal_6_final_verification.csv"),
+            (4190, 6, "Petal_7_final_verification.csv"),
+            (4806, 4, "Petal_8_final_verification.csv"),
+            (4810, 3, "Petal_9_final_verification.csv"),
+            (4868, 5, "Petal_10_final_verification.csv"),
+            (4883, 4, "Petal_11_final_verification.csv")
+        ]
+    for docnum, docver, docname in fibermaps:
+        fmfile = None
+        try:
+            fmfile = docdb.download(docnum, docver, docname)
+        except IOError:
+            msg = "Could not download {}".format(docname)
+            log.error(msg)
+        fmslitcheck = dict()
+        firstline = True
+        with open(fmfile, newline="") as csvfile:
+            reader = csv.reader(csvfile, delimiter=",")
+            cols = dict()
+            for row in reader:
+                if firstline:
+                    for cnum, elem in enumerate(row):
+                        nm = elem.strip().rstrip()
+                        cols[nm] = cnum
+                    firstline = False
+                else:
+                    pet = int(row[cols["PETAL_ID"]])
+                    dev = int(row[cols["DEVICE_LOC"]])
+                    cable = int(row[cols["Cable_ID"]])
+                    conduit = row[cols["Conduit"]]
+                    fwhm = float(row[cols["FWHM@f/3.9"]])
+                    fthrough = float(row[cols["FRD_Throughput"]])
+                    athrough = float(row[cols["Abs_Throuhgput"]])
+                    blkfib = row[cols["slit_position"]].split(":")
+                    blk = int(blkfib[0])
+                    fib = int(blkfib[1])
+                    if blk not in fmslitcheck:
+                        fmslitcheck[blk] = dict()
+                    if fib in fmslitcheck[blk]:
+                        msg = "Petal ID {}, slitblock {}, blockfiber {}" \
+                            " already assigned to device {}.  " \
+                            "Reassigning to device {}".format(
+                                pet, blk, fib, fmslitcheck[blk][fib], dev
+                            )
+                        log.warning(msg)
+                    fmslitcheck[blk][fib] = dev
+                    if (pet not in fp) or (dev not in fp[pet]):
+                        print("FAIL:  petal {}, dev {} not in fp".format(pet, dev), flush=True)
+                    fp[pet][dev]["SLITBLOCK"] = blk
+                    fp[pet][dev]["BLOCKFIBER"] = fib
+                    fp[pet][dev]["CABLE"] = cable
+                    fp[pet][dev]["CONDUIT"] = conduit
+                    fp[pet][dev]["FWHM"] = fwhm
+                    fp[pet][dev]["FRD"] = fthrough
+                    fp[pet][dev]["ABS"] = athrough
+    # HARD-CODED modifications.  These changes are to work around features
+    # in the files on DocDB.  Remove these as they are fixed upstream.
+    # Note that once we get information from the database, then these may
+    # no longer be needed.
+    # ---------------------------
+    # DESI-4807v2-Petal_4_final_verification.csv
+    # Petal ID 04 has a typo.  Device location 357 should be slitblock
+    # 19 and blockfiber 23 (it is marked as 24)
+    log.info("Correcting petal ID 4, location 357")
+    fp[4][357]["SLITBLOCK"] = 19
+    fp[4][357]["BLOCKFIBER"] = 23
+    # ---------------------------
+    # DESI-4809v2-Petal_6_final_verification.csv
+    # Petal ID 06 is missing an entry for device location 261.  This device
+    # location is assigned to positioner M03120 in the pos_settings files.
+    # Assign it to the one missing fiber location.
+    log.info("Correcting petal ID 6, location 261")
+    fp[6][261]["DEVICE_TYPE"] = "POS"
+    fp[6][261]["DEVICE_ID"] = "NONE" # Populated below from pos_settings
+    fp[6][261]["SLITBLOCK"] = 19
+    fp[6][261]["BLOCKFIBER"] = 22
+    fp[6][261]["CABLE"] = 6
+    fp[6][261]["CONDUIT"] = "E0"     # This conduit has one fewer than F3
+    fp[6][261]["FWHM"] = 0.0         # No information from file
+    fp[6][261]["FRD"] = 0.0          # No information from file
+    fp[6][261]["ABS"] = 0.0          # No information from file
+    # ---------------------------
+    # DESI-4883v4-Petal_11_final_verification.csv
+    # Petal ID 11 is missing an entry for device location 484.  This
+    # device location is assigned to positioner M06847 in the pos_settings
+    # files.  Assign it to the one missing fiber location.
+    log.info("Correcting petal ID 11, location 484")
+    fp[11][484]["DEVICE_TYPE"] = "POS"
+    fp[11][484]["DEVICE_ID"] = "NONE"  # Populated below from pos_settings
+    fp[11][484]["SLITBLOCK"] = 3
+    fp[11][484]["BLOCKFIBER"] = 3
+    fp[11][484]["CABLE"] = 4
+    fp[11][484]["CONDUIT"] = "G0"     # This conduit has one fewer than G1
+    fp[11][484]["FWHM"] = 0.0         # No information from file
+    fp[11][484]["FRD"] = 0.0          # No information from file
+    fp[11][484]["ABS"] = 0.0          # No information from file
+
+    # Parse all the positioner files.
+    pos = dict()
+    pospat = re.compile(r"unit_(.*).conf")
+    if posdir is not None:
+        for root, dirs, files in os.walk(posdir):
+            for f in files:
+                posmat = pospat.match(f)
+                if posmat is not None:
+                    file_dev = posmat.group(1)
+                    pfile = os.path.join(root, f)
+                    print("parsing {}".format(pfile), flush=True)
+                    cnf = configobj.ConfigObj(pfile, unrepr=True)
+                    # Is this device used?
+                    if ("DEVICE_LOC" not in cnf) \
+                            or (int(cnf["DEVICE_LOC"]) < 0):
+                        continue
+                    if ("PETAL_ID" not in cnf):
+                        continue
+                    pet = int(cnf["PETAL_ID"])
+                    if (pet < 0) or (pet not in fp):
+                        continue
+                    # Check that the positioner ID in the file name matches
+                    # the file contents.
+                    if file_dev != cnf["POS_ID"]:
+                        msg = "positioner file {} has device {} in its name "\
+                            "but contains POS_ID={}"\
+                            .format(f, file_dev, cnf["POS_ID"])
+                        raise RuntimeError(msg)
+                    # Add properties to dictionary
+                    pos[file_dev] = cnf
+            break
+    for devid, props in pos.items():
+        pet = int(props["PETAL_ID"])
+        dev = int(props["DEVICE_LOC"])
+        if dev not in fp[pet]:
+            # This should never happen- all possible device locations
+            # should have been pre-populated before calling this function.
+            msg = "Device location {} on petal ID {} does not exist".format(
+                dev, pet
+            )
+            raise RuntimeError(msg)
+        fp[pet][dev]["DEVICE_ID"] = devid
+        t_min, t_max, p_min, p_max = _compute_theta_phi_range(
+            props["PHYSICAL_RANGE_T"], props["PHYSICAL_RANGE_P"])
+        fp[pet][dev]["OFFSET_T"] = props["OFFSET_T"]
+        fp[pet][dev]["OFFSET_P"] = props["OFFSET_P"]
+        fp[pet][dev]["LENGTH_R1"] = props["LENGTH_R1"]
+        fp[pet][dev]["LENGTH_R2"] = props["LENGTH_R2"]
+        fp[pet][dev]["MIN_T"] = t_min
+        fp[pet][dev]["MAX_T"] = t_max
+        fp[pet][dev]["MIN_P"] = p_min
+        fp[pet][dev]["MAX_P"] = p_max
+
+    if fillfake:
+        t_min, t_max, p_min, p_max = _compute_theta_phi_range(380.0, 200.0)
+        for petal in list(sorted(fp.keys())):
+            devlist = list(sorted(fp[petal].keys()))
+            for dev in devlist:
+                if (petal not in fp) or (dev not in fp[petal]):
+                    print(fp[petal][dev], flush=True)
+                devtyp = fp[petal][dev]["DEVICE_TYPE"]
+                if (devtyp != "POS") and (devtyp != "ETC"):
+                    continue
+                if fp[petal][dev]["DEVICE_ID"] == "NONE":
+                    fp[petal][dev]["LENGTH_R1"] = 3.0
+                    fp[petal][dev]["LENGTH_R2"] = 3.0
+                    if fakeoffset:
+                        fp[petal][dev]["OFFSET_T"] = 0.0
+                        fp[petal][dev]["OFFSET_P"] = 0.0
+                        fp[petal][dev]["MIN_T"] = 0.0
+                        fp[petal][dev]["MAX_T"] = 380.0
+                        fp[petal][dev]["MIN_P"] = 0.0
+                        fp[petal][dev]["MAX_P"] = 200.0
+                    else:
+                        fp[petal][dev]["OFFSET_T"] = -170.0
+                        fp[petal][dev]["OFFSET_P"] = -5.0
+                        fp[petal][dev]["MIN_T"] = t_min
+                        fp[petal][dev]["MAX_T"] = t_max
+                        fp[petal][dev]["MIN_P"] = p_min
+                        fp[petal][dev]["MAX_P"] = p_max
+    return
+
+
 def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
-           petalloc=None, startvalid=None, fillfake=False, exclusion="legacy",
-           fakeoffset=False, fakefiberpos=False):
+           petalloc=None, startvalid=None, fillfake=False,
+           exclusion="default", fakeoffset=False, fakefiberpos=False):
     """Construct DESI focalplane and state files.
 
     This function gathers information from the following sources:
@@ -100,328 +495,31 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     else:
         startvalid = datetime.strptime(startvalid, "%Y-%m-%dT%H:%M:%S")
 
-    if fibermaps is None:
-        fibermaps = [
-            (4042, 5, "Petal_2_final_verification.csv"),
-            (4043, 7, "Petal_3_final_verification.csv"),
-            (4807, 2, "Petal_4_final_verification.csv"),
-            (4808, 3, "Petal_5_final_verification.csv"),
-            (4809, 2, "Petal_6_final_verification.csv"),
-            (4190, 6, "Petal_7_final_verification.csv"),
-            (4806, 4, "Petal_8_final_verification.csv"),
-            (4810, 3, "Petal_9_final_verification.csv"),
-            (4868, 5, "Petal_10_final_verification.csv"),
-            (4883, 4, "Petal_11_final_verification.csv")
-        ]
+    if (petalloc is None) and (posdir is not None):
+        raise RuntimeError(
+            "If specifying posdir, must also specify the petal locations."
+        )
 
-    # Process the fibermap files from DocDB.  We start with this step so that
-    # we can build the list of all physical PETAL_IDs that have a mapping.
-    # Later, we will get positioner data only for devices that exist in the
-    # mapping.
-    allpetals = set()
-    fp = dict()
+    # The mapping of petal IDs to locations
+    if petalloc is None:
+        petalloc = {x: x for x in range(10)}
+
+    # Create a focalplane containing all possible petal locations
+    # and devices.
+    fp = _create_nominal(petalloc)
+
+    # FIXME:  Add another option here to "use the database".
 
     if fakefiberpos:
-        # Get the mapping AND device info from the fiberpos instead.
-        # We CANNOT use the desimodel "load_fiberpos()" function here, since
-        # it seems to strip out the ETC devices.  Manually read the file.
-        fiberpos_file = findfile('focalplane/fiberpos-all.fits')
-        fpos = Table.read(fiberpos_file)
-
-        # There is no "PETAL_ID" for the fake fiberpos, so we use PETAL
-        for pet, dev, devtyp, blk, fib, xoff, yoff in zip(
-                fpos["PETAL"], fpos["DEVICE"], fpos["DEVICE_TYPE"],
-                fpos["SLITBLOCK"], fpos["BLOCKFIBER"], fpos["X"], fpos["Y"]):
-            if (devtyp != "POS") and (devtyp != "ETC"):
-                # only consider science positioners and sky monitors.
-                continue
-            allpetals.add(pet)
-            if pet not in fp:
-                fp[pet] = dict()
-            if dev not in fp[pet]:
-                empty = dict()
-                empty["DEVICE_ID"] = "FAKE"
-                fp[pet][dev] = empty
-            fp[pet][dev]["SLITBLOCK"] = blk
-            fp[pet][dev]["BLOCKFIBER"] = fib
-            fp[pet][dev]["CABLE"] = 0
-            fp[pet][dev]["CONDUIT"] = "NA"
-            fp[pet][dev]["FWHM"] = 0.0
-            fp[pet][dev]["FRD"] = 0.0
-            fp[pet][dev]["ABS"] = 0.0
-            fp[pet][dev]["DEVICE_ID"] = "FAKE"
-            fp[pet][dev]["OFFSET_X"] = xoff
-            fp[pet][dev]["OFFSET_Y"] = yoff
-            fp[pet][dev]["OFFSET_T"] = 0.0
-            fp[pet][dev]["OFFSET_P"] = 0.0
-            fp[pet][dev]["MIN_T"] = 0.0
-            fp[pet][dev]["MAX_T"] = 380.0
-            fp[pet][dev]["MIN_P"] = 0.0
-            fp[pet][dev]["MAX_P"] = 200.0
-            fp[pet][dev]["LENGTH_R1"] = 3.0
-            fp[pet][dev]["LENGTH_R2"] = 3.0
+        _devices_from_fiberpos(fp)
     else:
-        for docnum, docver, docname in fibermaps:
-            fmfile = None
-            try:
-                fmfile = docdb.download(docnum, docver, docname)
-            except IOError:
-                msg = "Could not download {}".format(docname)
-                log.error(msg)
-            fmslitcheck = dict()
-            firstline = True
-            with open(fmfile, newline="") as csvfile:
-                reader = csv.reader(csvfile, delimiter=",")
-                cols = dict()
-                for row in reader:
-                    if firstline:
-                        for cnum, elem in enumerate(row):
-                            nm = elem.strip().rstrip()
-                            cols[nm] = cnum
-                        firstline = False
-                    else:
-                        pet = int(row[cols["PETAL_ID"]])
-                        allpetals.add(pet)
-                        dev = int(row[cols["DEVICE_LOC"]])
-                        cable = int(row[cols["Cable_ID"]])
-                        conduit = row[cols["Conduit"]]
-                        fwhm = float(row[cols["FWHM@f/3.9"]])
-                        fthrough = float(row[cols["FRD_Throughput"]])
-                        athrough = float(row[cols["Abs_Throuhgput"]])
-                        blkfib = row[cols["slit_position"]].split(":")
-                        blk = int(blkfib[0])
-                        fib = int(blkfib[1])
-                        if blk not in fmslitcheck:
-                            fmslitcheck[blk] = dict()
-                        if fib in fmslitcheck[blk]:
-                            msg = "Petal ID {}, slitblock {}, blockfiber {}" \
-                                " already assigned to device {}.  " \
-                                "Reassigning to device {}".format(
-                                    pet, blk, fib, fmslitcheck[blk][fib], dev
-                                )
-                            log.warning(msg)
-                        fmslitcheck[blk][fib] = dev
-                        if pet not in fp:
-                            fp[pet] = dict()
-                        if dev not in fp[pet]:
-                            empty = dict()
-                            empty["DEVICE_ID"] = "NONE"
-                            fp[pet][dev] = empty
-                        fp[pet][dev]["SLITBLOCK"] = blk
-                        fp[pet][dev]["BLOCKFIBER"] = fib
-                        fp[pet][dev]["CABLE"] = cable
-                        fp[pet][dev]["CONDUIT"] = conduit
-                        fp[pet][dev]["FWHM"] = fwhm
-                        fp[pet][dev]["FRD"] = fthrough
-                        fp[pet][dev]["ABS"] = athrough
-        # HARD-CODED modifications.  These changes are to work around features
-        # in the files on DocDB.  Remove these as they are fixed upstream.
-        # Note that once we get information from the database, then these may
-        # no longer be needed.
-        # ---------------------------
-        # DESI-4807v2-Petal_4_final_verification.csv
-        # Petal ID 04 has a typo.  Device location 357 should be slitblock
-        # 19 and blockfiber 23 (it is marked as 24)
-        fp[4][357]["SLITBLOCK"] = 19
-        fp[4][357]["BLOCKFIBER"] = 23
-        # ---------------------------
-        # DESI-4809v2-Petal_6_final_verification.csv
-        # Petal ID 06 is missing an entry for device location 261.  This device
-        # location is assigned to positioner M03120 in the pos_settings files.
-        # Assign it to the one missing fiber location.
-        fp[6][261] = dict()
-        fp[6][261]["DEVICE_ID"] = "NONE" # Populated below from pos_settings
-        fp[6][261]["SLITBLOCK"] = 19
-        fp[6][261]["BLOCKFIBER"] = 22
-        fp[6][261]["CABLE"] = 6
-        fp[6][261]["CONDUIT"] = "E0"     # This conduit has one fewer than F3
-        fp[6][261]["FWHM"] = 0.0         # No information from file
-        fp[6][261]["FRD"] = 0.0          # No information from file
-        fp[6][261]["ABS"] = 0.0          # No information from file
-        # ---------------------------
-        # DESI-4883v4-Petal_11_final_verification.csv
-        # Petal ID 11 is missing an entry for device location 484.  This
-        # device location is assigned to positioner M06847 in the pos_settings
-        # files.  Assign it to the one missing fiber location.
-        fp[11][484] = dict()
-        fp[11][484]["DEVICE_ID"] = "NONE"  # Populated below from pos_settings
-        fp[11][484]["SLITBLOCK"] = 3
-        fp[11][484]["BLOCKFIBER"] = 3
-        fp[11][484]["CABLE"] = 4
-        fp[11][484]["CONDUIT"] = "G0"     # This conduit has one fewer than G1
-        fp[11][484]["FWHM"] = 0.0         # No information from file
-        fp[11][484]["FRD"] = 0.0          # No information from file
-        fp[11][484]["ABS"] = 0.0          # No information from file
-
-    # Parse all the positioner files.
-    pos = dict()
-    pospat = re.compile(r"unit_(.*).conf")
-    if posdir is not None:
-        for root, dirs, files in os.walk(posdir):
-            for f in files:
-                posmat = pospat.match(f)
-                if posmat is not None:
-                    file_dev = posmat.group(1)
-                    pfile = os.path.join(root, f)
-                    print("parsing {}".format(pfile), flush=True)
-                    cnf = configobj.ConfigObj(pfile, unrepr=True)
-                    # Is this device used?
-                    if ("DEVICE_LOC" not in cnf) \
-                            or (int(cnf["DEVICE_LOC"]) < 0):
-                        continue
-                    if ("PETAL_ID" not in cnf):
-                        continue
-                    pet = int(cnf["PETAL_ID"])
-                    if (pet < 0) or (pet not in fp):
-                        continue
-                    # Check that the positioner ID in the file name matches
-                    # the file contents.
-                    if file_dev != cnf["POS_ID"]:
-                        msg = "positioner file {} has device {} in its name "\
-                            "but contains POS_ID={}"\
-                            .format(f, file_dev, cnf["POS_ID"])
-                        raise RuntimeError(msg)
-                    # Add properties to dictionary
-                    pos[file_dev] = cnf
-            break
-
-    # Extract and organize the information we are tracking
-
-    for devid, props in pos.items():
-        pet = int(props["PETAL_ID"])
-        dev = int(props["DEVICE_LOC"])
-        if dev not in fp[pet]:
-            # This device location must not be a POS type.  We still want
-            # its information though.
-            fp[pet][dev] = dict()
-            fp[pet][dev]["SLITBLOCK"] = -1
-            fp[pet][dev]["BLOCKFIBER"] = -1
-            fp[pet][dev]["CABLE"] = -1
-            fp[pet][dev]["CONDUIT"] = "NA"
-            fp[pet][dev]["FWHM"] = 0.0
-            fp[pet][dev]["FRD"] = 0.0
-            fp[pet][dev]["ABS"] = 0.0
-        fp[pet][dev]["DEVICE_ID"] = devid
-        t_min, t_max, p_min, p_max = _compute_theta_phi_range(
-            props["PHYSICAL_RANGE_T"], props["PHYSICAL_RANGE_P"])
-        # These values are incorrect in many cases.  Use nominal values
-        # instead (see below).
-        # fp[pet][dev]["OFFSET_X"] = props["OFFSET_X"]
-        # fp[pet][dev]["OFFSET_Y"] = props["OFFSET_Y"]
-        fp[pet][dev]["OFFSET_X"] = 0.0
-        fp[pet][dev]["OFFSET_Y"] = 0.0
-        fp[pet][dev]["OFFSET_T"] = props["OFFSET_T"]
-        fp[pet][dev]["OFFSET_P"] = props["OFFSET_P"]
-        fp[pet][dev]["LENGTH_R1"] = props["LENGTH_R1"]
-        fp[pet][dev]["LENGTH_R2"] = props["LENGTH_R2"]
-        fp[pet][dev]["MIN_T"] = t_min
-        fp[pet][dev]["MAX_T"] = t_max
-        fp[pet][dev]["MIN_P"] = p_min
-        fp[pet][dev]["MAX_P"] = p_max
-
-    # Use DocDB 0530 to get the mapping of device location to type.  Also use
-    # this for X/Y offsets in case we are simulating positioners.
-    xls_fp_layout = docdb.download(
-        530, 14, "DESI-0530-v14 (Focal Plane Layout).xlsx")
-    xls_sheet = "PositionerAndFiducialLocations"
-    rowmin, rowmax = 49, 591
-    headers = docdb.xls_read_row(xls_fp_layout, xls_sheet, rowmin-1, "B", "S")
-    assert headers[0] == "device_location_id"
-    assert headers[1] == "device_type"
-    xls_devloc = docdb.xls_read_col(
-        xls_fp_layout, xls_sheet, "B", rowmin, rowmax, dtype=np.int32)
-    xls_devtype = docdb.xls_read_col(
-        xls_fp_layout, xls_sheet, "C", rowmin, rowmax, dtype=str)
-    xls_dev_nominal_x = docdb.xls_read_col(
-        xls_fp_layout, xls_sheet, "D", rowmin, rowmax, dtype=np.float64)
-    xls_dev_nominal_y = docdb.xls_read_col(
-        xls_fp_layout, xls_sheet, "E", rowmin, rowmax, dtype=np.float64)
-    devtype = dict()
-    dev_nominal_xy = dict()
-    for loc, typ in zip(xls_devloc, xls_devtype):
-        devtype[int(loc)] = typ
-    for loc, x, y in zip(xls_devloc, xls_dev_nominal_x, xls_dev_nominal_y):
-        dev_nominal_xy[int(loc)] = (x, y)
-
-    for petal in sorted(allpetals):
-        devlist = list(sorted(fp[petal].keys()))
-        for dev in devlist:
-            fp[petal][dev]["DEVICE_TYPE"] = devtype[dev]
-
-    # If we have a map of petal ID to petal location, then use it.  Otherwise
-    # just assign them in petal ID order.
-    if petalloc is None:
-        loc = 0
-        for petal in sorted(allpetals):
-            devlist = list(sorted(fp[petal].keys()))
-            for dev in devlist:
-                fp[petal][dev]["PETAL"] = loc
-            loc += 1
-    else:
-        for petal in allpetals:
-            devlist = list(sorted(fp[petal].keys()))
-            for dev in devlist:
-                fp[petal][dev]["PETAL"] = petalloc[petal]
-
-    # If the fillfake option is specified, fill all device locations of POS and
-    # ETC type with a fake positioner if there is none there.
-
-    if fillfake:
-        t_min, t_max, p_min, p_max = _compute_theta_phi_range(380.0, 200.0)
-        for petal in sorted(allpetals):
-            devlist = list(sorted(fp[petal].keys()))
-            for dev in devlist:
-                # The petal location of this petal ID
-                petal_loc = fp[petal][dev]["PETAL"]
-                if fp[petal][dev]["DEVICE_ID"] == "NONE":
-                    fp[petal][dev]["OFFSET_X"] = 0.0
-                    fp[petal][dev]["OFFSET_Y"] = 0.0
-                    if fakeoffset:
-                        fp[petal][dev]["OFFSET_T"] = 0.0
-                        fp[petal][dev]["OFFSET_P"] = 0.0
-                        fp[petal][dev]["MIN_T"] = 0.0
-                        fp[petal][dev]["MAX_T"] = 380.0
-                        fp[petal][dev]["MIN_P"] = 0.0
-                        fp[petal][dev]["MAX_P"] = 200.0
-                    else:
-                        fp[petal][dev]["OFFSET_T"] = -170.0
-                        fp[petal][dev]["OFFSET_P"] = -5.0
-                        fp[petal][dev]["MIN_T"] = t_min
-                        fp[petal][dev]["MAX_T"] = t_max
-                        fp[petal][dev]["MIN_P"] = p_min
-                        fp[petal][dev]["MAX_P"] = p_max
-                    fp[petal][dev]["LENGTH_R1"] = 3.0
-                    fp[petal][dev]["LENGTH_R2"] = 3.0
-
-    # The pos_settings files seem to have incorrect / unreliable
-    # X / Y offsets.  Override these with the nominal values for now
-    # and investigate this more when moving to the DB.
-    for petal in sorted(allpetals):
-        devlist = list(sorted(fp[petal].keys()))
-        for dev in devlist:
-            if dev in dev_nominal_xy:
-                xnom, ynom = dev_nominal_xy[dev]
-                fp[petal][dev]["OFFSET_X"] = xnom
-                fp[petal][dev]["OFFSET_Y"] = ynom
+        _devices_from_files(
+            fp, posdir=posdir, fillfake=fillfake, fakeoffset=fakeoffset,
+            fibermaps=fibermaps
+        )
 
     # Now rotate the X / Y offsets based on the petal location.
-    for petal in sorted(allpetals):
-        devlist = list(sorted(fp[petal].keys()))
-        for dev in devlist:
-            # The petal location of this petal ID
-            petal_loc = fp[petal][dev]["PETAL"]
-            # Petal 0 is at the "bottom"; See DESI-0530.  The X/Y and
-            # positioner theta offset are defined with the petal in location 3.
-            # We need to rotate from petal location 3 to desired location.
-            petalrot_deg = (float(7 + petal_loc) * 36.0) % 360.0
-            petalrot_rad = np.radians(petalrot_deg)
-            x = fp[petal][dev]["OFFSET_X"]
-            y = fp[petal][dev]["OFFSET_Y"]
-            fp[petal][dev]["OFFSET_X"] = \
-                np.cos(petalrot_rad) * x - np.sin(petalrot_rad) * y
-            fp[petal][dev]["OFFSET_Y"] = \
-                np.sin(petalrot_rad) * x + np.cos(petalrot_rad) * y
-            fp[petal][dev]["OFFSET_T"] += petalrot_deg
+    _rotate_petals(fp)
 
     # Now load the file(s) with the exclusion polygons
     # Add the legacy polygons to the dictionary for reference.
@@ -475,8 +573,15 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
         sg.append(start)
         return [sg]
 
+    # NOTE:  The GFA and Petal exclusion polygons in these files are for
+    # the petal in the default position (location 3).  They will be
+    # rotated by downstream codes like fiberassign.  If the petal locations
+    # in focalplane coordinates are very different from nominal, we may
+    # want to read and store explicit polygons for each petal.  TBD.
+
     if polyfile is not None:
-        # Add shapes from other files.  The convention used here for
+        # Add shapes from other files.
+        log.info("Loading exclusion polygons from {}".format(polyfile))
         exprops = configobj.ConfigObj(polyfile, unrepr=True)
         poly["default"] = dict()
         ktheta_raw = np.transpose(np.array(exprops["KEEPOUT_THETA"]))
@@ -515,7 +620,8 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     # First the focalplane file
 
     nrows = 0
-    for petal in sorted(allpetals):
+    allpetals = list(sorted(fp.keys()))
+    for petal in allpetals:
         devlist = list(sorted(fp[petal].keys()))
         nrows += len(devlist)
 
@@ -592,7 +698,7 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     ]
 
     row = 0
-    for petal in sorted(allpetals):
+    for petal in allpetals:
         devlist = list(sorted(fp[petal].keys()))
         for dev in devlist:
             out_fp[row]["PETAL"] = fp[petal][dev]["PETAL"]
@@ -622,7 +728,7 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
                         out_fp[row][col] = fp[petal][dev][col]
             row += 1
 
-    out_fp.write(out_fp_file, format='ascii.ecsv')
+    out_fp.write(out_fp_file, format="ascii.ecsv")
     del out_fp
 
     # Now the state file.
@@ -646,7 +752,7 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     out_state.add_columns(out_cols)
 
     row = 0
-    for petal in sorted(allpetals):
+    for petal in allpetals:
         devlist = list(sorted(fp[petal].keys()))
         for dev in devlist:
             out_state[row]["TIME"] = file_date
@@ -657,7 +763,7 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
             out_state[row]["EXCLUSION"] = exclusion
             row += 1
 
-    out_state.write(out_state_file, format='ascii.ecsv')
+    out_state.write(out_state_file, format="ascii.ecsv")
 
     # Now write out the exclusion polygons.  Since these are not tabular, we
     # write to a YAML file.
