@@ -127,6 +127,7 @@ def load_fiberpos():
     if _fiberpos is None:
         fiberposfile = os.path.join(os.environ['DESIMODEL'],'data','focalplane','fiberpos.fits')
         _fiberpos = Table.read(fiberposfile)
+        _fiberpos.sort('FIBER')
         #- Convert to upper case if needed
         #- Make copy of colnames b/c they are updated during iteration
         for col in list(_fiberpos.colnames):
