@@ -19,16 +19,20 @@ def main():
                         "devices with an assigned PETAL_ID and DEVICE_LOC "
                         "are considered.")
 
-    parser.add_argument("--collision", type=str, default=None,
-                        required=False,
-                        help="The text config file containing the exclusion "
+    parser.add_argument("--exclusion_file", type=str, default=None,
+                        action="append", required=False,
+                        help="A text config file containing some exclusion "
                         "polygons to use.  For example, "
-                        "'_collision_settings_DEFAULT.conf'")
+                        "'$DESIMODEL/exclusions.conf'.  This file should "
+                        "contain a parameter 'NAME' with the name to use "
+                        "for this set of exclusions.  This option can be "
+                        "specified multiple times.")
 
-    parser.add_argument("--exclusion", type=str, default="legacy",
+    parser.add_argument("--exclusion_default", type=str, default="legacy",
                         required=False,
-                        help="The name of the default exclusion polygon"
-                        " to use (e.g. 'legacy', 'default', etc)")
+                        help="The name of the default exclusion polygons"
+                        " to use (e.g. 'legacy', 'default', etc).  This "
+                        " is the same as the 'NAME' value in each file.")
 
     parser.add_argument("--petal_id2loc", type=str, required=False,
                         help="Mapping of petal ID to focalplane location, "
@@ -72,10 +76,10 @@ def main():
             petalloc[int(k)] = int(v)
 
     create(testdir=args.test, posdir=args.pos_settings,
-           polyfile=args.collision, fibermaps=None, petalloc=petalloc,
-           startvalid=args.startvalid, fillfake=args.fillfake,
-           exclusion=args.exclusion, fakeoffset=args.fakeoffset,
-           fakefiberpos=args.fakefiberpos)
+           polyfile=list(args.exclusion_file), fibermaps=None,
+           petalloc=petalloc, startvalid=args.startvalid,
+           fillfake=args.fillfake, exclusion=args.exclusion_default,
+           fakeoffset=args.fakeoffset, fakefiberpos=args.fakefiberpos)
 
     return
 

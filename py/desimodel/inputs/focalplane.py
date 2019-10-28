@@ -440,7 +440,7 @@ def _devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
 
 def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
            petalloc=None, startvalid=None, fillfake=False,
-           exclusion="default", fakeoffset=False, fakefiberpos=False):
+           exclusion="legacy", fakeoffset=False, fakefiberpos=False):
     """Construct DESI focalplane and state files.
 
     This function gathers information from the following sources:
@@ -523,6 +523,8 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
 
     # Now load the file(s) with the exclusion polygons
     # Add the legacy polygons to the dictionary for reference.
+    # Also add an "unknown" polygon set which includes a large circle for the
+    # theta arm that is the size of the patrol radius.
     poly = dict()
 
     # First the THETA arm.
@@ -565,6 +567,16 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     poly["legacy"]["theta"] = shp_theta
     poly["legacy"]["phi"] = shp_phi
 
+    poly["unknown"] = dict()
+    poly["unknown"]["theta"] = dict()
+    poly["unknown"]["theta"]["circles"] = [
+        [[0.0, 0.0], 6.0]
+    ]
+    poly["unknown"]["theta"]["segments"] = list()
+    poly["unknown"]["phi"] = dict()
+    poly["unknown"]["phi"]["circles"] = list()
+    poly["unknown"]["phi"]["segments"] = list()
+
     def collision_to_segments(raw):
         rx = raw[:, 0]
         ry = raw[:, 1]
@@ -580,29 +592,35 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     # want to read and store explicit polygons for each petal.  TBD.
 
     if polyfile is not None:
-        # Add shapes from other files.
-        log.info("Loading exclusion polygons from {}".format(polyfile))
-        exprops = configobj.ConfigObj(polyfile, unrepr=True)
-        poly["default"] = dict()
-        ktheta_raw = np.transpose(np.array(exprops["KEEPOUT_THETA"]))
-        poly["default"]["theta"] = dict()
-        poly["default"]["theta"]["segments"] = \
-            collision_to_segments(ktheta_raw)
-        poly["default"]["theta"]["circles"] = list()
-        kphi_raw = np.transpose(np.array(exprops["KEEPOUT_PHI"]))
-        poly["default"]["phi"] = dict()
-        poly["default"]["phi"]["segments"] = collision_to_segments(kphi_raw)
-        poly["default"]["phi"]["circles"] = list()
-        kpetal_raw = np.transpose(np.array(exprops["KEEPOUT_PTL"]))
-        poly["default"]["petal"] = dict()
-        poly["default"]["petal"]["segments"] = \
-            collision_to_segments(kpetal_raw)
-        poly["default"]["petal"]["circles"] = list()
-        kgfa_raw = np.transpose(np.array(exprops["KEEPOUT_GFA"]))
-        poly["default"]["gfa"] = dict()
-        poly["default"]["gfa"]["segments"] = \
-            collision_to_segments(kgfa_raw)
-        poly["default"]["gfa"]["circles"] = list()
+        for pf in polyfile:
+            # Add shapes from other files.
+            log.info("Loading exclusion polygons from {}".format(pf))
+            exprops = configobj.ConfigObj(pf, unrepr=True)
+            if "NAME" not in exprops:
+                msg = "exclusion file {} does not contain a NAME parameter"\
+                    .format(pf)
+                raise RuntimeError(msg)
+            nm = exprops["NAME"]
+            poly[nm] = dict()
+            ktheta_raw = np.transpose(np.array(exprops["KEEPOUT_THETA"]))
+            poly[nm]["theta"] = dict()
+            poly[nm]["theta"]["segments"] = \
+                collision_to_segments(ktheta_raw)
+            poly[nm]["theta"]["circles"] = list()
+            kphi_raw = np.transpose(np.array(exprops["KEEPOUT_PHI"]))
+            poly[nm]["phi"] = dict()
+            poly[nm]["phi"]["segments"] = collision_to_segments(kphi_raw)
+            poly[nm]["phi"]["circles"] = list()
+            kpetal_raw = np.transpose(np.array(exprops["KEEPOUT_PTL"]))
+            poly[nm]["petal"] = dict()
+            poly[nm]["petal"]["segments"] = \
+                collision_to_segments(kpetal_raw)
+            poly[nm]["petal"]["circles"] = list()
+            kgfa_raw = np.transpose(np.array(exprops["KEEPOUT_GFA"]))
+            poly[nm]["gfa"] = dict()
+            poly[nm]["gfa"]["segments"] = \
+                collision_to_segments(kgfa_raw)
+            poly[nm]["gfa"]["circles"] = list()
 
     # Now write out all of this collected information.  Also write out an
     # initial "state" log as a starting point.  Note that by having log
