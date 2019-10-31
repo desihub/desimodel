@@ -9,6 +9,13 @@ desimodel Release Notes
   ``desi-healpix-weights.fits`` with new dither pattern; see DESI-0717.
   Layers 0=GRAY, 1-4=DARK instead of 0-3=DARK, 4=GRAY.
 
+0.10.2 (2019-10-31)
+-------------------
+
+* Improve focalplane creation code (PR `#127`_).
+
+.. _`#127`: https://github.com/desihub/desimodel/pull/127
+
 0.10.1 (2019-10-17)
 -------------------
 
