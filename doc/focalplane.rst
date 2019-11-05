@@ -68,12 +68,17 @@ be::
     desi_generate_focalplane \
         --startvalid 2019-10-10T00:00:00 \
         --pos_settings /path/to/svn/fp_settings/pos_settings \
-        --collision /path/to/svn/fp_settings/collision_settings/_collision_settings_DEFAULT.conf \
-        --exclusion default \
         --petal_id2loc XXXXXXXXXX
 
 This creates a new focalplane model in the desimodel data directory.  It starts
 with all positioner devices in a "good" state.
+
+The positioner exclusion polygons include a couple of built-in ones and then
+every file in the desimodel data directory with a name
+``${DESIMODEL}/data/focalplane/exclusions_*.conf`` is read and added to the
+available exclusion polygons.  One of these files must contain the name
+"default".
+
 
 Updating the State of a Model
 ================================
@@ -81,7 +86,19 @@ Updating the State of a Model
 After a focalplane model is created, one can update the state of an individual
 positioner with the following command line tool:
 
-.. include:: update_focalplane.inc
+.. include:: update_focalplane_state.inc
+
+
+Updating the Exclusion Polygons in a Model
+================================================
+
+After a focalplane model is created, one can update the available exclusion
+polygons with the following command line tool:
+
+.. include:: update_focalplane_excl.inc
+
+Existing exclusion polygons with the same name as any input files will be
+replaced.  New polygons will be appended.
 
 
 File Format and Loading

@@ -23,8 +23,7 @@ def main():
                         " exclusion polygons to use.  For example, "
                         "'$DESIMODEL/exclusions.conf'.  This file should "
                         "contain a parameter 'NAME' with the name to use "
-                        "for this set of exclusions.  This option can be "
-                        "specified multiple times.")
+                        "for this set of exclusions.")
 
     parser.add_argument("--time", type=str, required=False, default=None,
                         help="Optional date/time (default is current "

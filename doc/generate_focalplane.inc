@@ -15,13 +15,6 @@
                             The file names are assumed to have the form
                             unit_<name>.conf. Only devices with an assigned
                             PETAL_ID and DEVICE_LOC are considered.
-      --collision COLLISION
-                            The text config file containing the exclusion polygons
-                            to use. For example,
-                            '_collision_settings_DEFAULT.conf'
-      --exclusion EXCLUSION
-                            The name of the default exclusion polygon to use (e.g.
-                            'legacy', 'default', etc)
       --petal_id2loc PETAL_ID2LOC
                             Mapping of petal ID to focalplane location, specified
                             as '<id0>:<loc0>,<id1>:<loc1>,...'. If not specified,

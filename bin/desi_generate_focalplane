@@ -19,21 +19,6 @@ def main():
                         "devices with an assigned PETAL_ID and DEVICE_LOC "
                         "are considered.")
 
-    parser.add_argument("--exclusion_file", type=str, default=None,
-                        action="append", required=False,
-                        help="A text config file containing some exclusion "
-                        "polygons to use.  For example, "
-                        "'$DESIMODEL/exclusions.conf'.  This file should "
-                        "contain a parameter 'NAME' with the name to use "
-                        "for this set of exclusions.  This option can be "
-                        "specified multiple times.")
-
-    parser.add_argument("--exclusion_default", type=str, default="legacy",
-                        required=False,
-                        help="The name of the default exclusion polygons"
-                        " to use (e.g. 'legacy', 'default', etc).  This "
-                        " is the same as the 'NAME' value in each file.")
-
     parser.add_argument("--petal_id2loc", type=str, required=False,
                         help="Mapping of petal ID to focalplane location, "
                         "specified as '<id0>:<loc0>,<id1>:<loc1>,...'.  If"
@@ -75,10 +60,9 @@ def main():
             k, v = pt.split(':')
             petalloc[int(k)] = int(v)
 
-    create(testdir=args.test, posdir=args.pos_settings,
-           polyfile=list(args.exclusion_file), fibermaps=None,
+    create(testdir=args.test, posdir=args.pos_settings, fibermaps=None,
            petalloc=petalloc, startvalid=args.startvalid,
-           fillfake=args.fillfake, exclusion=args.exclusion_default,
+           fillfake=args.fillfake,
            fakeoffset=args.fakeoffset, fakefiberpos=args.fakefiberpos)
 
     return

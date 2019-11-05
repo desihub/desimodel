@@ -11,6 +11,7 @@ from datetime import datetime
 import re
 import csv
 import yaml
+import glob
 
 import configobj
 import numpy as np
@@ -498,9 +499,9 @@ def update_exclusions(excl, paths=list()):
     return
 
 
-def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
+def create(testdir=None, posdir=None, fibermaps=None,
            petalloc=None, startvalid=None, fillfake=False,
-           exclusion="legacy", fakeoffset=False, fakefiberpos=False):
+           fakeoffset=False, fakefiberpos=False):
     """Construct DESI focalplane and state files.
 
     This function gathers information from the following sources:
@@ -515,8 +516,6 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
         posdir (str):  Directory containing the many positioner conf files.
             If None, simulate identical, nominal positioners.  A None value
             will force fillfake=True.
-        polyfile (str):  File containing the exclusion polygons.  If None,
-            Use the "legacy" polygons historically included in fiberassign.
         fibermaps (list):  Override list of tuples (DocDB number,
             DocDB version, DocDB csv file) of where to find the petal mapping
             files.
@@ -525,7 +524,6 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
             ISO 8601 format string.
         fillfake (bool):  If True, fill missing device locations with fake
             positioners with nominal values for use in simulations.
-        exclusion (str):  The name of the default exclusion polygons.
         fakeoffset (bool):  If True, artificially sets the theta / phi angle
             offsets to zero.  This replicates the behavior of legacy
             fiberassign and should only be used for testing.
@@ -637,8 +635,18 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     poly["unknown"]["phi"]["circles"] = list()
     poly["unknown"]["phi"]["segments"] = list()
 
-    if polyfile is not None:
-        update_exclusions(poly, polyfile)
+    # Get all available exclusion polygons from the desimodel data directory.
+
+    fpdir = os.path.join(datadir(), "focalplane")
+    excl_match = os.path.join(fpdir, "exclusions_*.conf")
+    excl_files = glob.glob(excl_match)
+    update_exclusions(poly, excl_files)
+
+    # Ensure that the default polygon has been defined.
+    if "default" not in poly.keys():
+        raise RuntimeError(
+            "No default exclusion polygon found in available files"
+        )
 
     # Now write out all of this collected information.  Also write out an
     # initial "state" log as a starting point.  Note that by having log
@@ -796,7 +804,7 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
             out_state[row]["LOCATION"] = fp[petal][dev]["PETAL"] * 1000 + dev
             out_state[row]["DEVICE"] = dev
             out_state[row]["STATE"] = 0
-            out_state[row]["EXCLUSION"] = exclusion
+            out_state[row]["EXCLUSION"] = "default"
             row += 1
 
     out_state.write(out_state_file, format="ascii.ecsv")
