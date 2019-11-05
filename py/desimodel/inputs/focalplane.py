@@ -438,6 +438,66 @@ def _devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
     return
 
 
+def _collision_to_segments(raw):
+    rx = raw[:, 0]
+    ry = raw[:, 1]
+    sg = [[float(x), float(y)] for x, y in zip(rx, ry)]
+    start = list(sg[0])
+    sg.append(start)
+    return [sg]
+
+
+def update_exclusions(excl, paths=list()):
+    """Update exclusion polygons in a focalplane model.
+
+    Args:
+        excl (dict):  Dictionary of exclusion polygons, modified in place.
+        paths (list):  List of file paths to append to the exclusions.
+
+    Returns:
+        None
+
+    """
+    log = get_logger()
+    # NOTE:  The GFA and Petal exclusion polygons in these files are for
+    # the petal in the default position (location 3).  They will be
+    # rotated by downstream codes like fiberassign.  If the petal locations
+    # in focalplane coordinates are very different from nominal, we may
+    # want to read and store explicit polygons for each petal.  TBD.
+
+    for pf in paths:
+        # Add shapes from other files.
+        log.info("Loading exclusion polygons from {}".format(pf))
+        exprops = configobj.ConfigObj(pf, unrepr=True)
+        if "NAME" not in exprops:
+            msg = "exclusion file {} does not contain a NAME parameter"\
+                .format(pf)
+            raise RuntimeError(msg)
+        nm = exprops["NAME"]
+        props = dict()
+        ktheta_raw = np.transpose(np.array(exprops["KEEPOUT_THETA"]))
+        props["theta"] = dict()
+        props["theta"]["segments"] = \
+            _collision_to_segments(ktheta_raw)
+        props["theta"]["circles"] = list()
+        kphi_raw = np.transpose(np.array(exprops["KEEPOUT_PHI"]))
+        props["phi"] = dict()
+        props["phi"]["segments"] = _collision_to_segments(kphi_raw)
+        props["phi"]["circles"] = list()
+        kpetal_raw = np.transpose(np.array(exprops["KEEPOUT_PTL"]))
+        props["petal"] = dict()
+        props["petal"]["segments"] = \
+            _collision_to_segments(kpetal_raw)
+        props["petal"]["circles"] = list()
+        kgfa_raw = np.transpose(np.array(exprops["KEEPOUT_GFA"]))
+        props["gfa"] = dict()
+        props["gfa"]["segments"] = \
+            _collision_to_segments(kgfa_raw)
+        props["gfa"]["circles"] = list()
+        excl[nm] = props
+    return
+
+
 def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
            petalloc=None, startvalid=None, fillfake=False,
            exclusion="legacy", fakeoffset=False, fakefiberpos=False):
@@ -577,50 +637,8 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     poly["unknown"]["phi"]["circles"] = list()
     poly["unknown"]["phi"]["segments"] = list()
 
-    def collision_to_segments(raw):
-        rx = raw[:, 0]
-        ry = raw[:, 1]
-        sg = [[float(x), float(y)] for x, y in zip(rx, ry)]
-        start = list(sg[0])
-        sg.append(start)
-        return [sg]
-
-    # NOTE:  The GFA and Petal exclusion polygons in these files are for
-    # the petal in the default position (location 3).  They will be
-    # rotated by downstream codes like fiberassign.  If the petal locations
-    # in focalplane coordinates are very different from nominal, we may
-    # want to read and store explicit polygons for each petal.  TBD.
-
     if polyfile is not None:
-        for pf in polyfile:
-            # Add shapes from other files.
-            log.info("Loading exclusion polygons from {}".format(pf))
-            exprops = configobj.ConfigObj(pf, unrepr=True)
-            if "NAME" not in exprops:
-                msg = "exclusion file {} does not contain a NAME parameter"\
-                    .format(pf)
-                raise RuntimeError(msg)
-            nm = exprops["NAME"]
-            poly[nm] = dict()
-            ktheta_raw = np.transpose(np.array(exprops["KEEPOUT_THETA"]))
-            poly[nm]["theta"] = dict()
-            poly[nm]["theta"]["segments"] = \
-                collision_to_segments(ktheta_raw)
-            poly[nm]["theta"]["circles"] = list()
-            kphi_raw = np.transpose(np.array(exprops["KEEPOUT_PHI"]))
-            poly[nm]["phi"] = dict()
-            poly[nm]["phi"]["segments"] = collision_to_segments(kphi_raw)
-            poly[nm]["phi"]["circles"] = list()
-            kpetal_raw = np.transpose(np.array(exprops["KEEPOUT_PTL"]))
-            poly[nm]["petal"] = dict()
-            poly[nm]["petal"]["segments"] = \
-                collision_to_segments(kpetal_raw)
-            poly[nm]["petal"]["circles"] = list()
-            kgfa_raw = np.transpose(np.array(exprops["KEEPOUT_GFA"]))
-            poly[nm]["gfa"] = dict()
-            poly[nm]["gfa"]["segments"] = \
-                collision_to_segments(kgfa_raw)
-            poly[nm]["gfa"]["circles"] = list()
+        update_exclusions(poly, polyfile)
 
     # Now write out all of this collected information.  Also write out an
     # initial "state" log as a starting point.  Note that by having log
