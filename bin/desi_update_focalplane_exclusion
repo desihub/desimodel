@@ -1,0 +1,69 @@
+#!/usr/bin/env python
+"""Commandline script to update the exclusion polygons for a focalplane.
+"""
+import os
+
+import argparse
+
+from datetime import datetime
+
+import yaml
+
+from desimodel.io import load_focalplane, datadir
+
+from desimodel.inputs.focalplane import update_exclusions
+
+
+def main():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--exclusion", type=str, default=None,
+                        nargs="*", required=False,
+                        help="One or more text config files containing some"
+                        " exclusion polygons to use.  For example, "
+                        "'$DESIMODEL/exclusions.conf'.  This file should "
+                        "contain a parameter 'NAME' with the name to use "
+                        "for this set of exclusions.")
+
+    parser.add_argument("--time", type=str, required=False, default=None,
+                        help="Optional date/time (default is current "
+                        "date/time) to use when selecting the focalplane."
+                        "Format is YYYY-MM-DDTHH:mm:ss in UTC time.")
+
+    args = parser.parse_args()
+
+    if args.exclusion is None:
+        # Nothing to do!
+        return
+
+    # The timestamp.
+
+    fptime = None
+    if args.time is None:
+        fptime = datetime.utcnow()
+    else:
+        fptime = datetime.strptime(args.time, "%Y-%m-%dT%H:%M:%S")
+
+    # First, load the existing focalplane model
+
+    fp, exclude, state, tmstr = load_focalplane(fptime)
+
+    # Update exclusions
+    update_exclusions(exclude, args.exclusion)
+
+    # Write out
+
+    fpdir = os.path.join(datadir(), "focalplane")
+    excl_file = os.path.join(fpdir, "desi-exclusion_{}.yaml".format(tmstr))
+    tmp_excl = "{}.tmp".format(excl_file)
+
+    with open(tmp_excl, "w") as tf:
+        yaml.dump(exclude, tf, default_flow_style=False)
+
+    os.rename(tmp_excl, excl_file)
+
+    return
+
+
+if __name__ == "__main__":
+    main()

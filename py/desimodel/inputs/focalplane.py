@@ -11,6 +11,7 @@ from datetime import datetime
 import re
 import csv
 import yaml
+import glob
 
 import configobj
 import numpy as np
@@ -438,9 +439,69 @@ def _devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
     return
 
 
-def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
+def _collision_to_segments(raw):
+    rx = raw[:, 0]
+    ry = raw[:, 1]
+    sg = [[float(x), float(y)] for x, y in zip(rx, ry)]
+    start = list(sg[0])
+    sg.append(start)
+    return [sg]
+
+
+def update_exclusions(excl, paths=list()):
+    """Update exclusion polygons in a focalplane model.
+
+    Args:
+        excl (dict):  Dictionary of exclusion polygons, modified in place.
+        paths (list):  List of file paths to append to the exclusions.
+
+    Returns:
+        None
+
+    """
+    log = get_logger()
+    # NOTE:  The GFA and Petal exclusion polygons in these files are for
+    # the petal in the default position (location 3).  They will be
+    # rotated by downstream codes like fiberassign.  If the petal locations
+    # in focalplane coordinates are very different from nominal, we may
+    # want to read and store explicit polygons for each petal.  TBD.
+
+    for pf in paths:
+        # Add shapes from other files.
+        log.info("Loading exclusion polygons from {}".format(pf))
+        exprops = configobj.ConfigObj(pf, unrepr=True)
+        if "NAME" not in exprops:
+            msg = "exclusion file {} does not contain a NAME parameter"\
+                .format(pf)
+            raise RuntimeError(msg)
+        nm = exprops["NAME"]
+        props = dict()
+        ktheta_raw = np.transpose(np.array(exprops["KEEPOUT_THETA"]))
+        props["theta"] = dict()
+        props["theta"]["segments"] = \
+            _collision_to_segments(ktheta_raw)
+        props["theta"]["circles"] = list()
+        kphi_raw = np.transpose(np.array(exprops["KEEPOUT_PHI"]))
+        props["phi"] = dict()
+        props["phi"]["segments"] = _collision_to_segments(kphi_raw)
+        props["phi"]["circles"] = list()
+        kpetal_raw = np.transpose(np.array(exprops["KEEPOUT_PTL"]))
+        props["petal"] = dict()
+        props["petal"]["segments"] = \
+            _collision_to_segments(kpetal_raw)
+        props["petal"]["circles"] = list()
+        kgfa_raw = np.transpose(np.array(exprops["KEEPOUT_GFA"]))
+        props["gfa"] = dict()
+        props["gfa"]["segments"] = \
+            _collision_to_segments(kgfa_raw)
+        props["gfa"]["circles"] = list()
+        excl[nm] = props
+    return
+
+
+def create(testdir=None, posdir=None, fibermaps=None,
            petalloc=None, startvalid=None, fillfake=False,
-           exclusion="default", fakeoffset=False, fakefiberpos=False):
+           fakeoffset=False, fakefiberpos=False):
     """Construct DESI focalplane and state files.
 
     This function gathers information from the following sources:
@@ -455,8 +516,6 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
         posdir (str):  Directory containing the many positioner conf files.
             If None, simulate identical, nominal positioners.  A None value
             will force fillfake=True.
-        polyfile (str):  File containing the exclusion polygons.  If None,
-            Use the "legacy" polygons historically included in fiberassign.
         fibermaps (list):  Override list of tuples (DocDB number,
             DocDB version, DocDB csv file) of where to find the petal mapping
             files.
@@ -465,7 +524,6 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
             ISO 8601 format string.
         fillfake (bool):  If True, fill missing device locations with fake
             positioners with nominal values for use in simulations.
-        exclusion (str):  The name of the default exclusion polygons.
         fakeoffset (bool):  If True, artificially sets the theta / phi angle
             offsets to zero.  This replicates the behavior of legacy
             fiberassign and should only be used for testing.
@@ -523,6 +581,8 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
 
     # Now load the file(s) with the exclusion polygons
     # Add the legacy polygons to the dictionary for reference.
+    # Also add an "unknown" polygon set which includes a large circle for the
+    # theta arm that is the size of the patrol radius.
     poly = dict()
 
     # First the THETA arm.
@@ -565,44 +625,28 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
     poly["legacy"]["theta"] = shp_theta
     poly["legacy"]["phi"] = shp_phi
 
-    def collision_to_segments(raw):
-        rx = raw[:, 0]
-        ry = raw[:, 1]
-        sg = [[float(x), float(y)] for x, y in zip(rx, ry)]
-        start = list(sg[0])
-        sg.append(start)
-        return [sg]
+    poly["unknown"] = dict()
+    poly["unknown"]["theta"] = dict()
+    poly["unknown"]["theta"]["circles"] = [
+        [[0.0, 0.0], 6.0]
+    ]
+    poly["unknown"]["theta"]["segments"] = list()
+    poly["unknown"]["phi"] = dict()
+    poly["unknown"]["phi"]["circles"] = list()
+    poly["unknown"]["phi"]["segments"] = list()
 
-    # NOTE:  The GFA and Petal exclusion polygons in these files are for
-    # the petal in the default position (location 3).  They will be
-    # rotated by downstream codes like fiberassign.  If the petal locations
-    # in focalplane coordinates are very different from nominal, we may
-    # want to read and store explicit polygons for each petal.  TBD.
+    # Get all available exclusion polygons from the desimodel data directory.
 
-    if polyfile is not None:
-        # Add shapes from other files.
-        log.info("Loading exclusion polygons from {}".format(polyfile))
-        exprops = configobj.ConfigObj(polyfile, unrepr=True)
-        poly["default"] = dict()
-        ktheta_raw = np.transpose(np.array(exprops["KEEPOUT_THETA"]))
-        poly["default"]["theta"] = dict()
-        poly["default"]["theta"]["segments"] = \
-            collision_to_segments(ktheta_raw)
-        poly["default"]["theta"]["circles"] = list()
-        kphi_raw = np.transpose(np.array(exprops["KEEPOUT_PHI"]))
-        poly["default"]["phi"] = dict()
-        poly["default"]["phi"]["segments"] = collision_to_segments(kphi_raw)
-        poly["default"]["phi"]["circles"] = list()
-        kpetal_raw = np.transpose(np.array(exprops["KEEPOUT_PTL"]))
-        poly["default"]["petal"] = dict()
-        poly["default"]["petal"]["segments"] = \
-            collision_to_segments(kpetal_raw)
-        poly["default"]["petal"]["circles"] = list()
-        kgfa_raw = np.transpose(np.array(exprops["KEEPOUT_GFA"]))
-        poly["default"]["gfa"] = dict()
-        poly["default"]["gfa"]["segments"] = \
-            collision_to_segments(kgfa_raw)
-        poly["default"]["gfa"]["circles"] = list()
+    fpdir = os.path.join(datadir(), "focalplane")
+    excl_match = os.path.join(fpdir, "exclusions_*.conf")
+    excl_files = glob.glob(excl_match)
+    update_exclusions(poly, excl_files)
+
+    # Ensure that the default polygon has been defined.
+    if "default" not in poly.keys():
+        raise RuntimeError(
+            "No default exclusion polygon found in available files"
+        )
 
     # Now write out all of this collected information.  Also write out an
     # initial "state" log as a starting point.  Note that by having log
@@ -760,7 +804,7 @@ def create(testdir=None, posdir=None, polyfile=None, fibermaps=None,
             out_state[row]["LOCATION"] = fp[petal][dev]["PETAL"] * 1000 + dev
             out_state[row]["DEVICE"] = dev
             out_state[row]["STATE"] = 0
-            out_state[row]["EXCLUSION"] = exclusion
+            out_state[row]["EXCLUSION"] = "default"
             row += 1
 
     out_state.write(out_state_file, format="ascii.ecsv")
