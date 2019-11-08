@@ -7,7 +7,7 @@ desimodel.inputs.focalplane
 Utilities for constructing a focalplane model.
 """
 import os
-from datetime import datetime
+import datetime
 import re
 import csv
 import yaml
@@ -21,13 +21,14 @@ from desiutil.log import get_logger
 
 from . import docdb
 
-from ..io import datadir, findfile
+from ..io import datadir, findfile, load_focalplane
 
 from .focalplane_utils import (
     compute_theta_phi_range,
     rotate_petals,
     create_nominal,
-    compare,
+    device_compare,
+    device_printdiff,
     update_exclusions,
     valid_states
 )
@@ -351,9 +352,12 @@ def create(testdir=None, posdir=None, fibermaps=None,
             " devices from posdir")
 
     if startvalid is None:
-        startvalid = datetime.utcnow()
+        startvalid = datetime.datetime.utcnow()
     else:
-        startvalid = datetime.strptime(startvalid, "%Y-%m-%dT%H:%M:%S")
+        startvalid = datetime.datetime.strptime(
+            startvalid, "%Y-%m-%dT%H:%M:%S"
+        )
+    file_date = startvalid.isoformat(timespec="seconds")
 
     if (petalloc is None) and (posdir is not None):
         raise RuntimeError(
@@ -450,20 +454,7 @@ def create(testdir=None, posdir=None, fibermaps=None,
             "No default exclusion polygon found in available files"
         )
 
-    # Now write out all of this collected information.  Also write out an
-    # initial "state" log as a starting point.  Note that by having log
-    # files (which contain datestamps) also have a "starting" date, it means
-    # that we don't need a single log for the entire survey.
-
-    file_date = startvalid.isoformat(timespec="seconds")
-    out_fp_file = os.path.join(
-        outdir, "desi-focalplane_{}.ecsv".format(file_date))
-    out_poly_file = os.path.join(
-        outdir, "desi-exclusion_{}.yaml".format(file_date))
-    out_state_file = os.path.join(
-        outdir, "desi-state_{}.ecsv".format(file_date))
-
-    # First the focalplane file
+    # Construct the focaplane table
 
     nrows = 0
     allpetals = list(sorted(fp.keys()))
@@ -574,10 +565,59 @@ def create(testdir=None, posdir=None, fibermaps=None,
                         out_fp[row][col] = fp[petal][dev][col]
             row += 1
 
-    out_fp.write(out_fp_file, format="ascii.ecsv")
-    del out_fp
 
-    # Now the state file.
+    # Propagate the device state.  Unless we have the reset option, we need
+    # to load the current focalplane model and try to use the state from that.
+    # We will choose a time that is one second before the currently selected
+    # time.
+
+    oldfp = None
+    oldstate = None
+    old_loc_to_state = None
+    old_loc_to_excl = None
+    if not reset:
+        dtime = datetime.timedelta(seconds=1)
+        oldtime = startvalid - dtime
+
+        oldfp, _, oldstate, oldtmstr = load_focalplane(oldtime)
+
+        log.info(
+            "Comparing generated focalplane to one from {}".format(oldtmstr)
+        )
+
+        # Compare the old and new.  These are the device properties we care
+        # about when propagating state.  In particular if positioner
+        # calibration has modified arm lengths and angle ranges we don't
+        # care.
+        checkcols = [
+            "PETAL",
+            "DEVICE",
+            "PETAL_ID",
+            "DEVICE_ID",
+            "DEVICE_TYPE",
+            "SLITBLOCK",
+            "BLOCKFIBER"
+        ]
+        diff = device_compare(oldfp, out_fp, checkcols)
+
+        device_printdiff(diff)
+
+        if len(diff) > 0:
+            msg = "Existing focalplane device properties have changed."\
+                "  Refusing to propagate the device state.  Use the 'reset'"\
+                " option to start with a new device state."
+            raise RuntimeError(msg)
+
+        old_loc_to_state = dict()
+        for loc, st in zip(oldstate[:]["LOCATION"], oldstate[:]["STATE"]):
+            old_loc_to_state[loc] = st
+
+        old_loc_to_excl = dict()
+        for loc, ex in zip(oldstate[:]["LOCATION"], oldstate[:]["EXCLUSION"]):
+            old_loc_to_excl[loc] = ex
+
+
+    # Create the state table.  Use existing state if we are propagating.
 
     out_cols = [
         Column(name="TIME", length=nrows, dtype=np.dtype("a20"),
@@ -603,13 +643,34 @@ def create(testdir=None, posdir=None, fibermaps=None,
         for dev in devlist:
             out_state[row]["TIME"] = file_date
             out_state[row]["PETAL"] = fp[petal][dev]["PETAL"]
-            out_state[row]["LOCATION"] = fp[petal][dev]["PETAL"] * 1000 + dev
+            loc = fp[petal][dev]["PETAL"] * 1000 + dev
+            out_state[row]["LOCATION"] = loc
             out_state[row]["DEVICE"] = dev
-            out_state[row]["STATE"] = 0
-            out_state[row]["EXCLUSION"] = "default"
+            if reset:
+                out_state[row]["STATE"] = 0
+                out_state[row]["EXCLUSION"] = "default"
+            else:
+                out_state[row]["STATE"] = old_loc_to_state[loc]
+                out_state[row]["EXCLUSION"] = old_loc_to_excl[loc]
             row += 1
 
+    # Now write out all of this collected information.  Also write out an
+    # initial "state" log as a starting point.  Note that by having log
+    # files (which contain datestamps) also have a "starting" date, it means
+    # that we don't need a single log for the entire survey.
+
+    out_fp_file = os.path.join(
+        outdir, "desi-focalplane_{}.ecsv".format(file_date))
+    out_poly_file = os.path.join(
+        outdir, "desi-exclusion_{}.yaml".format(file_date))
+    out_state_file = os.path.join(
+        outdir, "desi-state_{}.ecsv".format(file_date))
+
+    out_fp.write(out_fp_file, format="ascii.ecsv")
+    del out_fp
+
     out_state.write(out_state_file, format="ascii.ecsv")
+    del out_state
 
     # Now write out the exclusion polygons.  Since these are not tabular, we
     # write to a YAML file.

@@ -174,84 +174,79 @@ def create_nominal(petal_loc):
     return fp
 
 
-def _compare_direction(out, first, fkey, second, skey):
-    """Do one direction of the comparison.
-
-    This updates "out" with the things in "second" that do not exist in
-    "first".
-
-    """
-    newpet = list(sorted(second.keys()))
-    for petal in newpet:
-        newdev = list(sorted(second[petal].keys()))
-        if petal not in first:
-            # This is a whole new petal...
-            if petal not in out:
-                out[petal] = dict()
-            for dev in newdev:
-                props = list(sorted(second[petal][dev].keys()))
-                if dev not in out[petal]:
-                    out[petal][dev] = dict()
-                for p in props:
-                    if p not in out[petal][dev]:
-                        out[petal][dev][p] = dict()
-                    out[petal][dev][p][fkey] = None
-                    out[petal][dev][p][skey] = second[petal][dev][p]
-        else:
-            for dev in newdev:
-                props = list(sorted(second[petal][dev].keys()))
-                if dev not in first[petal]:
-                    # This device is missing
-                    if petal not in out:
-                        out[petal] = dict()
-                    if dev not in out[petal]:
-                        out[petal][dev] = dict()
-                    for p in props:
-                        if p not in out[petal][dev]:
-                            out[petal][dev][p] = dict()
-                        out[petal][dev][p][fkey] = None
-                        out[petal][dev][p][skey] = second[petal][dev][p]
-                else:
-                    for p in props:
-                        if (p not in first[petal][dev]) or (
-                            first[petal][dev][p] != second[petal][dev][p]
-                        ):
-                            # This property is missing or mismatched
-                            if petal not in out:
-                                out[petal] = dict()
-                            if dev not in out[petal]:
-                                out[petal][dev] = dict()
-                            if p not in out[petal][dev]:
-                                out[petal][dev][p] = dict()
-                            if p in first[petal][dev]:
-                                out[petal][dev][p][fkey] = first[petal][dev]
-                                out[petal][dev][p][skey] = \
-                                    second[petal][dev][p]
-                            else:
-                                out[petal][dev][p][fkey] = None
-                                out[petal][dev][p][skey] = \
-                                    second[petal][dev][p]
-    return
-
-
-def compare(fpold, fpnew):
+def device_compare(fpold, fpnew, check):
     """Compare two sets of focalplane device properties.
 
     Args:
-        fpold (dict):  The original device properties.
-        fpnew (dict):  The new device properties.
+        fpold (Table):  The original device properties.
+        fpnew (Table):  The new device properties.
+        check (list):  The column names to check for equality.
 
     Returns:
-        (dict):  A dictionary with the same structure as the inputs, but
-            only differing values are included.  One additional nested
-            level is added to the "leaves" of the hierarchy and this
-            contains the keys "old" and "new".
+        (dict):  A dictionary containing the differences.  The keys are
+            the LOCATION value, and the value is a dict with "old" and "new"
+            keys that contain the table rows that differ.
 
     """
     out = dict()
-    _compare_direction(out, fpold, "old", fpnew, "new")
-    _compare_direction(out, fpnew, "new", fpold, "old")
+    olddiff = np.setdiff1d(fpold[:]["LOCATION"], fpnew[:]["LOCATION"])
+    rows = np.arange(len(fpold), dtype=np.int)[fpold[:]["LOCATION"] in olddiff]
+    for r in rows:
+        loc = fpold[r]["LOCATION"]
+        out[loc] = dict()
+        out[loc]["old"] = fpold[r]
+        out[loc]["new"] = None
+    totdiff = set(olddiff)
+    newdiff = np.setdiff1d(fpnew[:]["LOCATION"], fpold[:]["LOCATION"])
+    rows = np.arange(len(fpnew), dtype=np.int)[fpnew[:]["LOCATION"] in newdiff]
+    for r in rows:
+        loc = fnew[r]["LOCATION"]
+        out[loc] = dict()
+        out[loc]["new"] = fpnew[r]
+        out[loc]["old"] = None
+    totdiff.update(newdiff)
+
+    # Go through locations found in both tables and look for differences in
+    # the column values.
+
+    old_loc_to_row = dict()
+    for indx, row in enumerate(fpold):
+        old_loc_to_row[row["LOCATION"]] = indx
+
+    for row in fpnew:
+        loc = row["LOCATION"]
+        if loc in totdiff:
+            continue
+        oldrow = fpold[old_loc_to_row[loc]]
+        for col in check:
+            if row[col] != oldrow[col]:
+                out[loc] = dict()
+                out[loc]["old"] = np.copy(oldrow)
+                out[loc]["new"] = np.copy(row)
     return out
+
+
+def device_printdiff(diff):
+    """Print a diff dictionary created with device_compare().
+    """
+    for loc, df in diff.items():
+        print("Location {:04d}:".format(loc))
+        ol = df["old"]
+        nw = df["new"]
+        if ol is None:
+            print("  OLD:  None")
+        else:
+            print("  OLD:")
+            for col in ol.dtype.names:
+                print("    {}:  {}".format(col, ol[col]))
+        if nw is None:
+            print("  NEW:  None")
+        else:
+            print("  NEW:")
+            for col in nw.dtype.names:
+                print("    {}:  {}".format(col, nw[col]))
+    print("", flush=True)
+    return
 
 
 def collision_to_segments(raw):
