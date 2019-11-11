@@ -16,24 +16,45 @@ analysis.  Eventually this information will be consolidated into a database and
 our focalplane model will be based on that database instead of the many
 individual pieces of upstream information.
 
+The focalplane model currently uses the CS5 coordinate system for the X/Y
+locations of devices on the focalplane.
+
+Tracking Changes
+====================
+
 Although the generated focalplane models are checked into svn, we need to be
 able to get the state of the hardware at any time, across the full history of
-the DESI project.  We enable this feature through the use of our file format.
-Since most changes are small (a positioner breaks or gets stuck, etc), we keep
-a running log of these small changes.  A completely new model is only generated
-for large events (e.g. a petal is swapped out).  When a focalplane is loaded,
-the most recent model for a given time is found and the events in this log are
-replayed up to the requested time.
+the DESI project.  We enable this feature through the use of our file format
+(see section below on the details of the format). Since most changes are small
+(a positioner breaks or gets stuck, etc), we keep a running log of these small
+changes.  A completely new model is only generated for large events (e.g. a
+petal is swapped out).  When a focalplane is loaded, the most recent model for
+a given time is found and the events in this log are replayed up to the
+requested time.  It is worth emphasizing the previous text again.  When a
+focalplane is loaded for a particular timestamp:
+
+1.  Each focalplane model has a starting time, and remains valid until it is superceded by a newer model.  The most recent set of 3 focalplane files which comes before the requested timestamp is read from disk.  The static focalplane properties are kept as a Table and the exclusion polygons are read into a dictionary.
+
+2.  The state log (one of the 3 files) is parsed line by line.  If the timestamp for that line comes before the requested time, then the event in that line is applied.  All positioners have an initial state specified in the state log with a timestamp that matches the starting time of the focalplane.  Subsequent events are appended to the state log with a timestamp.
+
+The file formats used are text-based (ECSV and YAML).  **However**, these are
+intended to be modified by the included scripts, which can ensure that the
+formatting is correct.  The risk of typos and subtle errors if hand-editing
+these files is large.  If you find that you frequently need to edit these
+files, then please open an issue to document your use case.
+
 
 Inputs
 ============
 
-The current inputs require a local svn checkout of the fp_settings repo.  This
-includes a "pos_settings" directory of python ConfigObj files, one per device.
-It also includes a collision_settings directory with some ConfigObj files
-representing the exclusion polygons as line segments.
+The current inputs require a local svn checkout of the pos_settings directory
+of the focalplane repo
+(https://desi.lbl.gov/trac/browser/code/focalplane/fp_settings/pos_settings).
+This is a directory of python ConfigObj files, one per device.
 
-Additionally, the following DocDB files are downloaded and parsed:
+Additionally, the following DocDB files are downloaded and parsed.  The petal
+verification files contain the mapping of fiber focalplane location to
+slitblock location.
 
 ==============   ===========
 DocDB Number     Purpose
@@ -50,6 +71,9 @@ DocDB Number     Purpose
 4042             Petal verification for petal ID 10
 4042             Petal verification for petal ID 11
 ==============   ===========
+
+The mapping from petal ID to petal location on the focalplane is passed as a
+commandline option to the script that generates the focalplane model.
 
 
 Generating a New Model
@@ -68,16 +92,23 @@ be::
     desi_generate_focalplane \
         --startvalid 2019-10-10T00:00:00 \
         --pos_settings /path/to/svn/fp_settings/pos_settings \
-        --petal_id2loc XXXXXXXXXX
+        --petal_id2loc '4:0,5:1,6:2,3:3,8:4,10:5,11:6,2:7,7:8,9:9'
 
-This creates a new focalplane model in the desimodel data directory.  It starts
-with all positioner devices in a "good" state.
+This creates a new focalplane model in the desimodel data directory.  The
+default above is to check that the new focalplane has the same petal / device /
+fiber mapping as the previous one, and then to propagate the positioner state
+as the starting point of the new focalplane.  You can override this behavior by
+using the ``--reset`` option, which starts with all positioners in some default
+state (like "good").  If you do not specify the reset option but some hardware
+mapping has changed, then the code will raise an error and exit.
 
 The positioner exclusion polygons include a couple of built-in ones and then
 every file in the desimodel data directory with a name
 ``${DESIMODEL}/data/focalplane/exclusions_*.conf`` is read and added to the
 available exclusion polygons.  One of these files must contain the name
-"default".
+"default".  If propagating an existing focalplane state, the existing exclusion
+polygons are used and then replaced by newer built-in ones and anything found
+in the data directory.
 
 
 Updating the State of a Model
@@ -146,9 +177,9 @@ MIN_P          float64       Minimum PHI angle relative to OFFSET_P
 ============   ===========   =============
 
 The second file is a YAML format file which contains one or more exclusion
-polygons for the positioners.  Each named exclusion entry actually has 2
-polygons- one for the theta arm and one for the phi arm.  These define the
-shape of the polygon at the origin, which is then translated and rotated
+polygons for the positioners.  Each named exclusion entry actually has multiple
+polygons:  for the GFA, petal boundary, theta arm and phi arm.  These define
+the shape of the polygon at the origin, which is then translated and rotated
 differently for every positioner based on the arm length, etc.  Exclusion
 polygons are specified in terms of lists of circles and line segments.
 
@@ -187,10 +218,6 @@ There are several small features needed:
 - When marking fibers as broken or stuck, their current X/Y or theta/phi
   location should be marked.  See
   https://github.com/desihub/desimodel/issues/122
-
-- We should add an event for CANbus failure.  We only need to mark this once in
-  the log and can then map that to multiple devices.  See
-  https://github.com/desihub/desimodel/issues/123
 
 - We should build this focalplane model from the online instrument DB.  See
   https://github.com/desihub/desimodel/issues/124
