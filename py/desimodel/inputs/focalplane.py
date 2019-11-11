@@ -7,7 +7,7 @@ desimodel.inputs.focalplane
 Utilities for constructing a focalplane model.
 """
 import os
-from datetime import datetime
+import datetime
 import re
 import csv
 import yaml
@@ -21,163 +21,20 @@ from desiutil.log import get_logger
 
 from . import docdb
 
-from ..io import datadir, findfile
+from ..io import datadir, findfile, load_focalplane
+
+from .focalplane_utils import (
+    compute_theta_phi_range,
+    rotate_petals,
+    create_nominal,
+    device_compare,
+    device_printdiff,
+    update_exclusions,
+    valid_states
+)
 
 
-def _compute_theta_phi_range(phys_t, phys_p):
-    """Compute the min/max range about the initial offset.
-
-    Based on the "full_range" defined in plate_control/petal/posmodel.py
-
-    Args:
-        phys_t (float):  PHYSICAL_RANGE_T in degrees.
-        phys_p (float):  PHYSICAL_RANGE_P in degrees.
-
-    Returns:
-        (tuple):  The (theta_min, theta_max, phi_min, phi_max) angles.
-
-    """
-    t_min = -0.5 * phys_t
-    t_max = 0.5 * phys_t
-    p_min = 185.0 - phys_p
-    p_max = 185.0
-    return (t_min, t_max, p_min, p_max)
-
-
-def _create_device():
-    """Create an empty device property dictionary.
-    """
-    props = dict()
-    props["PETAL"] = -1
-    props["DEVICE"] = -1
-    props["PETAL_ID"] = -1
-    props["DEVICE_ID"] = "NONE"
-    props["DEVICE_TYPE"] = "NONE"
-    props["CABLE"] = -1
-    props["CONDUIT"] = "NA"
-    props["FWHM"] = 0.0
-    props["FRD"] = 0.0
-    props["ABS"] = 0.0
-    props["OFFSET_X"] = 0.0
-    props["OFFSET_Y"] = 0.0
-    props["SLITBLOCK"] = -1
-    props["BLOCKFIBER"] = -1
-    props["OFFSET_T"] = 0.0
-    props["OFFSET_P"] = 0.0
-    props["MIN_T"] = 0.0
-    props["MAX_T"] = 0.0
-    props["MIN_P"] = 0.0
-    props["MAX_P"] = 0.0
-    props["LENGTH_R1"] = 0.0
-    props["LENGTH_R2"] = 0.0
-    return props
-
-
-def _rotate_petals(fp):
-    """Rotate the X/Y offsets according to petal location.
-
-    The X / Y offsets of each device are rotated to the petal
-    location for that device.  The focalplane dictionary is
-    modified in place.
-
-    Args:
-        fp (dict):  The focalplane dictionary.
-
-    Returns:
-        None
-
-    """
-    # Now rotate the X / Y offsets based on the petal location.
-    petals = list(sorted(fp.keys()))
-    for petal in petals:
-        devlist = list(sorted(fp[petal].keys()))
-        for dev in devlist:
-            # The petal location of this petal ID
-            petal_loc = fp[petal][dev]["PETAL"]
-            # Petal 0 is at the "bottom"; See DESI-0530.  The X/Y and
-            # positioner theta offset are defined with the petal in location 3
-            # We need to rotate from petal location 3 to desired location.
-            petalrot_deg = (float(7 + petal_loc) * 36.0) % 360.0
-            petalrot_rad = np.radians(petalrot_deg)
-            x = fp[petal][dev]["OFFSET_X"]
-            y = fp[petal][dev]["OFFSET_Y"]
-            fp[petal][dev]["OFFSET_X"] = \
-                np.cos(petalrot_rad) * x - np.sin(petalrot_rad) * y
-            fp[petal][dev]["OFFSET_Y"] = \
-                np.sin(petalrot_rad) * x + np.cos(petalrot_rad) * y
-            fp[petal][dev]["OFFSET_T"] += petalrot_deg
-    return
-
-
-def _create_nominal(petal_loc):
-    """Create a nominal focalplane layout.
-
-    This uses DocDB 0530 to construct a nominal focalplane.  All
-    positioner devices are assigned to their nominal X/Y locations,
-    nominal theta / phi offsets and ranges, and nominal arm lengths.
-
-    Quantities not specified in 0530, such as physical petal and device IDs,
-    are set to -1.
-
-    The input petal_loc dictionary is required, and only petal IDs in this
-    dictionary will be created.
-
-    Note:  The X/Y offsets used are those relative to the petal
-    when placed at location 3.  After modifying these with data
-    from other sources, the final offsets are rotated into place.
-
-    Args:
-        petal_loc (dict):  Dictionary of petal ID to petal location.
-
-    Returns:
-        (dict):  Dictionary of petal location properties, containing
-            dictionaries of device properties.
-
-    """
-    log = get_logger()
-    fp = dict()
-
-    xls_fp_layout = docdb.download(
-        530, 14, "DESI-0530-v14 (Focal Plane Layout).xlsx")
-    xls_sheet = "PositionerAndFiducialLocations"
-    rowmin, rowmax = 49, 591
-    headers = docdb.xls_read_row(xls_fp_layout, xls_sheet, rowmin-1, "B", "S")
-    assert headers[0] == "device_location_id"
-    assert headers[1] == "device_type"
-    xls_devloc = docdb.xls_read_col(
-        xls_fp_layout, xls_sheet, "B", rowmin, rowmax, dtype=np.int32)
-    xls_devtype = docdb.xls_read_col(
-        xls_fp_layout, xls_sheet, "C", rowmin, rowmax, dtype=str)
-    xls_dev_nominal_x = docdb.xls_read_col(
-        xls_fp_layout, xls_sheet, "D", rowmin, rowmax, dtype=np.float64)
-    xls_dev_nominal_y = docdb.xls_read_col(
-        xls_fp_layout, xls_sheet, "E", rowmin, rowmax, dtype=np.float64)
-    devtype = dict()
-    dev_nominal_xy = dict()
-    for loc, typ in zip(xls_devloc, xls_devtype):
-        devtype[int(loc)] = typ
-    for loc, x, y in zip(xls_devloc, xls_dev_nominal_x, xls_dev_nominal_y):
-        dev_nominal_xy[int(loc)] = (x, y)
-
-    petals = list(sorted(petal_loc.keys()))
-    device_locs = list(sorted(devtype.keys()))
-    for petal in petals:
-        pt = dict()
-        for loc in device_locs:
-            # Create an empty device
-            props = _create_device()
-            props["PETAL"] = petal_loc[petal]
-            props["PETAL_ID"] = petal
-            props["DEVICE_TYPE"] = devtype[loc]
-            x, y = dev_nominal_xy[loc]
-            props["OFFSET_X"] = x
-            props["OFFSET_Y"] = y
-            pt[loc] = props
-        fp[petal] = pt
-    return fp
-
-
-def _devices_from_fiberpos(fp):
+def devices_from_fiberpos(fp):
     """Populate focalplane properties from a fiberpos file.
 
     This is only used for testing consistency with the previous fiberpos
@@ -227,8 +84,8 @@ def _devices_from_fiberpos(fp):
     return
 
 
-def _devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
-                        fibermaps=None):
+def devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
+                       fibermaps=None):
     """Populate focalplane properties from information in files.
 
     This populates the focalplane with device information gathered from
@@ -306,7 +163,9 @@ def _devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
                         log.warning(msg)
                     fmslitcheck[blk][fib] = dev
                     if (pet not in fp) or (dev not in fp[pet]):
-                        print("FAIL:  petal {}, dev {} not in fp".format(pet, dev), flush=True)
+                        print("FAIL:  petal {}, dev {} not in fp".format(
+                            pet, dev
+                        ), flush=True)
                     fp[pet][dev]["SLITBLOCK"] = blk
                     fp[pet][dev]["BLOCKFIBER"] = fib
                     fp[pet][dev]["CABLE"] = cable
@@ -332,14 +191,14 @@ def _devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
     # Assign it to the one missing fiber location.
     log.info("Correcting petal ID 6, location 261")
     fp[6][261]["DEVICE_TYPE"] = "POS"
-    fp[6][261]["DEVICE_ID"] = "NONE" # Populated below from pos_settings
+    fp[6][261]["DEVICE_ID"] = "NONE"  # Populated below from pos_settings
     fp[6][261]["SLITBLOCK"] = 19
     fp[6][261]["BLOCKFIBER"] = 22
     fp[6][261]["CABLE"] = 6
-    fp[6][261]["CONDUIT"] = "E0"     # This conduit has one fewer than F3
-    fp[6][261]["FWHM"] = 0.0         # No information from file
-    fp[6][261]["FRD"] = 0.0          # No information from file
-    fp[6][261]["ABS"] = 0.0          # No information from file
+    fp[6][261]["CONDUIT"] = "E0"      # This conduit has one fewer than F3
+    fp[6][261]["FWHM"] = 0.0          # No information from file
+    fp[6][261]["FRD"] = 0.0           # No information from file
+    fp[6][261]["ABS"] = 0.0           # No information from file
     # ---------------------------
     # DESI-4883v4-Petal_11_final_verification.csv
     # Petal ID 11 is missing an entry for device location 484.  This
@@ -398,7 +257,7 @@ def _devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
             )
             raise RuntimeError(msg)
         fp[pet][dev]["DEVICE_ID"] = devid
-        t_min, t_max, p_min, p_max = _compute_theta_phi_range(
+        t_min, t_max, p_min, p_max = compute_theta_phi_range(
             props["PHYSICAL_RANGE_T"], props["PHYSICAL_RANGE_P"])
         fp[pet][dev]["OFFSET_T"] = props["OFFSET_T"]
         fp[pet][dev]["OFFSET_P"] = props["OFFSET_P"]
@@ -410,7 +269,7 @@ def _devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
         fp[pet][dev]["MAX_P"] = p_max
 
     if fillfake:
-        t_min, t_max, p_min, p_max = _compute_theta_phi_range(380.0, 200.0)
+        t_min, t_max, p_min, p_max = compute_theta_phi_range(380.0, 200.0)
         for petal in list(sorted(fp.keys())):
             devlist = list(sorted(fp[petal].keys()))
             for dev in devlist:
@@ -439,69 +298,9 @@ def _devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
     return
 
 
-def _collision_to_segments(raw):
-    rx = raw[:, 0]
-    ry = raw[:, 1]
-    sg = [[float(x), float(y)] for x, y in zip(rx, ry)]
-    start = list(sg[0])
-    sg.append(start)
-    return [sg]
-
-
-def update_exclusions(excl, paths=list()):
-    """Update exclusion polygons in a focalplane model.
-
-    Args:
-        excl (dict):  Dictionary of exclusion polygons, modified in place.
-        paths (list):  List of file paths to append to the exclusions.
-
-    Returns:
-        None
-
-    """
-    log = get_logger()
-    # NOTE:  The GFA and Petal exclusion polygons in these files are for
-    # the petal in the default position (location 3).  They will be
-    # rotated by downstream codes like fiberassign.  If the petal locations
-    # in focalplane coordinates are very different from nominal, we may
-    # want to read and store explicit polygons for each petal.  TBD.
-
-    for pf in paths:
-        # Add shapes from other files.
-        log.info("Loading exclusion polygons from {}".format(pf))
-        exprops = configobj.ConfigObj(pf, unrepr=True)
-        if "NAME" not in exprops:
-            msg = "exclusion file {} does not contain a NAME parameter"\
-                .format(pf)
-            raise RuntimeError(msg)
-        nm = exprops["NAME"]
-        props = dict()
-        ktheta_raw = np.transpose(np.array(exprops["KEEPOUT_THETA"]))
-        props["theta"] = dict()
-        props["theta"]["segments"] = \
-            _collision_to_segments(ktheta_raw)
-        props["theta"]["circles"] = list()
-        kphi_raw = np.transpose(np.array(exprops["KEEPOUT_PHI"]))
-        props["phi"] = dict()
-        props["phi"]["segments"] = _collision_to_segments(kphi_raw)
-        props["phi"]["circles"] = list()
-        kpetal_raw = np.transpose(np.array(exprops["KEEPOUT_PTL"]))
-        props["petal"] = dict()
-        props["petal"]["segments"] = \
-            _collision_to_segments(kpetal_raw)
-        props["petal"]["circles"] = list()
-        kgfa_raw = np.transpose(np.array(exprops["KEEPOUT_GFA"]))
-        props["gfa"] = dict()
-        props["gfa"]["segments"] = \
-            _collision_to_segments(kgfa_raw)
-        props["gfa"]["circles"] = list()
-        excl[nm] = props
-    return
-
-
 def create(testdir=None, posdir=None, fibermaps=None,
            petalloc=None, startvalid=None, fillfake=False,
-           fakeoffset=False, fakefiberpos=False):
+           fakeoffset=False, fakefiberpos=False, reset=False):
     """Construct DESI focalplane and state files.
 
     This function gathers information from the following sources:
@@ -509,7 +308,7 @@ def create(testdir=None, posdir=None, fibermaps=None,
         - Positioner device configuration files (e.g. from svn).
         - DESI-0530, to get the mapping from device ID to device type as well
           as the nominal device X/Y offsets on petal 0 (for fillfake option).
-        - A "collision" file containing the exclusion polygons to use.
+        - Exclusion configobj files in $DESIMODEL/data/focalplane.
 
     Args:
         testdir (str):  Override the output directory for testing.
@@ -529,6 +328,10 @@ def create(testdir=None, posdir=None, fibermaps=None,
             fiberassign and should only be used for testing.
         fakefiberpos (bool):  If True, ignore the real fibermaps and load the
             old fiberpos file to get the mapping.  Only useful for testing.
+        reset (bool):  If True, ignore all previous focalplane models and
+            start with all positioners "good".  Default propagates the state
+            of most recent model, after verifying that the positioners are the
+            same.
 
     Returns:
         None
@@ -549,9 +352,12 @@ def create(testdir=None, posdir=None, fibermaps=None,
             " devices from posdir")
 
     if startvalid is None:
-        startvalid = datetime.utcnow()
+        startvalid = datetime.datetime.utcnow()
     else:
-        startvalid = datetime.strptime(startvalid, "%Y-%m-%dT%H:%M:%S")
+        startvalid = datetime.datetime.strptime(
+            startvalid, "%Y-%m-%dT%H:%M:%S"
+        )
+    file_date = startvalid.isoformat(timespec="seconds")
 
     if (petalloc is None) and (posdir is not None):
         raise RuntimeError(
@@ -564,104 +370,22 @@ def create(testdir=None, posdir=None, fibermaps=None,
 
     # Create a focalplane containing all possible petal locations
     # and devices.
-    fp = _create_nominal(petalloc)
+    fp = create_nominal(petalloc)
 
     # FIXME:  Add another option here to "use the database".
 
     if fakefiberpos:
-        _devices_from_fiberpos(fp)
+        devices_from_fiberpos(fp)
     else:
-        _devices_from_files(
+        devices_from_files(
             fp, posdir=posdir, fillfake=fillfake, fakeoffset=fakeoffset,
             fibermaps=fibermaps
         )
 
     # Now rotate the X / Y offsets based on the petal location.
-    _rotate_petals(fp)
+    rotate_petals(fp)
 
-    # Now load the file(s) with the exclusion polygons
-    # Add the legacy polygons to the dictionary for reference.
-    # Also add an "unknown" polygon set which includes a large circle for the
-    # theta arm that is the size of the patrol radius.
-    poly = dict()
-
-    # First the THETA arm.
-    circs = [
-        [[0.0+3.0, 0.0], 2.095]
-    ]
-    seg = [
-        [2.095+3.0, -0.474],
-        [1.358+3.0, -2.5],
-        [-0.229+3.0, -2.5],
-        [-1.241+3.0, -2.792],
-        [-2.095+3.0, -0.356]
-    ]
-    segs = [seg]
-    shp_theta = dict()
-    shp_theta["circles"] = circs
-    shp_theta["segments"] = segs
-
-    # Now the PHI arm
-    circs = [
-        [[0.0+3.0, 0.0], 0.967]
-    ]
-    seg_upper = [
-        [-3.0+3.0, 0.990],
-        [0.0+3.0, 0.990]
-    ]
-    seg_lower = [
-        [-2.944+3.0, -1.339],
-        [-2.944+3.0, -2.015],
-        [-1.981+3.0, -1.757],
-        [-1.844+3.0, -0.990],
-        [0.0+3.0, -0.990]
-    ]
-    segs = [seg_upper, seg_lower]
-    shp_phi = dict()
-    shp_phi["circles"] = circs
-    shp_phi["segments"] = segs
-
-    poly["legacy"] = dict()
-    poly["legacy"]["theta"] = shp_theta
-    poly["legacy"]["phi"] = shp_phi
-
-    poly["unknown"] = dict()
-    poly["unknown"]["theta"] = dict()
-    poly["unknown"]["theta"]["circles"] = [
-        [[0.0, 0.0], 6.0]
-    ]
-    poly["unknown"]["theta"]["segments"] = list()
-    poly["unknown"]["phi"] = dict()
-    poly["unknown"]["phi"]["circles"] = list()
-    poly["unknown"]["phi"]["segments"] = list()
-
-    # Get all available exclusion polygons from the desimodel data directory.
-
-    fpdir = os.path.join(datadir(), "focalplane")
-    excl_match = os.path.join(fpdir, "exclusions_*.conf")
-    excl_files = glob.glob(excl_match)
-    update_exclusions(poly, excl_files)
-
-    # Ensure that the default polygon has been defined.
-    if "default" not in poly.keys():
-        raise RuntimeError(
-            "No default exclusion polygon found in available files"
-        )
-
-    # Now write out all of this collected information.  Also write out an
-    # initial "state" log as a starting point.  Note that by having log
-    # files (which contain datestamps) also have a "starting" date, it means
-    # that we don't need a single log for the entire survey.
-
-    file_date = startvalid.isoformat(timespec="seconds")
-    out_fp_file = os.path.join(
-        outdir, "desi-focalplane_{}.ecsv".format(file_date))
-    out_poly_file = os.path.join(
-        outdir, "desi-exclusion_{}.yaml".format(file_date))
-    out_state_file = os.path.join(
-        outdir, "desi-state_{}.ecsv".format(file_date))
-
-    # First the focalplane file
+    # Construct the focaplane table
 
     nrows = 0
     allpetals = list(sorted(fp.keys()))
@@ -772,10 +496,59 @@ def create(testdir=None, posdir=None, fibermaps=None,
                         out_fp[row][col] = fp[petal][dev][col]
             row += 1
 
-    out_fp.write(out_fp_file, format="ascii.ecsv")
-    del out_fp
 
-    # Now the state file.
+    # Propagate the device state.  Unless we have the reset option, we need
+    # to load the current focalplane model and try to use the state from that.
+    # We will choose a time that is one second before the currently selected
+    # time.
+
+    oldfp = None
+    oldstate = None
+    oldexcl = dict()
+    old_loc_to_state = None
+    old_loc_to_excl = None
+    if not reset:
+        dtime = datetime.timedelta(seconds=1)
+        oldtime = startvalid - dtime
+
+        oldfp, oldexcl, oldstate, oldtmstr = load_focalplane(oldtime)
+
+        log.info(
+            "Comparing generated focalplane to one from {}".format(oldtmstr)
+        )
+
+        # Compare the old and new.  These are the device properties we care
+        # about when propagating state.  In particular if positioner
+        # calibration has modified arm lengths and angle ranges we don't
+        # care.
+        checkcols = [
+            "PETAL",
+            "DEVICE",
+            "PETAL_ID",
+            "DEVICE_ID",
+            "DEVICE_TYPE",
+            "SLITBLOCK",
+            "BLOCKFIBER"
+        ]
+        diff = device_compare(oldfp, out_fp, checkcols)
+
+        device_printdiff(diff)
+
+        if len(diff) > 0:
+            msg = "Existing focalplane device properties have changed."\
+                "  Refusing to propagate the device state.  Use the 'reset'"\
+                " option to start with a new device state."
+            raise RuntimeError(msg)
+
+        old_loc_to_state = dict()
+        for loc, st in zip(oldstate[:]["LOCATION"], oldstate[:]["STATE"]):
+            old_loc_to_state[loc] = st
+
+        old_loc_to_excl = dict()
+        for loc, ex in zip(oldstate[:]["LOCATION"], oldstate[:]["EXCLUSION"]):
+            old_loc_to_excl[loc] = ex
+
+    # Create the state table.  Use existing state if we are propagating.
 
     out_cols = [
         Column(name="TIME", length=nrows, dtype=np.dtype("a20"),
@@ -801,18 +574,113 @@ def create(testdir=None, posdir=None, fibermaps=None,
         for dev in devlist:
             out_state[row]["TIME"] = file_date
             out_state[row]["PETAL"] = fp[petal][dev]["PETAL"]
-            out_state[row]["LOCATION"] = fp[petal][dev]["PETAL"] * 1000 + dev
+            loc = fp[petal][dev]["PETAL"] * 1000 + dev
+            out_state[row]["LOCATION"] = loc
             out_state[row]["DEVICE"] = dev
-            out_state[row]["STATE"] = 0
-            out_state[row]["EXCLUSION"] = "default"
+            if reset:
+                out_state[row]["STATE"] = 0
+                out_state[row]["EXCLUSION"] = "default"
+            else:
+                out_state[row]["STATE"] = old_loc_to_state[loc]
+                out_state[row]["EXCLUSION"] = old_loc_to_excl[loc]
             row += 1
 
+    # Now load the file(s) with the exclusion polygons
+    # Add the legacy polygons to the dictionary for reference.
+    # Also add an "unknown" polygon set which includes a large circle for the
+    # theta arm that is the size of the patrol radius.
+    poly = dict()
+
+    # First the THETA arm.
+    circs = [
+        [[0.0+3.0, 0.0], 2.095]
+    ]
+    seg = [
+        [2.095+3.0, -0.474],
+        [1.358+3.0, -2.5],
+        [-0.229+3.0, -2.5],
+        [-1.241+3.0, -2.792],
+        [-2.095+3.0, -0.356]
+    ]
+    segs = [seg]
+    shp_theta = dict()
+    shp_theta["circles"] = circs
+    shp_theta["segments"] = segs
+
+    # Now the PHI arm
+    circs = [
+        [[0.0+3.0, 0.0], 0.967]
+    ]
+    seg_upper = [
+        [-3.0+3.0, 0.990],
+        [0.0+3.0, 0.990]
+    ]
+    seg_lower = [
+        [-2.944+3.0, -1.339],
+        [-2.944+3.0, -2.015],
+        [-1.981+3.0, -1.757],
+        [-1.844+3.0, -0.990],
+        [0.0+3.0, -0.990]
+    ]
+    segs = [seg_upper, seg_lower]
+    shp_phi = dict()
+    shp_phi["circles"] = circs
+    shp_phi["segments"] = segs
+
+    poly["legacy"] = dict()
+    poly["legacy"]["theta"] = shp_theta
+    poly["legacy"]["phi"] = shp_phi
+
+    poly["unknown"] = dict()
+    poly["unknown"]["theta"] = dict()
+    poly["unknown"]["theta"]["circles"] = [
+        [[0.0, 0.0], 6.0]
+    ]
+    poly["unknown"]["theta"]["segments"] = list()
+    poly["unknown"]["phi"] = dict()
+    poly["unknown"]["phi"]["circles"] = list()
+    poly["unknown"]["phi"]["segments"] = list()
+
+    # Get all available exclusion polygons from the desimodel data directory.
+
+    fpdir = os.path.join(datadir(), "focalplane")
+    excl_match = os.path.join(fpdir, "exclusions_*.conf")
+    excl_files = glob.glob(excl_match)
+    update_exclusions(poly, excl_files)
+
+    # Merge the new and old exclusions.
+
+    excl = oldexcl
+    excl.update(poly)
+
+    # Ensure that the default polygon has been defined.
+    if "default" not in excl.keys():
+        raise RuntimeError(
+            "No default exclusion polygon found in available files"
+        )
+
+    # Now write out all of this collected information.  Also write out an
+    # initial "state" log as a starting point.  Note that by having log
+    # files (which contain datestamps) also have a "starting" date, it means
+    # that we don't need a single log for the entire survey.
+
+    out_fp_file = os.path.join(
+        outdir, "desi-focalplane_{}.ecsv".format(file_date))
+    out_excl_file = os.path.join(
+        outdir, "desi-exclusion_{}.yaml".format(file_date))
+    out_state_file = os.path.join(
+        outdir, "desi-state_{}.ecsv".format(file_date))
+
+    out_fp.write(out_fp_file, format="ascii.ecsv")
+    del out_fp
+
     out_state.write(out_state_file, format="ascii.ecsv")
+    del out_state
 
     # Now write out the exclusion polygons.  Since these are not tabular, we
     # write to a YAML file.
 
-    with open(out_poly_file, "w") as pf:
-        yaml.dump(poly, pf, default_flow_style=False)
+    with open(out_excl_file, "w") as pf:
+        yaml.dump(excl, pf, default_flow_style=False)
 
     return

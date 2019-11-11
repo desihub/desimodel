@@ -11,7 +11,7 @@ import yaml
 
 from desimodel.io import load_focalplane, datadir
 
-from desimodel.inputs.focalplane import update_exclusions
+from desimodel.inputs.focalplane_utils import update_exclusions
 
 
 def main():

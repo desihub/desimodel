@@ -1,11 +1,10 @@
 .. code-block:: console
 
     usage: desi_generate_focalplane [-h] [--pos_settings POS_SETTINGS]
-                                    [--collision COLLISION]
-                                    [--exclusion EXCLUSION]
                                     [--petal_id2loc PETAL_ID2LOC]
                                     [--startvalid STARTVALID] [--fillfake]
                                     [--test TEST] [--fakeoffset] [--fakefiberpos]
+                                    [--reset]
 
     optional arguments:
       -h, --help            show this help message and exit
@@ -33,3 +32,6 @@
                             else.
       --fakefiberpos        Use the old fiberpos file for the device mapping. Only
                             for testing.
+      --reset               Do not propagate device state from the
+                            current focalplane model. This will initialize all
+                            devicesto a good state.

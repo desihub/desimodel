@@ -11,6 +11,8 @@ from astropy.table import Table
 
 from desimodel.io import load_focalplane, datadir
 
+from desimodel.inputs.focalplane_utils import valid_states
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -27,8 +29,10 @@ def main():
                         help="The device location (--petal must also be given)"
                         " modified by this event.")
 
-    parser.add_argument("--state", type=int, default=None, required=False,
-                        help="The new state to assign to the device.")
+    parser.add_argument("--state", type=str, default=None, required=False,
+                        help="The new state to assign to the device."
+                        " Can be an integer or a valid state string (OK, "
+                        "STUCK, BROKEN).")
 
     parser.add_argument("--exclusion", type=str, default=None, required=False,
                         help="The new exclusion polygon to assign to the"
@@ -50,6 +54,16 @@ def main():
             raise RuntimeError(
                 "must specify either location or petal and device, not both")
 
+    new_st = None
+    if args.state is not None:
+        if args.state in valid_states:
+            new_st = valid_states[args.state]
+        else:
+            try:
+                new_st = int(args.state)
+            except ValueError:
+                raise RuntimeError("Invalid state '{}'".format(args.state))
+
     # The timestamp for this event.
 
     event = None
@@ -68,7 +82,6 @@ def main():
     new_pet = args.petal
     new_dev = args.device
     new_loc = args.location
-    new_st = args.state
     new_excl = args.exclusion
     if args.location is not None:
         for row in state:

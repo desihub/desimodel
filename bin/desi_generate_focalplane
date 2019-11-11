@@ -50,6 +50,12 @@ def main():
                         help="Use the old fiberpos file for the device "
                         "mapping.  Only for testing.")
 
+    parser.add_argument("--reset", required=False, default=False,
+                        action="store_true",
+                        help="Do not propagate device state from the current"
+                        "focalplane model.  This will initialize all devices"
+                        "to a good state.")
+
     args = parser.parse_args()
 
     petalloc = None
@@ -62,8 +68,8 @@ def main():
 
     create(testdir=args.test, posdir=args.pos_settings, fibermaps=None,
            petalloc=petalloc, startvalid=args.startvalid,
-           fillfake=args.fillfake,
-           fakeoffset=args.fakeoffset, fakefiberpos=args.fakefiberpos)
+           fillfake=args.fillfake, fakeoffset=args.fakeoffset,
+           fakefiberpos=args.fakefiberpos, reset=args.reset)
 
     return
 
