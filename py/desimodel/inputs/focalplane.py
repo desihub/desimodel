@@ -385,75 +385,6 @@ def create(testdir=None, posdir=None, fibermaps=None,
     # Now rotate the X / Y offsets based on the petal location.
     rotate_petals(fp)
 
-    # Now load the file(s) with the exclusion polygons
-    # Add the legacy polygons to the dictionary for reference.
-    # Also add an "unknown" polygon set which includes a large circle for the
-    # theta arm that is the size of the patrol radius.
-    poly = dict()
-
-    # First the THETA arm.
-    circs = [
-        [[0.0+3.0, 0.0], 2.095]
-    ]
-    seg = [
-        [2.095+3.0, -0.474],
-        [1.358+3.0, -2.5],
-        [-0.229+3.0, -2.5],
-        [-1.241+3.0, -2.792],
-        [-2.095+3.0, -0.356]
-    ]
-    segs = [seg]
-    shp_theta = dict()
-    shp_theta["circles"] = circs
-    shp_theta["segments"] = segs
-
-    # Now the PHI arm
-    circs = [
-        [[0.0+3.0, 0.0], 0.967]
-    ]
-    seg_upper = [
-        [-3.0+3.0, 0.990],
-        [0.0+3.0, 0.990]
-    ]
-    seg_lower = [
-        [-2.944+3.0, -1.339],
-        [-2.944+3.0, -2.015],
-        [-1.981+3.0, -1.757],
-        [-1.844+3.0, -0.990],
-        [0.0+3.0, -0.990]
-    ]
-    segs = [seg_upper, seg_lower]
-    shp_phi = dict()
-    shp_phi["circles"] = circs
-    shp_phi["segments"] = segs
-
-    poly["legacy"] = dict()
-    poly["legacy"]["theta"] = shp_theta
-    poly["legacy"]["phi"] = shp_phi
-
-    poly["unknown"] = dict()
-    poly["unknown"]["theta"] = dict()
-    poly["unknown"]["theta"]["circles"] = [
-        [[0.0, 0.0], 6.0]
-    ]
-    poly["unknown"]["theta"]["segments"] = list()
-    poly["unknown"]["phi"] = dict()
-    poly["unknown"]["phi"]["circles"] = list()
-    poly["unknown"]["phi"]["segments"] = list()
-
-    # Get all available exclusion polygons from the desimodel data directory.
-
-    fpdir = os.path.join(datadir(), "focalplane")
-    excl_match = os.path.join(fpdir, "exclusions_*.conf")
-    excl_files = glob.glob(excl_match)
-    update_exclusions(poly, excl_files)
-
-    # Ensure that the default polygon has been defined.
-    if "default" not in poly.keys():
-        raise RuntimeError(
-            "No default exclusion polygon found in available files"
-        )
-
     # Construct the focaplane table
 
     nrows = 0
@@ -573,13 +504,14 @@ def create(testdir=None, posdir=None, fibermaps=None,
 
     oldfp = None
     oldstate = None
+    oldexcl = dict()
     old_loc_to_state = None
     old_loc_to_excl = None
     if not reset:
         dtime = datetime.timedelta(seconds=1)
         oldtime = startvalid - dtime
 
-        oldfp, _, oldstate, oldtmstr = load_focalplane(oldtime)
+        oldfp, oldexcl, oldstate, oldtmstr = load_focalplane(oldtime)
 
         log.info(
             "Comparing generated focalplane to one from {}".format(oldtmstr)
@@ -615,7 +547,6 @@ def create(testdir=None, posdir=None, fibermaps=None,
         old_loc_to_excl = dict()
         for loc, ex in zip(oldstate[:]["LOCATION"], oldstate[:]["EXCLUSION"]):
             old_loc_to_excl[loc] = ex
-
 
     # Create the state table.  Use existing state if we are propagating.
 
@@ -654,6 +585,80 @@ def create(testdir=None, posdir=None, fibermaps=None,
                 out_state[row]["EXCLUSION"] = old_loc_to_excl[loc]
             row += 1
 
+    # Now load the file(s) with the exclusion polygons
+    # Add the legacy polygons to the dictionary for reference.
+    # Also add an "unknown" polygon set which includes a large circle for the
+    # theta arm that is the size of the patrol radius.
+    poly = dict()
+
+    # First the THETA arm.
+    circs = [
+        [[0.0+3.0, 0.0], 2.095]
+    ]
+    seg = [
+        [2.095+3.0, -0.474],
+        [1.358+3.0, -2.5],
+        [-0.229+3.0, -2.5],
+        [-1.241+3.0, -2.792],
+        [-2.095+3.0, -0.356]
+    ]
+    segs = [seg]
+    shp_theta = dict()
+    shp_theta["circles"] = circs
+    shp_theta["segments"] = segs
+
+    # Now the PHI arm
+    circs = [
+        [[0.0+3.0, 0.0], 0.967]
+    ]
+    seg_upper = [
+        [-3.0+3.0, 0.990],
+        [0.0+3.0, 0.990]
+    ]
+    seg_lower = [
+        [-2.944+3.0, -1.339],
+        [-2.944+3.0, -2.015],
+        [-1.981+3.0, -1.757],
+        [-1.844+3.0, -0.990],
+        [0.0+3.0, -0.990]
+    ]
+    segs = [seg_upper, seg_lower]
+    shp_phi = dict()
+    shp_phi["circles"] = circs
+    shp_phi["segments"] = segs
+
+    poly["legacy"] = dict()
+    poly["legacy"]["theta"] = shp_theta
+    poly["legacy"]["phi"] = shp_phi
+
+    poly["unknown"] = dict()
+    poly["unknown"]["theta"] = dict()
+    poly["unknown"]["theta"]["circles"] = [
+        [[0.0, 0.0], 6.0]
+    ]
+    poly["unknown"]["theta"]["segments"] = list()
+    poly["unknown"]["phi"] = dict()
+    poly["unknown"]["phi"]["circles"] = list()
+    poly["unknown"]["phi"]["segments"] = list()
+
+    # Get all available exclusion polygons from the desimodel data directory.
+
+    fpdir = os.path.join(datadir(), "focalplane")
+    excl_match = os.path.join(fpdir, "exclusions_*.conf")
+    excl_files = glob.glob(excl_match)
+    update_exclusions(poly, excl_files)
+
+    # Merge the new and old exclusions.
+
+    excl = oldexcl
+    excl.update(poly)
+
+    # Ensure that the default polygon has been defined.
+    if "default" not in excl.keys():
+        raise RuntimeError(
+            "No default exclusion polygon found in available files"
+        )
+
     # Now write out all of this collected information.  Also write out an
     # initial "state" log as a starting point.  Note that by having log
     # files (which contain datestamps) also have a "starting" date, it means
@@ -661,7 +666,7 @@ def create(testdir=None, posdir=None, fibermaps=None,
 
     out_fp_file = os.path.join(
         outdir, "desi-focalplane_{}.ecsv".format(file_date))
-    out_poly_file = os.path.join(
+    out_excl_file = os.path.join(
         outdir, "desi-exclusion_{}.yaml".format(file_date))
     out_state_file = os.path.join(
         outdir, "desi-state_{}.ecsv".format(file_date))
@@ -675,7 +680,7 @@ def create(testdir=None, posdir=None, fibermaps=None,
     # Now write out the exclusion polygons.  Since these are not tabular, we
     # write to a YAML file.
 
-    with open(out_poly_file, "w") as pf:
-        yaml.dump(poly, pf, default_flow_style=False)
+    with open(out_excl_file, "w") as pf:
+        yaml.dump(excl, pf, default_flow_style=False)
 
     return
