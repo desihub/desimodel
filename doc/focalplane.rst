@@ -50,10 +50,12 @@ Inputs
 The current inputs require a local svn checkout of the pos_settings directory
 of the focalplane repo
 (https://desi.lbl.gov/trac/browser/code/focalplane/fp_settings/pos_settings).
-This is a directory of python ConfigObj files, one per device.
+This is a directory of python ConfigObj files, one per device.  These file
+contain the measured arm lengths and angle ranges for each device.
 
-Additionally, the following DocDB files are downloaded and parsed.  The petal
-verification files contain the mapping of fiber focalplane location to
+Additionally, the following DocDB files are downloaded and parsed.  The
+positioner locations from DocDB 0530 are the designed locations in CS5.  The
+petal verification files contain the mapping of fiber focalplane location to
 slitblock location.
 
 ==============   ===========
