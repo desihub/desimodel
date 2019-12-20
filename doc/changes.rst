@@ -9,6 +9,15 @@ desimodel Release Notes
   ``desi-healpix-weights.fits`` with new dither pattern; see DESI-0717.
   Layers 0=GRAY, 1-4=DARK instead of 0-3=DARK, 4=GRAY.
 
+0.10.3 (2019-12-20)
+-------------------
+
+* Pass multiple sets of exclusion polygons (PR `#128`_).
+* Propagate existing focalplane state to new focalplanes (PR `#129`_).
+
+.. _`#128`: https://github.com/desihub/desimodel/pull/128
+.. _`#129`: https://github.com/desihub/desimodel/pull/129
+
 0.10.2 (2019-10-31)
 -------------------
 
