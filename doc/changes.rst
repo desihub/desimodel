@@ -9,6 +9,11 @@ desimodel Release Notes
   ``desi-healpix-weights.fits`` with new dither pattern; see DESI-0717.
   Layers 0=GRAY, 1-4=DARK instead of 0-3=DARK, 4=GRAY.
 
+0.10.4 (unreleased)
+-------------------
+
+* No changes yet.
+
 0.10.3 (2019-12-20)
 -------------------
 
