@@ -257,8 +257,9 @@ def load_platescale():
         ('theta', 'f8'),
         ('radial_platescale', 'f8'),
         ('az_platescale', 'f8'),
+        ('arclength', 'f8'),
     ]
-    _platescale = np.loadtxt(infile, usecols=[0,1,6,7], dtype=columns)
+    _platescale = np.loadtxt(infile, usecols=[0,1,6,7,8], dtype=columns)
     return _platescale
 
 
