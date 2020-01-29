@@ -132,12 +132,18 @@ newtiles
     An improved tiling dither pattern from Eddie Schlafly, intended
     to be merged prior to the start of the DESI survey.
 
+update_inputs
+    This branch *might* be present during updates to the inputs to
+    the desimodel data files.  See the `updating desimodel inputs`_ document
+    for further details.
+
 In addition to these historical branches, there are a set of ``test-*`` branches
 that contain smaller versions of the desimodel files.  These branches are
 intended for use in desimodel unit tests.  See the `desimodel testing`_
 document for further details.
 
 .. _`desimodel testing`: https://desimodel.readthedocs.io/en/latest/testing.html
+.. _`updating desimodel inputs`: https://desimodel.readthedocs.io/en/latest/update_inputs.html
 
 Tagging
 -------
