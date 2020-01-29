@@ -105,7 +105,7 @@ data/spectra/
     Example benchmark spectra.
 
 data/targets/
-    Inputs for targeting data?
+    Expected n(z) information per target class for cosmology projections.
 
 data/throughput/
     Throughput *versus* wavelength (also contained in specpsf).
@@ -119,11 +119,8 @@ Branches
 ~~~~~~~~
 
 There are a couple of permanent branches that were used for testing
-alternative designs.  These will never be merged into trunk but we
+alternative designs.  Some of these will never be merged into trunk but we
 will keep them around for the record:
-
-1703
-    Unknown.  Documentation needed.
 
 altccd
     500 micron *versus* 250 micron thick CCDs.
@@ -132,7 +129,8 @@ bb
     Recreating assumptions used during early BigBOSS projections.
 
 newtiles
-    Unknown. Documentation needed.
+    An improved tiling dither pattern from Eddie Schlafly, intended
+    to be merged prior to the start of the DESI survey.
 
 In addition to these historical branches, there is are a set of ``test-*`` branches
 that contain smaller versions of the desimodel files.  These branches are
