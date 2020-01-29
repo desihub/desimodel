@@ -52,12 +52,12 @@ For "by hand" installs:
 
 3. Create the directory and switch to it::
 
-    mkdir -p $DESIMODEL
-    cd $DESIMODEL
+       mkdir -p $DESIMODEL
+       cd $DESIMODEL
 
 4. Export::
 
-    svn export https://desi.lbl.gov/svn/code/desimodel/tags/0.10.3/data
+       svn export https://desi.lbl.gov/svn/code/desimodel/tags/0.10.3/data
 
    Note how the tag name is the *same* as in the ``DESIMODEL`` variable.
 
@@ -118,7 +118,7 @@ data/weather/
 Branches
 ~~~~~~~~
 
-There are a couple of permanent branches that were used for testing
+There are several permanent branches that were used for testing
 alternative designs.  Some of these will never be merged into trunk but we
 will keep them around for the record:
 
@@ -132,7 +132,7 @@ newtiles
     An improved tiling dither pattern from Eddie Schlafly, intended
     to be merged prior to the start of the DESI survey.
 
-In addition to these historical branches, there is are a set of ``test-*`` branches
+In addition to these historical branches, there are a set of ``test-*`` branches
 that contain smaller versions of the desimodel files.  These branches are
 intended for use in desimodel unit tests.  See the `desimodel testing`_
 document for further details.

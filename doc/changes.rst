@@ -12,7 +12,9 @@ desimodel Release Notes
 0.10.4 (unreleased)
 -------------------
 
-* No changes yet.
+* Update README file and Travis tests (PR `#132`_).
+
+.. _`#132`: https://github.com/desihub/desimodel/pull/132
 
 0.10.3 (2019-12-20)
 -------------------
