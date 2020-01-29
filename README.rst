@@ -38,24 +38,30 @@ There are two methods to install the data, "by hand" and "scripted."
 
 For "by hand" installs:
 
-1. Define the environment variable ``DESIMODEL``::
+1. Find the tag you are interested in::
 
-    export DESIMODEL=/Users/desicollaborator/Data/desimodel/0.4.2
+       svn ls https://desi.lbl.gov/svn/code/desimodel/tags
+
+    We'll use ``0.10.3`` in the examples below.
+
+2. Define the environment variable ``DESIMODEL``::
+
+       export DESIMODEL=/Users/desicollaborator/Data/desimodel/0.10.3
 
    Note how the tag name is included.
 
-2. Create the directory and switch to it::
+3. Create the directory and switch to it::
 
-    mkdir -p $DESIMODEL
-    cd $DESIMODEL
+       mkdir -p $DESIMODEL
+       cd $DESIMODEL
 
-3. Export::
+4. Export::
 
-    svn export https://desi.lbl.gov/svn/code/desimodel/tags/0.4.2/data
+       svn export https://desi.lbl.gov/svn/code/desimodel/tags/0.10.3/data
 
    Note how the tag name is the *same* as in the ``DESIMODEL`` variable.
 
-4. You may now want to add ``DESIMODEL`` to your shell startup scripts.
+5. You may now want to add ``DESIMODEL`` to your shell startup scripts.
 
 For "scripted" installs:
 
@@ -83,28 +89,37 @@ data/desi.yaml
     Basic scalar parameters, organized in a nested tree.
 
 data/focalplane/
-    Informaton about positioner locations and platescale.
+    Information about positioner locations and platescale.
+
+data/footprint/
+    The areas of the sky that will be observed by DESI, with RA, Dec of tiles.
+
+data/sky/
+    Sample sky spectra.
 
 data/specpsf/
     Spectrograph point-spread-function (PSF) for specter_
     CCD pixel-level simulations.
 
+data/spectra/
+    Example benchmark spectra.
+
+data/targets/
+    Expected n(z) information per target class for cosmology projections.
+
 data/throughput/
     Throughput *versus* wavelength (also contained in specpsf).
 
-data/footprint/
-    DESI footprint with RA, Dec of tiles.
-
-data/spectra/
-    Example benchmark spectra.
+data/weather/
+    Historical weather data.
 
 .. _specter: https://github.com/desihub/specter
 
 Branches
 ~~~~~~~~
 
-There are a couple of permanent branches that were used for testing
-alternative designs.  These will never be merged into trunk but we
+There are several permanent branches that were used for testing
+alternative designs.  Some of these will never be merged into trunk but we
 will keep them around for the record:
 
 altccd
@@ -113,9 +128,22 @@ altccd
 bb
     Recreating assumptions used during early BigBOSS projections.
 
-In addition to these historical branches, there is a permanent 'testing' branch
-that contains smaller versions of the desimodel files.  This branch is
-intended for use in desimodel unit tests.
+newtiles
+    An improved tiling dither pattern from Eddie Schlafly, intended
+    to be merged prior to the start of the DESI survey.
+
+update_inputs
+    This branch *might* be present during updates to the inputs to
+    the desimodel data files.  See the `updating desimodel inputs`_ document
+    for further details.
+
+In addition to these historical branches, there are a set of ``test-*`` branches
+that contain smaller versions of the desimodel files.  These branches are
+intended for use in desimodel unit tests.  See the `desimodel testing`_
+document for further details.
+
+.. _`desimodel testing`: https://desimodel.readthedocs.io/en/latest/testing.html
+.. _`updating desimodel inputs`: https://desimodel.readthedocs.io/en/latest/update_inputs.html
 
 Tagging
 -------
