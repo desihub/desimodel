@@ -28,7 +28,7 @@ addons:
             - dvipng
 python:
     # - 2.7
-    - 3.5
+    # - 3.5
     - 3.6
 env:
     global:
@@ -37,10 +37,11 @@ env:
         # to repeat them for all configurations.
         - NUMPY_VERSION=1.15
         # - SCIPY_VERSION=0.14
-        - ASTROPY_VERSION=2.0.14
+        - ASTROPY_VERSION=2.0.16
         # - SPHINX_VERSION=1.6.6
         - DESIUTIL_VERSION=2.0.1
         - SPECTER_VERSION=0.9.1
+        - PIP_VERSION=19.3.1
         # This is the version of the svn data product to export.
         # - DESIMODEL_VERSION=branches/test-0.10
         - DESIMODEL_VERSION=trunk
@@ -72,7 +73,7 @@ matrix:
         - os: osx
         - os: linux
           python: 3.6
-          env: ASTROPY_VERSION='<4.0'
+          env: ASTROPY_VERSION=stable
                SETUP_CMD='test'
                CONDA_DEPENDENCIES=${CONDA_ALL_DEPENDENCIES}
                PIP_DEPENDENCIES=${PIP_ALL_DEPENDENCIES}
@@ -86,21 +87,21 @@ matrix:
         # Note: this test is not a perfectly realistic test of ReadTheDocs
         # builds, which operate in a much more bare-bones environment
         - os: linux
-          python: 3.5
+          python: 3.6
           env: SETUP_CMD='build_sphinx --warning-is-error'
 
         # Coverage test.  Note that installing the coverage software can
         # change the set of packages installed by conda, so we do
         # separate 'test' and 'test --coverage'.
         - os: linux
-          python: 3.5
+          python: 3.6
           env: SETUP_CMD='test --coverage'
                CONDA_DEPENDENCIES=${CONDA_ALL_DEPENDENCIES}
                PIP_DEPENDENCIES=${PIP_ALL_DEPENDENCIES}
 
         - os: linux
           python: 3.6
-          env: ASTROPY_VERSION='<4.0'
+          env: ASTROPY_VERSION=stable
                SETUP_CMD='test'
                CONDA_DEPENDENCIES=${CONDA_ALL_DEPENDENCIES}
                PIP_DEPENDENCIES=${PIP_ALL_DEPENDENCIES}
