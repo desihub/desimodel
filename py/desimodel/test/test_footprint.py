@@ -4,6 +4,7 @@
 """
 import unittest
 import os
+from collections import Counter
 import numpy as np
 from astropy.table import Table
 
@@ -29,25 +30,23 @@ class TestFootprint(unittest.TestCase):
     def test_pass2program(self):
         '''Test footprint.pass2program().
         '''
-        self.assertEqual(footprint.pass2program(0), 'GRAY')
-        self.assertEqual(footprint.pass2program(1), 'DARK')
-        self.assertEqual(footprint.pass2program(2), 'DARK')
-        self.assertEqual(footprint.pass2program(3), 'DARK')
-        self.assertEqual(footprint.pass2program(4), 'DARK')
-        self.assertEqual(footprint.pass2program(5), 'BRIGHT')
-        self.assertEqual(footprint.pass2program(6), 'BRIGHT')
-        self.assertEqual(footprint.pass2program(7), 'BRIGHT')
+        programs = footprint.pass2program(list(range(8)))
+        count_layers = Counter(programs)
+        self.assertEqual(count_layers['DARK'], 4)
+        self.assertEqual(count_layers['GRAY'], 1)
+        self.assertEqual(count_layers['BRIGHT'], 3)
+        self.assertEqual(set(programs), set(['DARK', 'GRAY', 'BRIGHT']))
 
-        passes = [0,1,2,3,4,5,6,7]
-        programs = ['GRAY', 'DARK', 'DARK', 'DARK', 'DARK', 'BRIGHT', 'BRIGHT', 'BRIGHT']
-        tmp = footprint.pass2program(passes)
-        self.assertEqual(tmp, programs)
+        #- confirm that it works with multiple kinds of input
+        p0 = footprint.pass2program(0)
+        p1 = footprint.pass2program(1)
+        p01a = footprint.pass2program([0,1])
+        p01b = footprint.pass2program(np.array([0,1]))
+        self.assertEqual([p0,p1], p01a)
+        self.assertEqual([p0,p1], p01b)
 
-        tmp = footprint.pass2program(np.array(passes))
-        self.assertEqual(tmp, programs)
-
-        tmp = footprint.pass2program([0,0,1,2])
-        self.assertEqual(tmp, ['GRAY', 'GRAY', 'DARK', 'DARK'])
+        p011 = footprint.pass2program([0,1,1])
+        self.assertEqual([p0,p1,p1], p011)
 
         with self.assertRaises(KeyError):
             footprint.pass2program(999)
@@ -55,12 +54,16 @@ class TestFootprint(unittest.TestCase):
     def test_program2pass(self):
         '''Test footprint.program2pass().
         '''
-        self.assertEqual(footprint.program2pass('DARK'), [1,2,3,4])
-        self.assertEqual(footprint.program2pass('GRAY'), [0,])
-        self.assertEqual(footprint.program2pass('BRIGHT'), [5,6,7])
-        self.assertEqual(footprint.program2pass(['DARK', 'GRAY']), [[1,2,3,4], [0,]])
-        self.assertEqual(footprint.program2pass(np.array(['DARK', 'GRAY'])),
-                                                [[1,2,3,4], [0,]])
+        self.assertEqual(len(footprint.program2pass('DARK')), 4)
+        self.assertEqual(len(footprint.program2pass('GRAY')), 1)
+        self.assertEqual(len(footprint.program2pass('BRIGHT')), 3)
+
+        passes = footprint.program2pass(['DARK', 'GRAY', 'BRIGHT'])
+        self.assertEqual(len(passes), 3)
+        self.assertEqual(len(passes[0]), 4)
+        self.assertEqual(len(passes[1]), 1)
+        self.assertEqual(len(passes[2]), 3)
+
         with self.assertRaises(ValueError):
             footprint.program2pass('BLAT')
 
