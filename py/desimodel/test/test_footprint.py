@@ -78,6 +78,15 @@ class TestFootprint(unittest.TestCase):
         for p in passes:
             self.assertNotEqual(p, None)
 
+    def test_ecsv(self):
+        """Test consistency of ecsv vs. fits tiles files"""
+        t1 = Table.read(os.path.expandvars('$DESIMODEL/data/footprint/desi-tiles.fits'))
+        t2 = Table.read(os.path.expandvars('$DESIMODEL/data/footprint/desi-tiles.ecsv'),
+            format='ascii.ecsv')
+        for colname in t2.colnames:
+            self.assertIn(colname, t1.colnames)
+            self.assertTrue(np.all(t1[colname] == t2[colname]))
+
     def test_get_tile_radec(self):
         """Test grabbing tile information by tileID.
         """
