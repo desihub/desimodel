@@ -328,7 +328,20 @@ def load_platescale():
         ('az_platescale', 'f8'),
         ('arclength', 'f8'),
     ]
-    _platescale = np.loadtxt(infile, usecols=[0,1,6,7,8], dtype=columns)
+    try:
+        _platescale = np.loadtxt(infile, usecols=[0,1,6,7,8], dtype=columns)
+    except IndexError:
+        #- no "arclength" column in this version of desimodel/data
+        #- Get info from separate rzs file instead
+
+        _platescale = np.loadtxt(infile, usecols=[0,1,6,7,7], dtype=columns)
+        rzs = Table.read(findfile('focalplane/rzsn.txt'), format='ascii')
+
+        from scipy.interpolate import interp1d
+        from numpy.lib.recfunctions import append_fields
+        arclength = interp1d(rzs['R'], rzs['S'], kind='quadratic')
+        _platescale['arclength'] = arclength(_platescale['radius'])
+
     return _platescale
 
 
