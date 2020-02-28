@@ -12,9 +12,12 @@ desimodel Release Notes
 0.10.4 (unreleased)
 -------------------
 
+* Update documentation for :mod:`desimodel.io`; use :func:`desimodel.io.findfile`
+  consistently throughout the module (PR `#133`_).
 * Update README file and Travis tests (PR `#132`_).
 
 .. _`#132`: https://github.com/desihub/desimodel/pull/132
+.. _`#133`: https://github.com/desihub/desimodel/pull/133
 
 0.10.3 (2019-12-20)
 -------------------
