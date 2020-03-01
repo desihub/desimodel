@@ -85,7 +85,10 @@ class TestFootprint(unittest.TestCase):
             format='ascii.ecsv')
         for colname in t2.colnames:
             self.assertIn(colname, t1.colnames)
-            self.assertTrue(np.all(t1[colname] == t2[colname]))
+            try:
+                assert(np.all(t1[colname] == t2[colname]))
+            except AssertionError:
+                self.assertTrue(np.allclose(t1[colname], t2[colname]), f'{colname} mismatch')
 
     def test_get_tile_radec(self):
         """Test grabbing tile information by tileID.
