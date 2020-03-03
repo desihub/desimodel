@@ -43,9 +43,8 @@ env:
         - SPECTER_VERSION=0.9.1
         - PIP_VERSION=19.3.1
         # This is the version of the svn data product to export.
-        # - DESIMODEL_VERSION=trunk
         # - DESIMODEL_VERSION=branches/test-0.9.8
-        - DESIMODEL_VERSION=branches/newtiles
+        - DESIMODEL_VERSION=trunk
         - MAIN_CMD='python setup.py'
         # These packages will always be installed.
         - CONDA_DEPENDENCIES=''
