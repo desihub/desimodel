@@ -2,10 +2,18 @@
 desimodel Release Notes
 =======================
 
-0.12.0 (planned)
-----------------
+0.13.0 (unreleased)
+-------------------
 
-* updates to focal plane geometry and platescale.
+* planned: updates to focal plane hardware calibrations
+
+0.12.0 (2020-03-13)
+-------------------
+
+* update platescale to as-built DESI-4037v5 (PR `#1361`_).
+* update desi-focalplane model for limited phi range 20200306 (svn data).
+
+.. _`#136`: https://github.com/desihub/desimodel/pull/136
 
 0.11.0 (2020-03-13)
 -------------------
