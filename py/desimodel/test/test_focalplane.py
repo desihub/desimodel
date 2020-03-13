@@ -43,23 +43,28 @@ class TestFocalplane(unittest.TestCase):
     def test_get_radius(self):
         """Tests converting x, y coordinates on the focal plane to a radius in degrees and mm
         """
-        degree = get_radius_deg(333.738, 217.766)
-        truedegree = 1.5731300326614939
-        radius = get_radius_mm(1.5731300326614939)
-        trueradius = 398.5010456698936
-        testradii = [1.5731300326614939, 1.5]
-        radius1 = get_radius_mm(testradii)
-        trueradius1 = [398.50104567, 378.53678987]
-        self.assertAlmostEqual(truedegree, degree, 5)
-        self.assertAlmostEqual(trueradius, radius, 5)
-        self.assertAlmostEqual(all(trueradius1), all(radius1), 5)
+        ps = io.load_platescale()
+        for i in np.linspace(0, len(ps)-1, 10).astype(int):
+            degree = get_radius_deg(0, ps['radius'][i])
+            self.assertAlmostEqual(degree, ps['theta'][i])
+            radius = get_radius_mm(ps['theta'][i])
+            self.assertAlmostEqual(radius, ps['radius'][i])
 
-        #- Arrays should also work
-        x = np.array([333.738, 333.738])
-        y = np.array([217.766, 217.766])
-        truedegrees = np.array([truedegree, truedegree])
-        degrees = get_radius_deg(x, y)
-        self.assertTrue(np.allclose(degrees, truedegrees))
+        #- Rotational invariance
+        d1 = get_radius_deg(0, ps['radius'][10])
+        d2 = get_radius_deg(ps['radius'][10], 0)
+        d3 = get_radius_deg(0, -ps['radius'][10])
+        d4 = get_radius_deg(-ps['radius'][10], 0)
+        self.assertAlmostEqual(d1, d2)
+        self.assertAlmostEqual(d1, d3)
+        self.assertAlmostEqual(d1, d4)
+
+        #- lists and arrays should also work
+        degrees = get_radius_deg([0,0,0,0], ps['radius'][0:4])
+        self.assertTrue(np.allclose(degrees, ps['theta'][0:4]))
+
+        radius = get_radius_mm(ps['theta'][100:110])
+        self.assertTrue(np.allclose(radius, ps['radius'][100:110]))
 
     def test_FocalPlane(self):
         n = 20
@@ -144,8 +149,29 @@ class TestFocalplane(unittest.TestCase):
         """
         x = [0., 50., 100., 200]
         y = [-0., -50., -100., -200]
-        area = fiber_area_arcsec2(x, y)
-        self.assertFalse(np.any(np.fabs(area-np.array([1.97314482,  1.96207294,  1.92970506,  1.81091119])) >1E-6))
+
+        #- runs with scalar, list, or array
+        a1 = fiber_area_arcsec2(10, 20)
+        a2 = fiber_area_arcsec2([10, 30], [20, 40])
+        a3 = fiber_area_arcsec2(np.array([10, 30]), np.array([20, 40]))
+        self.assertTrue(np.allclose(a2, a3))
+        self.assertTrue(np.allclose(a1, a2[0]))
+        self.assertTrue(np.allclose(a1, a3[0]))
+
+        #- approximately correct values (depends on platescale data)
+        a0, a400 = fiber_area_arcsec2([0, 400], [0, 0])
+        self.assertAlmostEqual(a0, 1.9744, 2)
+        self.assertAlmostEqual(a400, 1.6754, 2)
+
+        #- area is constant vs. radius
+        a = fiber_area_arcsec2([30,40,0,-50], [40, 30, 50, 0])
+        self.assertTrue(np.allclose(a[0], a))
+
+        #- area decreases with radius
+        x = np.arange(0,401,10)
+        y = np.zeros(len(x))
+        da = np.diff(fiber_area_arcsec2(x, y))
+        self.assertTrue(np.all(da<0))
 
     def test_on_gfa(self):
         import numpy as np

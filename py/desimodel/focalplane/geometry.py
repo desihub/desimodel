@@ -81,6 +81,12 @@ def get_radius_deg(x, y):
     :class:`float`
         Radius corresponding to `x`, `y`.
     """
+    #- support scalars, lists, and arrays
+    if not np.isscalar(x):
+        x = np.asarray(x)
+    if not np.isscalar(y):
+        y = np.asarray(y)
+
     radius = np.sqrt(x**2 + y**2)
     platescale = load_platescale()
     fn = interp1d(platescale['radius'], platescale['theta'],
