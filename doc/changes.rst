@@ -2,22 +2,27 @@
 desimodel Release Notes
 =======================
 
-0.11.0 (planned)
+0.12.0 (planned)
 ----------------
 
-* svn data only: updated ``data/footprint/desi-tiles.fits`` and
-  ``desi-healpix-weights.fits`` with new dither pattern; see DESI-0717.
-  Layers 0=GRAY, 1-4=DARK instead of 0-3=DARK, 4=GRAY.
+* updates to focal plane geometry and platescale.
 
-0.10.4 (unreleased)
+0.11.0 (2020-03-13)
 -------------------
 
-* Update documentation for :mod:`desimodel.io`; use :func:`desimodel.io.findfile`
-  consistently throughout the module (PR `#133`_).
+* Updated ``data/footprint/desi-tiles.fits`` and
+  ``desi-healpix-weights.fits`` with new dither pattern; see DESI-0717.
+  Layers 0=GRAY, 1-4=DARK instead of 0-3=DARK, 4=GRAY. (PR `#135`_).
+* Update documentation for :mod:`desimodel.io`; use
+  :func:`desimodel.io.findfile` consistently throughout the module (PR `#133`_).
 * Update README file and Travis tests (PR `#132`_).
+* Include S (curved focal surface arc length) vs. R (CS5 xy radius)
+  table from DESI-0530 (PR `#130`_ and `#135`_).
 
+.. _`#130`: https://github.com/desihub/desimodel/pull/130
 .. _`#132`: https://github.com/desihub/desimodel/pull/132
 .. _`#133`: https://github.com/desihub/desimodel/pull/133
+.. _`#135`: https://github.com/desihub/desimodel/pull/135
 
 0.10.3 (2019-12-20)
 -------------------
