@@ -33,7 +33,7 @@ def update(testdir=None, desi347_version=13, desi334_version=3):
 
     master_thru_file = docdb.download(
         347, desi347_version,
-        'DESI-347-v{} Throughput Noise SNR Calcs.xlsx'.format(desi347_version))
+        'DESI-347-v{}_Throughput-Noise-SNR-Calcs.xlsx'.format(desi347_version))
     desi_yaml_file   = docdb.download(
         347, desi347_version, 'desi.yaml')
 
