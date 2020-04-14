@@ -35,7 +35,7 @@ def update(testdir=None, desi347_version=13, desi334_version=3):
         347, desi347_version,
         'DESI-347-v{}_Throughput-Noise-SNR-Calcs.xlsx'.format(desi347_version))
     desi_yaml_file   = docdb.download(
-        347, desi347_version, 'desi.yaml')
+        347, desi347_version, 'desi_v{}.yaml'.format(desi347_version))
 
     ccd_thru_file = dict()
     ccd_thru_file['b'] = docdb.download(334, desi334_version, 'blue-thru.txt')
@@ -111,7 +111,7 @@ def update(testdir=None, desi347_version=13, desi334_version=3):
         hdus.writeto(outfile, overwrite=True)
         log.info('Wrote {}'.format(outfile))
 
-def load_throughput(filename, specthru_row=95, thru_row=114):
+def load_throughput(filename, specthru_row=95, thru_row=97):
     """
     Load throughputs from DESI-0347, removing the spectrograph contributions
     which will be loaded separately from higher resolution data.
