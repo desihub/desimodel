@@ -187,6 +187,39 @@ def load_spec_throughput(filename):
 
     return InterpolatedUnivariateSpline(wavelength, throughput, k=3)
 
+def load_spec_throughputs(filenames, columns='ABCD', first_row=2, last_row=647):
+    """
+    Loads spectrograph*CCD throughputs from DESI-5501 excel files.
+
+    Args:
+        filenames: list of per-spectrograph filenames.
+
+    Returns arrays of wavelength in nm and throughput per spectrograph.
+    """
+    wave = None
+    nspectro = len(filenames)
+    for spectro in range(nspectro):
+        fname = filenames[spectro]
+        # Sanity check on column headers.
+        headers = docdb.xls_read_row(fname, 'Summary', first_row - 1, columns[0], columns[-1])
+        assert np.array_equal(headers, ['Wav', 'Blue', 'Red', 'NIR']), 'Unexpected column headers.'
+        wave_in = docdb.xls_read_col(fname, 'Summary', columns[0], first_row, last_row, dtype=float)
+        if wave is None:
+            wave = wave_in
+            assert np.allclose(np.diff(wave), 1), 'Unexpected wavelength grid.'
+            nwave = len(wave)
+            thru = np.zeros((nspectro, 3, nwave))
+        else:
+            assert np.array_equal(wave, wave_in), 'Wavelength arrays do not match.'
+        for k, (camera, column) in enumerate(zip('brz', columns[1:])):
+            # Read column values as strings since some cells are empty.
+            values = docdb.xls_read_col(fname, 'Summary', column, first_row, last_row)
+            # Replace empty cells with zeros and convert non-empty cells to floats.
+            values[values == ''] = '0'
+            thru[spectro, k] = values.astype(float)
+
+    return wave, thru
+
 def get_waveminmax(psffile):
     """
     return wmin, wmax as taken from the header of a PSF file,
