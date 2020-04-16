@@ -6,11 +6,14 @@ desimodel Release Notes
 -------------------
 
 * planned: updates to focal plane hardware calibrations
+* Use DESI-5501 (as built) instead of DESI-334 (design) for spectrograph throughput (PR `#137`_).
+
+.. _`#137`: https://github.com/desihub/desimodel/pull/137
 
 0.12.0 (2020-03-13)
 -------------------
 
-* update platescale to as-built DESI-4037v5 (PR `#1361`_).
+* update platescale to as-built DESI-4037v5 (PR `#136`_).
 * update desi-focalplane model for limited phi range 20200306 (svn data).
 
 .. _`#136`: https://github.com/desihub/desimodel/pull/136
