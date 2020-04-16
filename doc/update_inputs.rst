@@ -121,6 +121,28 @@ the results into ``$$DESIMODEL/data/focalplane/ci-corners.ecsv``:
 We don't anticipate needing to update this again, so this section is just
 documenting the provenance of that file.
 
+Commit Changes to SVN
+---------------------
+
+Once you have finished making updates on the ``update_inputs`` svn branch, checkout the trunk and
+merge your changes using::
+
+    cd trunk
+    svn merge --dry-run $base/branches/update_inputs
+    # Make sure everything looks good. Then do it for real.
+    svn merge $base/branches/update_inputs
+    svn commit -m "Merge branch update_inputs into trunk"
+
+Finally, remove the ``update_inputs`` branch::
+
+    svn remove $base/branches/update_inputs -m "Cleanup after updating inputs"
+
+and tag the updated trunk (replace 0.13.0 as needed)::
+
+    version=0.13.0
+    svn copy $base/trunk $base/tags/$version -m "Tagging desimodel $version"
+
+
 To Do
 =====
 
