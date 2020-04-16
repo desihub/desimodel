@@ -169,27 +169,6 @@ def load_fiberinput(filename):
 
     return InterpolatedUnivariateSpline(wavelength, throughput, k=3)
 
-def load_spec_throughput(filename):
-    """
-    Loads spectrograph*CCD throughputs from DESI-0334 text files.
-
-    Args:
-        filename: input filename, e.g. blue-thru.txt from DESI-0334
-
-    Returns InterpolatedUnivariateSpline instance.
-    """
-    #- Spectrograph throughputs from DESI-0334 have wavelength [nm] in the
-    #- first column and total throughput in the last column
-    tmp = np.loadtxt(filename)
-    wavelength = tmp[:, 0] * 10  #- nm -> Angstroms
-    throughput = tmp[:, -1]
-
-    assert np.all(np.diff(wavelength)) > 0
-    assert 3500 <= np.min(wavelength) and np.max(wavelength) <= 9950
-    assert 0 <= np.min(throughput) and np.max(throughput) <= 1
-
-    return InterpolatedUnivariateSpline(wavelength, throughput, k=3)
-
 def load_spec_throughputs(filenames, columns='ABCD', first_row=2, last_row=647):
     """
     Loads spectrograph*CCD throughputs from DESI-5501 excel files.
