@@ -18,7 +18,7 @@ import yaml
 from . import docdb
 from ..io import datadir, findfile
 
-def update(testdir=None, desi347_version=13, desi334_version=3):
+def update(testdir=None, desi347_version=16, desi5501_version=3, desi5501_KOSI=True):
     '''
     Update thru-\*.fits from DESI-0347 and DESI-0344
 
@@ -37,10 +37,11 @@ def update(testdir=None, desi347_version=13, desi334_version=3):
     desi_yaml_file   = docdb.download(
         347, desi347_version, 'desi_v{}.yaml'.format(desi347_version))
 
-    ccd_thru_file = dict()
-    ccd_thru_file['b'] = docdb.download(334, desi334_version, 'blue-thru.txt')
-    ccd_thru_file['r'] = docdb.download(334, desi334_version, 'red-thru.txt')
-    ccd_thru_file['z'] = docdb.download(334, desi334_version, 'nir-thru-250.txt')
+    ccd_thru_file = []
+    suffix = 'KOSI' if desi5501_KOSI else ''
+    for spectro in range(10):
+        ccd_thru_file.append(docdb.download(
+            5501, desi5501_version, 'Spectrograph{0}{1}.xlsx'.format(spectro + 1, suffix)))
 
     with open(desi_yaml_file) as fx:
         params = yaml.safe_load(fx)
@@ -73,20 +74,22 @@ def update(testdir=None, desi347_version=13, desi334_version=3):
         fiberinput[objtype] = load_fiberinput(
             findfile('throughput/fiberloss-{}.dat'.format(objtype)) )
 
-    #- Spectrograph throughputs
-    specthru = dict()
+    #- Read spectrograph throughputs and calculate mean over spectrographs.
+    specwave, specthru_data = load_spec_throughputs(ccd_thru_file)
+    specthru_mean = np.mean(specthru_data, axis=0)
 
     #- Min/Max wavelength coverage
     wmin = dict()
     wmax = dict()
 
-    for channel in ('b', 'r', 'z'):
-        specthru[channel] = load_spec_throughput(ccd_thru_file[channel])
+    for j, channel in enumerate('brz'):
+        # Build an interpolation the DESI-5501 mean spectrograph throughput in Angstrom units.
+        specthru = InterpolatedUnivariateSpline(10 * specwave, specthru_mean[j], k=3)
         wmin[channel], wmax[channel] = get_waveminmax(findfile('specpsf/psf-{}.fits'.format(channel)))
 
         dw = 0.1
         ww = np.arange(wmin[channel], wmax[channel]+dw/2, dw)
-        tt = thru(ww) * specthru[channel](ww)
+        tt = thru(ww) * specthru(ww)
 
         data = np.rec.fromarrays([ww, tt, extinction(ww), fiberinput['elg'](ww)],
                                 names='wavelength,throughput,extinction,fiberinput')
