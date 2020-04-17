@@ -127,10 +127,11 @@ Commit Changes to SVN
 Once you have finished making updates on the ``update_inputs`` svn branch, checkout the trunk and
 merge your changes using::
 
-    cd trunk
-    svn merge --dry-run $base/branches/update_inputs
+    svn checkout $base/trunk/data data.trunk
+    cd data.trunk
+    svn merge --dry-run $base/branches/update_inputs/data
     # Make sure everything looks good. Then do it for real.
-    svn merge $base/branches/update_inputs
+    svn merge $base/branches/update_inputs/data
     svn commit -m "Merge branch update_inputs into trunk"
 
 Finally, remove the ``update_inputs`` branch::
