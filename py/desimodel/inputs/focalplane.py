@@ -75,7 +75,7 @@ def devices_from_fiberpos(fp):
         fp[pet][dev]["MIN_P"] = 0.0
         fp[pet][dev]["LENGTH_R1"] = 0.0
         fp[pet][dev]["LENGTH_R2"] = 0.0
-        if (devtyp != "POS") and (devtyp != "ETC"):
+        if (devtyp == "POS") or (devtyp == "ETC"):
             # This is a positioner.
             fp[pet][dev]["MAX_T"] = 380.0
             fp[pet][dev]["MAX_P"] = 200.0
@@ -671,10 +671,10 @@ def create(testdir=None, posdir=None, fibermaps=None,
     out_state_file = os.path.join(
         outdir, "desi-state_{}.ecsv".format(file_date))
 
-    out_fp.write(out_fp_file, format="ascii.ecsv")
+    out_fp.write(out_fp_file, format="ascii.ecsv", overwrite=True)
     del out_fp
 
-    out_state.write(out_state_file, format="ascii.ecsv")
+    out_state.write(out_state_file, format="ascii.ecsv", overwrite=True)
     del out_state
 
     # Now write out the exclusion polygons.  Since these are not tabular, we

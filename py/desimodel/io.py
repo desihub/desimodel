@@ -428,7 +428,7 @@ def load_focalplane(time=None):
     fullstate = None
     tmstr = None
     for dt, fp, ex, st in _focalplane:
-        if time > dt:
+        if time >= dt:
             fp_data = fp
             excl_data = ex
             fullstate = st
