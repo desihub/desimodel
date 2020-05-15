@@ -10,10 +10,13 @@ desimodel Release Notes
 0.12.0 (2020-03-13)
 -------------------
 
-* update platescale to as-built DESI-4037v5 (PR `#1361`_).
+* update platescale to as-built DESI-4037v5 (PR `#136`_).
 * update desi-focalplane model for limited phi range 20200306 (svn data).
+* fix bug in generating focalplane model from old fiberpos files (PR `#139`_).
+* use >= not > when comparing runtime to focalplane model `#139`_).
 
 .. _`#136`: https://github.com/desihub/desimodel/pull/136
+.. _`#139`: https://github.com/desihub/desimodel/pull/139
 
 0.11.0 (2020-03-13)
 -------------------
