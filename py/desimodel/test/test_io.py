@@ -83,6 +83,16 @@ class TestIO(unittest.TestCase):
         """
         for channel in ('b', 'r', 'z'):
             t = io.load_throughput(channel)
+            ww = np.arange(t.wavemin, t.wavemax, 0.1)
+            msg = f'{channel} has negative throughput'
+            self.assertTrue(np.all(t.fiberinput_throughput(ww)>=0.0), msg)
+            self.assertTrue(np.all(t.hardware_throughput(ww)>=0.0), msg)
+            self.assertTrue(np.all(t.thru(ww)>=0.0), msg)
+            t1 = t.atmospheric_throughput(ww, airmass=1.0)
+            t2 = t.atmospheric_throughput(ww, airmass=2.0)
+            self.assertTrue(np.all(t1>=0.0))
+            self.assertTrue(np.all(t2>=0.0))
+            self.assertTrue(np.all(t1>=t2))
 
     @unittest.skipUnless(specter_available, specter_message)
     def test_load_psf(self):

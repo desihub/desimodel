@@ -26,7 +26,8 @@ def update(testdir=None, desi347_version=16, desi5501_version=3, desi5501_KOSI=T
         testdir: If not None, write files here instead of standard locations
             under $DESIMODEL/data/
         desi347_version: version of DESI-347 to use
-        desi334_version: version of DESI-334 to use
+        desi5501_version: version of DESI-5501 to use
+        desi5501_KOSI [bool]: use KOSI throughput measurements in 5501
     '''
     from desiutil.log import get_logger
     log = get_logger()
@@ -89,7 +90,7 @@ def update(testdir=None, desi347_version=16, desi5501_version=3, desi5501_KOSI=T
 
         dw = 0.1
         ww = np.arange(wmin[channel], wmax[channel]+dw/2, dw)
-        tt = thru(ww) * specthru(ww)
+        tt = (thru(ww) * specthru(ww)).clip(0.0, None)
 
         data = np.rec.fromarrays([ww, tt, extinction(ww), fiberinput['elg'](ww)],
                                 names='wavelength,throughput,extinction,fiberinput')
