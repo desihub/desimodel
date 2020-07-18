@@ -18,7 +18,7 @@ import yaml
 from . import docdb
 from ..io import datadir, findfile
 
-def update(testdir=None, desi347_version=13, desi334_version=3):
+def update(testdir=None, desi347_version=16, desi5501_version=3, desi5501_KOSI=True):
     '''
     Update thru-\*.fits from DESI-0347 and DESI-0344
 
@@ -26,21 +26,23 @@ def update(testdir=None, desi347_version=13, desi334_version=3):
         testdir: If not None, write files here instead of standard locations
             under $DESIMODEL/data/
         desi347_version: version of DESI-347 to use
-        desi334_version: version of DESI-334 to use
+        desi5501_version: version of DESI-5501 to use
+        desi5501_KOSI [bool]: use KOSI throughput measurements in 5501
     '''
     from desiutil.log import get_logger
     log = get_logger()
 
     master_thru_file = docdb.download(
         347, desi347_version,
-        'DESI-347-v{} Throughput Noise SNR Calcs.xlsx'.format(desi347_version))
+        'DESI-347-v{}_Throughput-Noise-SNR-Calcs.xlsx'.format(desi347_version))
     desi_yaml_file   = docdb.download(
-        347, desi347_version, 'desi.yaml')
+        347, desi347_version, 'desi_v{}.yaml'.format(desi347_version))
 
-    ccd_thru_file = dict()
-    ccd_thru_file['b'] = docdb.download(334, desi334_version, 'blue-thru.txt')
-    ccd_thru_file['r'] = docdb.download(334, desi334_version, 'red-thru.txt')
-    ccd_thru_file['z'] = docdb.download(334, desi334_version, 'nir-thru-250.txt')
+    ccd_thru_file = []
+    suffix = 'KOSI' if desi5501_KOSI else ''
+    for spectro in range(10):
+        ccd_thru_file.append(docdb.download(
+            5501, desi5501_version, 'Spectrograph{0}{1}.xlsx'.format(spectro + 1, suffix)))
 
     with open(desi_yaml_file) as fx:
         params = yaml.safe_load(fx)
@@ -73,20 +75,22 @@ def update(testdir=None, desi347_version=13, desi334_version=3):
         fiberinput[objtype] = load_fiberinput(
             findfile('throughput/fiberloss-{}.dat'.format(objtype)) )
 
-    #- Spectrograph throughputs
-    specthru = dict()
+    #- Read spectrograph throughputs and calculate mean over spectrographs.
+    specwave, specthru_data = load_spec_throughputs(ccd_thru_file)
+    specthru_mean = np.mean(specthru_data, axis=0)
 
     #- Min/Max wavelength coverage
     wmin = dict()
     wmax = dict()
 
-    for channel in ('b', 'r', 'z'):
-        specthru[channel] = load_spec_throughput(ccd_thru_file[channel])
+    for j, channel in enumerate('brz'):
+        # Build an interpolation the DESI-5501 mean spectrograph throughput in Angstrom units.
+        specthru = InterpolatedUnivariateSpline(10 * specwave, specthru_mean[j], k=3)
         wmin[channel], wmax[channel] = get_waveminmax(findfile('specpsf/psf-{}.fits'.format(channel)))
 
         dw = 0.1
         ww = np.arange(wmin[channel], wmax[channel]+dw/2, dw)
-        tt = thru(ww) * specthru[channel](ww)
+        tt = (thru(ww) * specthru(ww)).clip(0.0, None)
 
         data = np.rec.fromarrays([ww, tt, extinction(ww), fiberinput['elg'](ww)],
                                 names='wavelength,throughput,extinction,fiberinput')
@@ -111,7 +115,7 @@ def update(testdir=None, desi347_version=13, desi334_version=3):
         hdus.writeto(outfile, overwrite=True)
         log.info('Wrote {}'.format(outfile))
 
-def load_throughput(filename, specthru_row=95, thru_row=114):
+def load_throughput(filename, specthru_row=95, thru_row=97):
     """
     Load throughputs from DESI-0347, removing the spectrograph contributions
     which will be loaded separately from higher resolution data.
@@ -166,26 +170,38 @@ def load_fiberinput(filename):
 
     return InterpolatedUnivariateSpline(wavelength, throughput, k=3)
 
-def load_spec_throughput(filename):
+def load_spec_throughputs(filenames, columns='ABCD', first_row=2, last_row=647):
     """
-    Loads spectrograph*CCD throughputs from DESI-0334 text files.
+    Loads spectrograph*CCD throughputs from DESI-5501 excel files.
 
     Args:
-        filename: input filename, e.g. blue-thru.txt from DESI-0334
+        filenames: list of per-spectrograph filenames.
 
-    Returns InterpolatedUnivariateSpline instance.
+    Returns arrays of wavelength in nm and throughput per spectrograph.
     """
-    #- Spectrograph throughputs from DESI-0334 have wavelength [nm] in the
-    #- first column and total throughput in the last column
-    tmp = np.loadtxt(filename)
-    wavelength = tmp[:, 0] * 10  #- nm -> Angstroms
-    throughput = tmp[:, -1]
+    wave = None
+    nspectro = len(filenames)
+    for spectro in range(nspectro):
+        fname = filenames[spectro]
+        # Sanity check on column headers.
+        headers = docdb.xls_read_row(fname, 'Summary', first_row - 1, columns[0], columns[-1])
+        assert np.array_equal(headers, ['Wav', 'Blue', 'Red', 'NIR']), 'Unexpected column headers.'
+        wave_in = docdb.xls_read_col(fname, 'Summary', columns[0], first_row, last_row, dtype=float)
+        if wave is None:
+            wave = wave_in
+            assert np.allclose(np.diff(wave), 1), 'Unexpected wavelength grid.'
+            nwave = len(wave)
+            thru = np.zeros((nspectro, 3, nwave))
+        else:
+            assert np.array_equal(wave, wave_in), 'Wavelength arrays do not match.'
+        for k, (camera, column) in enumerate(zip('brz', columns[1:])):
+            # Read column values as strings since some cells are empty.
+            values = docdb.xls_read_col(fname, 'Summary', column, first_row, last_row)
+            # Replace empty cells with zeros and convert non-empty cells to floats.
+            values[values == ''] = '0'
+            thru[spectro, k] = values.astype(float)
 
-    assert np.all(np.diff(wavelength)) > 0
-    assert 3500 <= np.min(wavelength) and np.max(wavelength) <= 9950
-    assert 0 <= np.min(throughput) and np.max(throughput) <= 1
-
-    return InterpolatedUnivariateSpline(wavelength, throughput, k=3)
+    return wave, thru
 
 def get_waveminmax(psffile):
     """
