@@ -20,7 +20,7 @@ from ..io import datadir, findfile
 
 def update(testdir=None, desi347_version=16, desi5501_version=3, desi5501_KOSI=True):
     '''
-    Update thru-\*.fits from DESI-0347 and DESI-0344
+    Update thru-[brz].fits from DESI-0347 and DESI-0344
 
     Args:
         testdir: If not None, write files here instead of standard locations
