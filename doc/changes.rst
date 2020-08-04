@@ -2,10 +2,15 @@
 desimodel Release Notes
 =======================
 
-0.13.1 (unreleased)
+0.13.2 (unreleased)
 -------------------
 
 * planned: updates to focal plane hardware calibrations
+
+0.13.1 (2020-08-03)
+-------------------
+
+* New tag of data+code since data had been erroneously pre-tagged 0.13.0
 
 0.13.0 (2020-08-03)
 -------------------
