@@ -2,12 +2,20 @@
 desimodel Release Notes
 =======================
 
-0.13.0 (unreleased)
+0.13.1 (unreleased)
 -------------------
 
 * planned: updates to focal plane hardware calibrations
+
+0.13.0 (2020-08-03)
+-------------------
+
+* Fix py3.8 syntax warnings (PR `#140`_).
+* Fix corner cases in generating and using focalplane models (PR `#139`_).
 * Use DESI-5501 (as built) instead of DESI-334 (design) for spectrograph throughput (PR `#137`_).
 
+.. _`#140`: https://github.com/desihub/desimodel/pull/140
+.. _`#139`: https://github.com/desihub/desimodel/pull/139
 .. _`#137`: https://github.com/desihub/desimodel/pull/137
 
 0.12.0 (2020-03-13)
