@@ -1,0 +1,127 @@
+#!/usr/bin/env python
+"""Commandline script to take a nominal focalplane model and produce a new model
+with a restricted patrol radius.
+
+This script loads an existing focalplane model and creates a new date-stamped model
+in the current $DESIMODEL data directory.
+
+"""
+
+import sys
+import datetime
+import argparse
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+import yaml
+
+from astropy.table import Table, Column
+
+from desimodel.io import load_focalplane
+
+
+def main():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--in_date",
+        type=str,
+        default=None,
+        required=False,
+        help="Input date in ISO format (e.g. '2020-01-01T00:00:00')."
+    )
+
+    parser.add_argument(
+        "--out_date",
+        type=str,
+        default=None,
+        required=False,
+        help="Output date in ISO format (e.g. '2020-01-01T00:00:00').  Default = now."
+    )
+
+    parser.add_argument(
+        "--reach",
+        type=float,
+        default=None,
+        required=True,
+        help="The maximum positioner reach in millimeters."
+    )
+
+    args = parser.parse_args()
+
+    in_time = None
+    if args.in_date is None:
+        in_time = datetime.datetime.now()
+    else:
+        in_time = datetime.datetime.strptime(args.in_date, "%Y-%m-%dT%H:%M:%S")
+
+    if args.out_date is None:
+        args.out_date = datetime.datetime.isoformat(
+            datetime.datetime.now()
+        )
+
+    # Load the starting focalplane model
+
+    fp, excl, state, in_tmstr = load_focalplane(in_time)
+
+    # Restrict the effective patrol radius by putting limits on the phi
+    # angle range.
+
+    nrows = len(fp)
+    for row in fp:
+        theta_arm = row["LENGTH_R1"]
+        phi_arm = row["LENGTH_R2"]
+        if theta_arm <= 0 or phi_arm <= 0:
+            # this is not a positioner
+            continue
+        phi_zero = np.radians(row["OFFSET_P"])
+        phi_min = np.radians(row["MIN_P"])
+        phi_max = np.radians(row["MAX_P"])
+        # Use law of cosines to find max opening angle
+        opening = np.degrees(
+            np.arccos(
+                (args.reach**2 - theta_arm**2 - phi_arm**2) /
+                (-2.0 * theta_arm * phi_arm)
+            )
+        )
+        # Phi min is relative to the offset
+        row["MIN_P"] = (180.0 - opening) - row["OFFSET_P"]
+
+    out_fp_file = "desi-focalplane_{}.ecsv".format(args.out_date)
+    out_excl_file = "desi-exclusion_{}.yaml".format(args.out_date)
+    out_state_file = "desi-state_{}.ecsv".format(args.out_date)
+
+    fp.write(out_fp_file, format="ascii.ecsv", overwrite=True)
+
+    out_cols = [
+        Column(name="TIME", length=nrows, dtype=np.dtype("a20"),
+               description="The timestamp of the event (UTC, ISO format)"),
+        Column(name="PETAL", length=nrows, dtype=np.int32,
+               description="Petal location [0-9]"),
+        Column(name="DEVICE", length=nrows, dtype=np.int32,
+               description="Device location on the petal"),
+        Column(name="LOCATION", length=nrows, dtype=np.int32,
+               description="Global device location (PETAL * 1000 + DEVICE)"),
+        Column(name="STATE", length=nrows, dtype=np.uint32,
+               description="State bit field (good == 0)"),
+        Column(name="EXCLUSION", length=nrows, dtype=np.dtype("a9"),
+               description="The exclusion polygon for this device"),
+    ]
+
+    out_state = Table()
+    out_state.add_columns(out_cols)
+    out_state["TIME"][:] = args.out_date
+    out_state["PETAL"][:] = state["PETAL"]
+    out_state["DEVICE"][:] = state["DEVICE"]
+    out_state["LOCATION"][:] = state["LOCATION"]
+    out_state["STATE"][:] = state["STATE"]
+    out_state["EXCLUSION"][:] = state["EXCLUSION"]
+
+    out_state.write(out_state_file, format="ascii.ecsv", overwrite=True)
+
+    with open(out_excl_file, "w") as pf:
+        yaml.dump(excl, pf, default_flow_style=False)
+
+if __name__ == "__main__":
+    main()
