@@ -1,0 +1,176 @@
+#!/usr/bin/env python
+"""Commandline script to extend a nominal set of exclusion polygons.
+
+This script DOES NOT touch any focalplane files.  It works with the lower-level input
+files that are passed to the desi_generate_focalplane script.
+
+"""
+
+import argparse
+
+import numpy as np
+
+import matplotlib.pyplot as plt
+
+
+from configobj import ConfigObj
+
+
+def raw_to_xy(obj):
+    raw = np.array(obj)
+    x = np.array(raw[0])
+    y = np.array(raw[1])
+    return {"x": x, "y": y}
+
+def xy_to_raw(xy):
+    raw = list()
+    raw.append(list(xy["x"]))
+    raw.append(list(xy["y"]))
+    return raw
+
+
+def load_exclusions(path):
+    raw = ConfigObj(infile=path, unrepr=True)
+    excl = dict()
+    excl["name"] = raw["NAME"]
+    excl["theta"] = raw_to_xy(raw["KEEPOUT_THETA"])
+    excl["phi"] = raw_to_xy(raw["KEEPOUT_PHI"])
+    excl["gfa"] = raw_to_xy(raw["KEEPOUT_GFA"])
+    excl["petal"] = raw_to_xy(raw["KEEPOUT_PTL"])
+    return excl
+
+
+def dump_exclusions(excl, path):
+    raw = ConfigObj(infile=None, unrepr=True)
+    raw.filename = path
+    raw.list_values = True
+    raw["NAME"] = excl["name"]
+    raw["KEEPOUT_THETA"] = xy_to_raw(excl["theta"])
+    raw["KEEPOUT_PHI"] = xy_to_raw(excl["phi"])
+    raw["KEEPOUT_GFA"] = xy_to_raw(excl["gfa"])
+    raw["KEEPOUT_PTL"] = xy_to_raw(excl["petal"])
+    raw.write()
+    return
+
+
+def extendpoly(xdata, ydata, dist):
+    xnew = list()
+    ynew = list()
+    ndat = len(xdata)
+    # For each point, compute the direction orthogonal to the line
+    # connecting the previous and next points.  Then move the
+    # current point along that direction.
+    for i in range(ndat):
+        prv = None
+        nxt = None
+        if i == 0:
+            nxt = i + 1
+            prv = -1
+        elif i == ndat - 1:
+            nxt = 0
+            prv = i - 1
+        else:
+            nxt = i + 1
+            prv = i - 1
+        tang = np.arctan2(ydata[nxt] - ydata[prv], xdata[nxt] - xdata[prv])
+        # print("{}:  prev {} ({}, {}) --> next {} ({}, {}) angle = {}".format(
+        #     i, prv, xdata[prv], ydata[prv], nxt, xdata[nxt], ydata[nxt], tang*180.0/np.pi)
+        # )
+        tang -= 0.5 * np.pi
+        xincr = dist * np.cos(tang)
+        yincr = dist * np.sin(tang)
+        # print("  radang = {}, xincr = {}, yincr = {}".format(tang, xincr, yincr))
+        xnew.append(xdata[i] + xincr)
+        ynew.append(ydata[i] + yincr)
+    return np.array(xnew), np.array(ynew)
+
+
+def plot_poly(ax, x, y, color="black"):
+    fullx = np.empty(len(x) + 1)
+    fullx[0:-1] = x
+    fullx[-1] = x[0]
+    fully = np.empty(len(y) + 1)
+    fully[0:-1] = y
+    fully[-1] = y[0]
+    ax.plot(fullx, fully, color=color)
+    return
+
+
+def main():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--original",
+        type=str,
+        default=None,
+        required=True,
+        help="The original exclusions conf file"
+    )
+
+    parser.add_argument(
+        "--increase",
+        type=int,
+        default=100,
+        required=False,
+        help="The amount (in microns) to extend the polygons"
+    )
+
+    parser.add_argument(
+        "--name",
+        type=str,
+        default=None,
+        required=False,
+        help="The name of the new exclusion polygons.  This should be short."
+    )
+
+    parser.add_argument(
+        "--out",
+        type=str,
+        default=None,
+        required=False,
+        help="The output filename."
+    )
+
+    args = parser.parse_args()
+
+    if args.name is None:
+        # construct name from the increase
+        args.name = "plus{}".format(args.increase)
+
+    if args.out is None:
+        args.out = "exclusions_{}.conf".format(args.name)
+
+    # Load original polygons
+    orig = load_exclusions(args.original)
+
+    # Add to theta / phi exclusions
+
+    p = dict()
+    p["name"] = args.name
+    p["gfa"] = orig["gfa"]
+    p["petal"] = orig["petal"]
+    p["theta"] = dict()
+    p["theta"]["x"], p["theta"]["y"] = extendpoly(
+        orig["theta"]["x"], orig["theta"]["y"], (args.increase / 1000.0)
+    )
+    p["phi"] = dict()
+    p["phi"]["x"], p["phi"]["y"] = extendpoly(
+        orig["phi"]["x"], orig["phi"]["y"], (args.increase / 1000.0)
+    )
+
+    dump_exclusions(p, args.out)
+
+    # Plot a comparison
+
+    fig = plt.figure(figsize=(8, 6), dpi=100)
+    ax = fig.add_subplot(1, 1, 1)
+    plot_poly(ax, orig["phi"]["x"], orig["phi"]["y"], color="black")
+    plot_poly(ax, p["phi"]["x"], p["phi"]["y"], color="red")
+
+    plt.savefig("{}.png".format(args.out))
+    #plt.show()
+    plt.close()
+
+
+if __name__ == "__main__":
+    main()
