@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+"""Commandline script to synchronize focalplane model from the DB dump.
+"""
+
+import argparse
+
+from desimodel.inputs.focalplane_sync import create_from_calibs
+
+
+def main():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--calib_file",
+        type=str,
+        default=None,
+        required=True,
+        help="The ECSV database dump file",
+    )
+
+    parser.add_argument(
+        "--test",
+        type=str,
+        required=False,
+        default=None,
+        help="Override the output directory for testing.",
+    )
+
+    parser.add_argument(
+        "--reset",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Create a new focalplane model from the calib file, ignoring all previous state information",
+    )
+
+    parser.add_argument(
+        "--simulation",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Create a focalplane model for simulations.  All transient hardware issues are cleared",
+    )
+
+    args = parser.parse_args()
+
+    create_from_calibs(
+        args.calib_file,
+        testdir=args.test,
+        force=args.reset,
+        sim=args.simulation
+    )
+
+    return
+
+
+if __name__ == "__main__":
+    main()

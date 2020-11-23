@@ -371,9 +371,9 @@ def load_focalplane(time=None):
     if _focalplane is None:
         # First call, load all data files.
         fpdir = os.path.join(datadir(), "focalplane")
-        fppat = re.compile(r"desi-focalplane_(.*)\.ecsv")
-        stpat = re.compile(r"desi-state_(.*)\.ecsv")
-        expat = re.compile(r"desi-exclusion_(.*)\.yaml")
+        fppat = re.compile(r"^desi-focalplane_(.*)\.ecsv$")
+        stpat = re.compile(r"^desi-state_(.*)\.ecsv$")
+        expat = re.compile(r"^desi-exclusion_(.*)\.yaml$")
         fpraw = dict()
         msg = "Loading focalplanes from {}".format(fpdir)
         log.debug(msg)
@@ -453,27 +453,32 @@ def load_focalplane(time=None):
         tm = datetime.strptime(fullstate[row]["TIME"], "%Y-%m-%dT%H:%M:%S")
         if tm <= time:
             loc = fullstate[row]["LOCATION"]
-            pet = fullstate[row]["PETAL"]
-            dev = fullstate[row]["DEVICE"]
-            st = fullstate[row]["STATE"]
-            excl = fullstate[row]["EXCLUSION"]
             if loc not in locstate:
                 locstate[loc] = dict()
-            locstate[loc]["PETAL"] = pet
-            locstate[loc]["DEVICE"] = dev
-            locstate[loc]["STATE"] = st
-            locstate[loc]["EXCLUSION"] = excl
+            locstate[loc]["STATE"] = fullstate[row]["STATE"]
+            if "MIN_P" in fullstate[row]:
+                # Modern state log
+                locstate[loc]["MIN_P"] = fullstate[row]["MIN_P"]
+                locstate[loc]["POS_P"] = fullstate[row]["POS_P"]
+                locstate[loc]["POS_T"] = fullstate[row]["POS_T"]
+            else:
+                locstate[loc]["MIN_P"] = 0.0
+                locstate[loc]["POS_P"] = 0.0
+                locstate[loc]["POS_T"] = 0.0
+            locstate[loc]["EXCLUSION"] = fullstate[row]["EXCLUSION"]
 
     nloc = len(locstate)
     state_cols = [
-        Column(name="PETAL", length=nloc, dtype=np.int32,
-               description="Petal location [0-9]"),
-        Column(name="DEVICE", length=nloc, dtype=np.int32,
-               description="Device location on the petal"),
         Column(name="LOCATION", length=nloc, dtype=np.int32,
                description="Global device location (PETAL * 1000 + DEVICE)"),
         Column(name="STATE", length=nloc, dtype=np.uint32,
                description="State bit field (good == 0)"),
+        Column(name="POS_T", length=nloc, dtype=np.float32,
+               description="Current estimate of Theta arm angle"),
+        Column(name="POS_P", length=nloc, dtype=np.float32,
+               description="Current estimate of Phi arm angle"),
+        Column(name="MIN_P", length=nloc, dtype=np.float32,
+               description="Current minimum Phi angle (restricted reach)"),
         Column(name="EXCLUSION", length=nloc, dtype=np.dtype("a9"),
                description="The exclusion polygon for this device"),
     ]
@@ -481,10 +486,11 @@ def load_focalplane(time=None):
     state_data.add_columns(state_cols)
     row = 0
     for loc in sorted(locstate.keys()):
-        state_data[row]["PETAL"] = locstate[loc]["PETAL"]
-        state_data[row]["DEVICE"] = locstate[loc]["DEVICE"]
         state_data[row]["LOCATION"] = loc
         state_data[row]["STATE"] = locstate[loc]["STATE"]
+        state_data[row]["MIN_P"] = locstate[loc]["MIN_P"]
+        state_data[row]["POS_P"] = locstate[loc]["POS_P"]
+        state_data[row]["POS_T"] = locstate[loc]["POS_T"]
         state_data[row]["EXCLUSION"] = locstate[loc]["EXCLUSION"]
         row += 1
 
