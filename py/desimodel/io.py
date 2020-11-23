@@ -449,6 +449,9 @@ def load_focalplane(time=None):
 
     # Now "replay" the state up to our requested time.
     locstate = dict()
+    new_format = False
+    if "MIN_P" in fullstate.colnames:
+        new_format = True
     for row in range(len(fullstate)):
         tm = datetime.strptime(fullstate[row]["TIME"], "%Y-%m-%dT%H:%M:%S")
         if tm <= time:
@@ -456,7 +459,7 @@ def load_focalplane(time=None):
             if loc not in locstate:
                 locstate[loc] = dict()
             locstate[loc]["STATE"] = fullstate[row]["STATE"]
-            if "MIN_P" in fullstate[row]:
+            if new_format:
                 # Modern state log
                 locstate[loc]["MIN_P"] = fullstate[row]["MIN_P"]
                 locstate[loc]["POS_P"] = fullstate[row]["POS_P"]
@@ -479,7 +482,7 @@ def load_focalplane(time=None):
                description="Current estimate of Phi arm angle"),
         Column(name="MIN_P", length=nloc, dtype=np.float32,
                description="Current minimum Phi angle (restricted reach)"),
-        Column(name="EXCLUSION", length=nloc, dtype=np.dtype("a9"),
+        Column(name="EXCLUSION", length=nloc, dtype=np.dtype("a16"),
                description="The exclusion polygon for this device"),
     ]
     state_data = Table()

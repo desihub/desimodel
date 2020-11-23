@@ -33,7 +33,7 @@ from .focalplane_utils import (
     valid_states,
     create_tables,
     load_petal_fiber_map,
-    propagate_state
+    propagate_state,
 )
 
 
@@ -59,8 +59,14 @@ def devices_from_fiberpos(fp):
 
     # There is no "PETAL_ID" for the fake fiberpos, so we use PETAL
     for pet, dev, devtyp, blk, fib, xoff, yoff in zip(
-            fpos["PETAL"], fpos["DEVICE"], fpos["DEVICE_TYPE"],
-            fpos["SLITBLOCK"], fpos["BLOCKFIBER"], fpos["X"], fpos["Y"]):
+        fpos["PETAL"],
+        fpos["DEVICE"],
+        fpos["DEVICE_TYPE"],
+        fpos["SLITBLOCK"],
+        fpos["BLOCKFIBER"],
+        fpos["X"],
+        fpos["Y"],
+    ):
         fp[pet][dev]["DEVICE_ID"] = "FAKE"
         fp[pet][dev]["DEVICE_TYPE"] = devtyp
         fp[pet][dev]["CABLE"] = 0
@@ -87,8 +93,9 @@ def devices_from_fiberpos(fp):
     return
 
 
-def devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
-                       fibermaps=None):
+def devices_from_files(
+    fp, posdir=None, fillfake=False, fakeoffset=False, fibermaps=None
+):
     """Populate focalplane properties from information in files.
 
     This populates the focalplane with device information gathered from
@@ -129,10 +136,9 @@ def devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
                     print("parsing {}".format(pfile), flush=True)
                     cnf = configobj.ConfigObj(pfile, unrepr=True)
                     # Is this device used?
-                    if ("DEVICE_LOC" not in cnf) \
-                            or (int(cnf["DEVICE_LOC"]) < 0):
+                    if ("DEVICE_LOC" not in cnf) or (int(cnf["DEVICE_LOC"]) < 0):
                         continue
-                    if ("PETAL_ID" not in cnf):
+                    if "PETAL_ID" not in cnf:
                         continue
                     pet = int(cnf["PETAL_ID"])
                     if (pet < 0) or (pet not in fp):
@@ -140,9 +146,10 @@ def devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
                     # Check that the positioner ID in the file name matches
                     # the file contents.
                     if file_dev != cnf["POS_ID"]:
-                        msg = "positioner file {} has device {} in its name "\
-                            "but contains POS_ID={}"\
-                            .format(f, file_dev, cnf["POS_ID"])
+                        msg = (
+                            "positioner file {} has device {} in its name "
+                            "but contains POS_ID={}".format(f, file_dev, cnf["POS_ID"])
+                        )
                         raise RuntimeError(msg)
                     # Add properties to dictionary
                     pos[file_dev] = cnf
@@ -153,13 +160,12 @@ def devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
         if dev not in fp[pet]:
             # This should never happen- all possible device locations
             # should have been pre-populated before calling this function.
-            msg = "Device location {} on petal ID {} does not exist".format(
-                dev, pet
-            )
+            msg = "Device location {} on petal ID {} does not exist".format(dev, pet)
             raise RuntimeError(msg)
         fp[pet][dev]["DEVICE_ID"] = devid
         t_min, t_max, p_min, p_max = compute_theta_phi_range(
-            props["PHYSICAL_RANGE_T"], props["PHYSICAL_RANGE_P"])
+            props["PHYSICAL_RANGE_T"], props["PHYSICAL_RANGE_P"]
+        )
         fp[pet][dev]["OFFSET_T"] = props["OFFSET_T"]
         fp[pet][dev]["OFFSET_P"] = props["OFFSET_P"]
         fp[pet][dev]["LENGTH_R1"] = props["LENGTH_R1"]
@@ -199,9 +205,17 @@ def devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
     return
 
 
-def create(testdir=None, posdir=None, fibermaps=None,
-           petalloc=None, startvalid=None, fillfake=False,
-           fakeoffset=False, fakefiberpos=False, reset=False):
+def create(
+    testdir=None,
+    posdir=None,
+    fibermaps=None,
+    petalloc=None,
+    startvalid=None,
+    fillfake=False,
+    fakeoffset=False,
+    fakefiberpos=False,
+    reset=False,
+):
     """Construct DESI focalplane and state files.
 
     This function gathers information from the following sources:
@@ -250,14 +264,13 @@ def create(testdir=None, posdir=None, fibermaps=None,
     if fakefiberpos and (posdir is not None):
         raise RuntimeError(
             "Cannot specify both fake positioners from fiberpos and real"
-            " devices from posdir")
+            " devices from posdir"
+        )
 
     if startvalid is None:
         startvalid = datetime.datetime.utcnow()
     else:
-        startvalid = datetime.datetime.strptime(
-            startvalid, "%Y-%m-%dT%H:%M:%S"
-        )
+        startvalid = datetime.datetime.strptime(startvalid, "%Y-%m-%dT%H:%M:%S")
     file_date = startvalid.isoformat(timespec="seconds")
 
     if (petalloc is None) and (posdir is not None):
@@ -279,8 +292,11 @@ def create(testdir=None, posdir=None, fibermaps=None,
         devices_from_fiberpos(fp)
     else:
         devices_from_files(
-            fp, posdir=posdir, fillfake=fillfake, fakeoffset=fakeoffset,
-            fibermaps=fibermaps
+            fp,
+            posdir=posdir,
+            fillfake=fillfake,
+            fakeoffset=fakeoffset,
+            fibermaps=fibermaps,
         )
 
     # Now rotate the X / Y offsets based on the petal location.
@@ -307,7 +323,7 @@ def create(testdir=None, posdir=None, fibermaps=None,
         "MIN_T",
         "MAX_T",
         "MIN_P",
-        "MAX_P"
+        "MAX_P",
     ]
 
     row = 0
@@ -331,10 +347,11 @@ def create(testdir=None, posdir=None, fibermaps=None,
                 # This must not be a POS device
                 out_fp[row]["FIBER"] = -1
             else:
-                out_fp[row]["FIBER"] = \
-                    fp[petal][dev]["PETAL"] * 500 \
-                    + fp[petal][dev]["SLITBLOCK"] * 25 \
+                out_fp[row]["FIBER"] = (
+                    fp[petal][dev]["PETAL"] * 500
+                    + fp[petal][dev]["SLITBLOCK"] * 25
                     + fp[petal][dev]["BLOCKFIBER"]
+                )
             if (fp[petal][dev]["DEVICE_ID"] != "NONE") or fillfake:
                 for col in dev_cols:
                     if col in fp[petal][dev]:
@@ -352,15 +369,13 @@ def create(testdir=None, posdir=None, fibermaps=None,
     excl = dict()
 
     # First the THETA arm.
-    circs = [
-        [[0.0+3.0, 0.0], 2.095]
-    ]
+    circs = [[[0.0 + 3.0, 0.0], 2.095]]
     seg = [
-        [2.095+3.0, -0.474],
-        [1.358+3.0, -2.5],
-        [-0.229+3.0, -2.5],
-        [-1.241+3.0, -2.792],
-        [-2.095+3.0, -0.356]
+        [2.095 + 3.0, -0.474],
+        [1.358 + 3.0, -2.5],
+        [-0.229 + 3.0, -2.5],
+        [-1.241 + 3.0, -2.792],
+        [-2.095 + 3.0, -0.356],
     ]
     segs = [seg]
     shp_theta = dict()
@@ -368,19 +383,14 @@ def create(testdir=None, posdir=None, fibermaps=None,
     shp_theta["segments"] = segs
 
     # Now the PHI arm
-    circs = [
-        [[0.0+3.0, 0.0], 0.967]
-    ]
-    seg_upper = [
-        [-3.0+3.0, 0.990],
-        [0.0+3.0, 0.990]
-    ]
+    circs = [[[0.0 + 3.0, 0.0], 0.967]]
+    seg_upper = [[-3.0 + 3.0, 0.990], [0.0 + 3.0, 0.990]]
     seg_lower = [
-        [-2.944+3.0, -1.339],
-        [-2.944+3.0, -2.015],
-        [-1.981+3.0, -1.757],
-        [-1.844+3.0, -0.990],
-        [0.0+3.0, -0.990]
+        [-2.944 + 3.0, -1.339],
+        [-2.944 + 3.0, -2.015],
+        [-1.981 + 3.0, -1.757],
+        [-1.844 + 3.0, -0.990],
+        [0.0 + 3.0, -0.990],
     ]
     segs = [seg_upper, seg_lower]
     shp_phi = dict()
@@ -393,9 +403,7 @@ def create(testdir=None, posdir=None, fibermaps=None,
 
     excl["unknown"] = dict()
     excl["unknown"]["theta"] = dict()
-    excl["unknown"]["theta"]["circles"] = [
-        [[0.0, 0.0], 6.0]
-    ]
+    excl["unknown"]["theta"]["circles"] = [[[0.0, 0.0], 6.0]]
     excl["unknown"]["theta"]["segments"] = list()
     excl["unknown"]["phi"] = dict()
     excl["unknown"]["phi"]["circles"] = list()
@@ -421,9 +429,7 @@ def create(testdir=None, posdir=None, fibermaps=None,
         checkrows = np.where(oldstate["LOCATION"] == 7000)[0]
         print(oldstate[checkrows])
 
-        log.info(
-            "Comparing generated focalplane to one from {}".format(oldtmstr)
-        )
+        log.info("Comparing generated focalplane to one from %s", oldtmstr)
 
         # Compare the old and new.  These are the device properties we care
         # about when propagating state.  In particular if positioner
@@ -436,37 +442,34 @@ def create(testdir=None, posdir=None, fibermaps=None,
             "DEVICE_ID",
             "DEVICE_TYPE",
             "SLITBLOCK",
-            "BLOCKFIBER"
+            "BLOCKFIBER",
         ]
         diff = device_compare(oldfp, out_fp, checkcols)
 
         device_printdiff(diff)
 
         if len(diff) > 0:
-            msg = "Existing focalplane device properties have changed."\
-                "  Refusing to propagate the device state.  Use the 'reset'"\
+            msg = (
+                "Existing focalplane device properties have changed."
+                "  Refusing to propagate the device state.  Use the 'reset'"
                 " option to start with a new device state."
+            )
             raise RuntimeError(msg)
 
         propagate_state(out_state, excl, oldstate, oldexcl)
 
     # Ensure that the default polygon has been defined.
     if "default" not in excl.keys():
-        raise RuntimeError(
-            "No default exclusion polygon found in available files"
-        )
+        raise RuntimeError("No default exclusion polygon found in available files")
 
     # Now write out all of this collected information.  Also write out an
     # initial "state" log as a starting point.  Note that by having log
     # files (which contain datestamps) also have a "starting" date, it means
     # that we don't need a single log for the entire survey.
 
-    out_fp_file = os.path.join(
-        outdir, "desi-focalplane_{}.ecsv".format(file_date))
-    out_excl_file = os.path.join(
-        outdir, "desi-exclusion_{}.yaml".format(file_date))
-    out_state_file = os.path.join(
-        outdir, "desi-state_{}.ecsv".format(file_date))
+    out_fp_file = os.path.join(outdir, "desi-focalplane_{}.ecsv".format(file_date))
+    out_excl_file = os.path.join(outdir, "desi-exclusion_{}.yaml".format(file_date))
+    out_state_file = os.path.join(outdir, "desi-state_{}.ecsv".format(file_date))
 
     out_fp.write(out_fp_file, format="ascii.ecsv", overwrite=True)
     del out_fp

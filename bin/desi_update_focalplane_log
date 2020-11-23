@@ -136,7 +136,7 @@ def main():
     # Now read the full state file and append
     st = Table.read(state_file, format="ascii.ecsv")
     st.add_row([timestr, loc, new_st, new_pos_t, new_pos_p, new_min_p, new_excl])
-    st.write(tmp_state, format="ascii.ecsv")
+    st.write(tmp_state, format="ascii.ecsv", overwrite=True)
 
     # now move the temp file into place
     shutil.copy2(state_file, prev_state)
