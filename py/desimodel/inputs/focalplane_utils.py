@@ -6,6 +6,7 @@ desimodel.inputs.focalplane_utils
 
 Helpers for constructing a focalplane model.
 """
+import hashlib
 import configobj
 import csv
 import numpy as np
@@ -460,13 +461,32 @@ def exclusions_equal(ex1, ex2):
         return False
     if len(ex1["circles"]) != len(ex2["circles"]):
         return False
-    for s1, s2 in zip(ex1["segments"], ex2["segments"]):
-        if not np.allclose(s1, s2):
+    for slist1, slist2 in zip(ex1["segments"], ex2["segments"]):
+        if len(slist1) != len(slist2):
             return False
+        for s1, s2 in zip(slist1, slist2):
+            if not np.allclose(s1, s2):
+                return False
     for c1, c2 in zip(ex1["circles"], ex2["circles"]):
         if not np.allclose(c1, c2):
             return False
     return True
+
+
+def hash_exclusion(excl):
+    exhash = hashlib.md5()
+    polynames = list(sorted(excl.keys()))
+    for nm in polynames:
+        for seglist in excl[nm]["segments"]:
+            for seg in seglist:
+                segstr = "{:0.4f}{:0.4f}".format(seg[0], seg[1])
+                exhash.update(segstr.encode("utf-8"))
+        for cir in excl[nm]["circles"]:
+            cent = cir[0]
+            rad = cir[1]
+            cirstr = "{:0.4f}{:0.4f}{:0.4f}".format(cent[0], cent[1], rad)
+            exhash.update(cirstr.encode("utf-8"))
+    return exhash.hexdigest()
 
 
 def update_exclusions(excl, paths=list()):
@@ -489,7 +509,7 @@ def update_exclusions(excl, paths=list()):
 
     for pf in paths:
         # Add shapes from other files.
-        log.info("Loading exclusion polygons from {}".format(pf))
+        log.info("Loading exclusion polygons from %s", pf)
         exprops = configobj.ConfigObj(pf, unrepr=True)
         if "NAME" not in exprops:
             msg = "exclusion file {} does not contain a NAME parameter"\
@@ -611,7 +631,7 @@ def create_tables(n_fp_rows, n_state_rows=None):
                description="Current estimate of Phi arm angle"),
         Column(name="MIN_P", length=n_state_rows, dtype=np.float32,
                description="Current minimum Phi angle (restricted reach)"),
-        Column(name="EXCLUSION", length=n_state_rows, dtype=np.dtype("a9"),
+        Column(name="EXCLUSION", length=n_state_rows, dtype=np.dtype("a16"),
                description="The exclusion polygon for this device"),
     ]
 

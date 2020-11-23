@@ -8,6 +8,7 @@ Tools for checking and synchronizing focalplane state to online system.
 """
 import os
 import datetime
+import shutil
 
 import ast
 
@@ -32,6 +33,7 @@ from .focalplane_utils import (
     device_printdiff,
     update_exclusions,
     restricted_positioner_phi,
+    hash_exclusion,
 )
 
 
@@ -104,7 +106,7 @@ def convert_fp_calibs(fpcal):
 
     retrct = dict(excl["default"])
     retrct["phi"]["segments"] = list()
-    retrct["phi"]["circles"] = [[0.0, 0.0], outer_clear_rotation]
+    retrct["phi"]["circles"] = [[[0.0, 0.0], outer_clear_rotation]]
     excl["retracted"] = retrct
 
     # Get the fiber map from device location to spectrographs.
@@ -178,26 +180,15 @@ def convert_fp_calibs(fpcal):
         dpolyphi["circles"] = list()
         dpolyphi["segments"] = collision_to_segments(dkphi)
 
-        pname = None
-        for nm, polys in excl.items():
-            if exclusions_equal(polys["theta"], dpolytheta) and exclusions_equal(
-                polys["phi"], dpolyphi
-            ):
-                pname = nm
-                break
-        if pname is None:
-            # New set of polygons
-            nm = "{:04d}".format(kindx)
-            kp = dict()
-            kp["theta"] = dpolytheta
-            kp["phi"] = dpolyphi
-            kp["petal"] = excl["default"]["petal"]
-            kp["gfa"] = excl["default"]["gfa"]
-            excl[nm] = kp
-            state["EXCLUSION"][r] = nm
-            kindx += 1
-        else:
-            state["EXCLUSION"][r] = pname
+        kp = dict(excl["default"])
+        kp["theta"] = dpolytheta
+        kp["phi"] = dpolyphi
+        pname = hash_exclusion(kp)[:16]
+
+        if pname not in excl:
+            excl[pname] = kp
+
+        state["EXCLUSION"][r] = pname
 
         # Now set rest of the state table
 
@@ -221,6 +212,8 @@ def convert_fp_calibs(fpcal):
                 fp["MIN_P"][r],
                 fp["MAX_P"][r],
             )
+        else:
+            state["MIN_P"] = d["MIN_P"]
         # If the device is NOT good, track its current estimated location.
         if state["STATE"][r] == valid_states["OK"]:
             state["POS_P"][r] = 0.0
@@ -264,13 +257,13 @@ def create_from_calibs(
         outdir = os.path.join(datadir(), "focalplane")
 
     # Get the model from the calib file
-    log.info("Loading calibration dump from {} ...".format(calib_file))
+    log.info("Loading calibration dump from %s ...", calib_file)
     fpcal = load_fp_calibs(calib_file)
 
     log.info("Converting calibration format ...")
     fp, state, excl, date_str = convert_fp_calibs(fpcal)
 
-    log.info("Calibration data retrieval date = {}".format(date_str))
+    log.info("Calibration data retrieval date = %s", date_str)
 
     if force:
         # Ignore any previous focalplane info and dump out what we have
@@ -297,7 +290,7 @@ def create_from_calibs(
 
         oldfp, oldexcl, oldstate, oldtmstr = load_focalplane(oldtime)
 
-        log.info("Comparing generated focalplane to one from {}".format(oldtmstr))
+        log.info("Comparing generated focalplane to one from %s", oldtmstr)
 
         # Compare the old and new.
         checkcols = set(fp.colnames)
@@ -349,13 +342,31 @@ def create_from_calibs(
                     raise RuntimeError(msg)
 
                 new_st = df["new"]["STATE"]
-                new_excl = df["new"]["EXCLUSION"]
+                new_excl = str(
+                    df["new"]["EXCLUSION"].tobytes().rstrip(b"\x00"), encoding="utf-8"
+                )
                 new_minp = df["new"]["MIN_P"]
                 new_posp = df["new"]["POS_P"]
                 new_post = df["new"]["POS_T"]
 
+                msg = "Updating state for location {}:".format(loc)
+                msg += "\n  old: state = {}, POS_T = {}, POS_P = {}, MIN_P = {}, excl = {}".format(
+                    df["old"]["STATE"],
+                    df["old"]["POS_T"],
+                    df["old"]["POS_P"],
+                    df["old"]["MIN_P"],
+                    str(
+                        df["old"]["EXCLUSION"].tobytes().rstrip(b"\x00"),
+                        encoding="utf-8",
+                    ),
+                )
+                msg += "\n  new: state = {}, POS_T = {}, POS_P = {}, MIN_P = {}, excl = {}".format(
+                    new_st, new_post, new_posp, new_minp, new_excl
+                )
+                log.info(msg)
+
                 st.add_row(
-                    [timestr, new_loc, new_st, new_post, new_posp, new_minp, new_excl]
+                    [date_str, loc, new_st, new_post, new_posp, new_minp, new_excl]
                 )
 
                 if new_excl not in oldexcl:
@@ -363,7 +374,7 @@ def create_from_calibs(
                     need_excl_update = True
 
             # Write to temp file then move into place
-            st.write(tmp_state, format="ascii.ecsv")
+            st.write(tmp_state, format="ascii.ecsv", overwrite=True)
             shutil.copy2(state_file, prev_state)
             os.rename(tmp_state, state_file)
 
