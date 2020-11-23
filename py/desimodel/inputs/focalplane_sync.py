@@ -43,7 +43,7 @@ def load_fp_calibs(path):
     return fpcal
 
 
-def convert_fp_calibs(fpcal):
+def convert_fp_calibs(fpcal, sim=False):
     """Convert the online system information.
 
     This returns a tuple containing the focalplane, the current state, and the set of
@@ -51,6 +51,8 @@ def convert_fp_calibs(fpcal):
 
     Args:
         fpcal (Table):  The table loaded from a dump from the online system.
+        sim (bool):  If True, clear all transient state issues and set hardware
+            to be as "good as possible", for use in simulations.
 
     Returns:
         (tuple):  The (focalplane, state, exclusions, time string) loaded from
@@ -195,25 +197,27 @@ def convert_fp_calibs(fpcal):
         state["TIME"][r] = state_time_str
         state["LOCATION"][r] = d["PETAL_LOC"] * 1000 + d["DEVICE_LOC"]
         state["STATE"][r] = valid_states["OK"]
-        if d["DEVICE_CLASSIFIED_NONFUNCTIONAL"]:
-            state["STATE"][r] |= valid_states["STUCK"]
-        if not d["FIBER_INTACT"]:
-            state["STATE"][r] |= valid_states["BROKEN"]
-        if d["CLASSIFIED_AS_RETRACTED"]:
-            # This positioner is retracted.  Set the exclusion to the retracted
-            # one and also limit the phi angle range.
-            state["STATE"][r] |= valid_states["RESTRICT"]
-            state["EXCLUSION"][r] = "retracted"
-            state["MIN_P"] = restricted_positioner_phi(
-                outer_clear_rotation + fp["LENGTH_R1"][r],
-                fp["LENGTH_R1"][r],
-                fp["LENGTH_R2"][r],
-                fp["OFFSET_P"][r],
-                fp["MIN_P"][r],
-                fp["MAX_P"][r],
-            )
-        else:
-            state["MIN_P"] = d["MIN_P"]
+        if not sim:
+            # We want the true state...
+            if d["DEVICE_CLASSIFIED_NONFUNCTIONAL"]:
+                state["STATE"][r] |= valid_states["STUCK"]
+            if not d["FIBER_INTACT"]:
+                state["STATE"][r] |= valid_states["BROKEN"]
+            if d["CLASSIFIED_AS_RETRACTED"]:
+                # This positioner is retracted.  Set the exclusion to the retracted
+                # one and also limit the phi angle range.
+                state["STATE"][r] |= valid_states["RESTRICT"]
+                state["EXCLUSION"][r] = "retracted"
+                state["MIN_P"] = restricted_positioner_phi(
+                    outer_clear_rotation + fp["LENGTH_R1"][r],
+                    fp["LENGTH_R1"][r],
+                    fp["LENGTH_R2"][r],
+                    fp["OFFSET_P"][r],
+                    fp["MIN_P"][r],
+                    fp["MAX_P"][r],
+                )
+            else:
+                state["MIN_P"] = d["MIN_P"]
         # If the device is NOT good, track its current estimated location.
         if state["STATE"][r] == valid_states["OK"]:
             state["POS_P"][r] = 0.0
@@ -261,7 +265,7 @@ def create_from_calibs(
     fpcal = load_fp_calibs(calib_file)
 
     log.info("Converting calibration format ...")
-    fp, state, excl, date_str = convert_fp_calibs(fpcal)
+    fp, state, excl, date_str = convert_fp_calibs(fpcal, sim=sim)
 
     log.info("Calibration data retrieval date = %s", date_str)
 
