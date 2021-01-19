@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+"""Commandline script to check positioner reach.
+
+"""
+
+import sys
+import datetime
+import argparse
+
+import numpy as np
+
+from desimodel.io import load_focalplane
+
+
+def main():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--in_date",
+        type=str,
+        default=None,
+        required=False,
+        help="Input date in ISO format (e.g. '2020-01-01T00:00:00')."
+    )
+
+    args = parser.parse_args()
+
+    now_time = datetime.datetime.now()
+    now_time_str = None
+    try:
+        now_time_str = now_time.isoformat(timespec="seconds")
+    except TypeError:
+        # This must be python < 3.6, with no timespec option.
+        # Since the focalplane time is read from the file name without
+        # microseconds, the microseconds should be zero and so the
+        # default return string will be correct.
+        now_time_str = now_time.isoformat()
+
+    in_time = None
+    if args.in_date is None:
+        in_time = now_time
+    else:
+        in_time = datetime.datetime.strptime(args.in_date, "%Y-%m-%dT%H:%M:%S")
+
+    # Load the focalplane model
+
+    fp, excl, state, in_tmstr = load_focalplane(in_time)
+
+    # Compute the reach of each positioner.
+
+    nrows = len(fp)
+    for row in fp:
+        if row["DEVICE_TYPE"] != "POS":
+            # Skip non-positioner devices
+            continue
+        theta_arm = row["LENGTH_R1"]
+        phi_arm = row["LENGTH_R2"]
+
+        opening = np.radians(
+            180.0 - row["MIN_P"] - row["OFFSET_P"]
+        )
+        reach = np.sqrt(
+            theta_arm**2 + phi_arm**2 - 2.0 * theta_arm * phi_arm * np.cos(opening)
+        )
+        print(
+            "petal {}, location {:03d}, reach = {:0.3f} mm".format(
+                row["PETAL"], row["LOCATION"], reach
+            )
+        )
+
+
+if __name__ == "__main__":
+    main()

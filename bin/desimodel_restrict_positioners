@@ -48,18 +48,43 @@ def main():
         help="The maximum positioner reach in millimeters."
     )
 
+    parser.add_argument(
+        "--exclude_petals",
+        type=str,
+        default=None,
+        required=False,
+        help="Comma-separated list of petal locations to exclude in restriction."
+    )
+
     args = parser.parse_args()
+
+    now_time = datetime.datetime.now()
+    now_time_str = None
+    try:
+        now_time_str = now_time.isoformat(timespec="seconds")
+    except TypeError:
+        # This must be python < 3.6, with no timespec option.
+        # Since the focalplane time is read from the file name without
+        # microseconds, the microseconds should be zero and so the
+        # default return string will be correct.
+        now_time_str = now_time.isoformat()
 
     in_time = None
     if args.in_date is None:
-        in_time = datetime.datetime.now()
+        in_time = now_time
     else:
         in_time = datetime.datetime.strptime(args.in_date, "%Y-%m-%dT%H:%M:%S")
 
     if args.out_date is None:
-        args.out_date = datetime.datetime.isoformat(
-            datetime.datetime.now()
-        )
+        args.out_date = now_time_str
+
+    petals = {x for x in range(10)}
+    if args.exclude_petals is not None:
+        expetals = [int(x) for x in args.exclude_petals.split(",")]
+        for p in expetals:
+            if p < 0 or p > 9:
+                raise RuntimeError("Petal locations to exclude must be in range 0-9")
+            petals.remove(p)
 
     # Load the starting focalplane model
 
@@ -70,6 +95,8 @@ def main():
 
     nrows = len(fp)
     for row in fp:
+        if row["PETAL"] not in petals:
+            continue
         theta_arm = row["LENGTH_R1"]
         phi_arm = row["LENGTH_R2"]
         if theta_arm <= 0 or phi_arm <= 0:
