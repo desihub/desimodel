@@ -2,10 +2,30 @@
 desimodel Release Notes
 =======================
 
-0.13.2 (unreleased)
+0.14.1 (unreleased)
 -------------------
 
-* planned: updates to focal plane hardware calibrations
+* No changes yet
+
+0.14.0 (2021-02-10)
+-------------------
+
+* Code (in GitHub):
+
+  * travis test fixes for old astropy (PR `#141`_).
+  * move command line scripts from svn to git (PR `#142`_).
+  * add option to exclude petals from restricted reach (PR `#144`_).
+
+* Data (in svn):
+
+  * added Template Signal-to-Noise (TSNR) ensembles
+  * added pre-calculated Noise Equivalent Area (NEA) from PSF model
+  * Corrected restricted reach focalplane model (@135002)
+  * Focal plan model with full reach for petal locs 0,2,4,5 (@135236)
+
+.. _`#141`: https://github.com/desihub/desimodel/pull/141
+.. _`#142`: https://github.com/desihub/desimodel/pull/142
+.. _`#144`: https://github.com/desihub/desimodel/pull/144
 
 0.13.1 (2020-08-03)
 -------------------
