@@ -9,6 +9,9 @@ Tools for checking and synchronizing focalplane state to online system.
 import os
 import datetime
 import shutil
+import gzip
+
+import subprocess as sp
 
 import ast
 
@@ -66,6 +69,11 @@ def convert_fp_calibs(fpcal, sim=False):
 
     state_time_str = cal_time.isoformat(timespec="seconds")
 
+    # Parse other metadata
+
+    eo_phi = fpcal.meta["Eo_phi"]
+    eo_radius = fpcal.meta["Eo_radius_with_margin"]
+
     # Get the default exclusion polygons for theta, phi, GFA, and petal
     # boundaries
 
@@ -99,16 +107,12 @@ def convert_fp_calibs(fpcal, sim=False):
 
     excl["default"] = kp
 
-    # Also make a set of exclusions for "retracted" positioners.  In this case,
-    # the PHI polygon is set to a circle of 2.1mm, which will extend to the
-    # edge of the nominal THETA keepout polygon.  This edge is the "outer clear
-    # rotation envelope".
-
-    outer_clear_rotation = 2.1  # mm
+    # Also make a set of exclusions for "retracted" positioners.  In this case place
+    # a circle at the the center of the theta axis.
 
     retrct = dict(excl["default"])
-    retrct["phi"]["segments"] = list()
-    retrct["phi"]["circles"] = [[[0.0, 0.0], outer_clear_rotation]]
+    retrct["theta"]["segments"] = list()
+    retrct["theta"]["circles"] = [[[0.0, 0.0], eo_radius]]
     excl["retracted"] = retrct
 
     # Get the fiber map from device location to spectrographs.
@@ -138,21 +142,19 @@ def convert_fp_calibs(fpcal, sim=False):
         fp["ABS"][r] = 0.0
         if d["PETAL_ID"] in fmap:
             # We have some information about the device to fiber mapping.
-            fp["SLITBLOCK"][r] = fmap[d["PETAL_ID"]][d["DEVICE_LOC"]]["SLITBLOCK"]
-            fp["BLOCKFIBER"][r] = fmap[d["PETAL_ID"]][d["DEVICE_LOC"]]["BLOCKFIBER"]
-            fp["CABLE"][r] = fmap[d["PETAL_ID"]][d["DEVICE_LOC"]]["CABLE"]
-            fp["CONDUIT"][r] = fmap[d["PETAL_ID"]][d["DEVICE_LOC"]]["CONDUIT"]
-            fp["FWHM"][r] = fmap[d["PETAL_ID"]][d["DEVICE_LOC"]]["FWHM"]
-            fp["FRD"][r] = fmap[d["PETAL_ID"]][d["DEVICE_LOC"]]["FRD"]
-            fp["ABS"][r] = fmap[d["PETAL_ID"]][d["DEVICE_LOC"]]["ABS"]
+            if d["DEVICE_LOC"] in fmap[d["PETAL_ID"]]:
+                # This is a POS or ETC device
+                fp["SLITBLOCK"][r] = fmap[d["PETAL_ID"]][d["DEVICE_LOC"]]["SLITBLOCK"]
+                fp["BLOCKFIBER"][r] = fmap[d["PETAL_ID"]][d["DEVICE_LOC"]]["BLOCKFIBER"]
+                fp["CABLE"][r] = fmap[d["PETAL_ID"]][d["DEVICE_LOC"]]["CABLE"]
+                fp["CONDUIT"][r] = fmap[d["PETAL_ID"]][d["DEVICE_LOC"]]["CONDUIT"]
+                fp["FWHM"][r] = fmap[d["PETAL_ID"]][d["DEVICE_LOC"]]["FWHM"]
+                fp["FRD"][r] = fmap[d["PETAL_ID"]][d["DEVICE_LOC"]]["FRD"]
+                fp["ABS"][r] = fmap[d["PETAL_ID"]][d["DEVICE_LOC"]]["ABS"]
         fp["LENGTH_R1"][r] = d["LENGTH_R1"]
         fp["LENGTH_R2"][r] = d["LENGTH_R2"]
         fp["OFFSET_X"][r] = d["OFFSET_X_CS5"]
         fp["OFFSET_Y"][r] = d["OFFSET_Y_CS5"]
-        fp["MIN_P"][r] = d["MIN_P"]
-        fp["MAX_P"][r] = d["MAX_P"]
-        fp["MIN_T"][r] = d["MIN_T"]
-        fp["MAX_T"][r] = d["MAX_T"]
         fp["OFFSET_P"][r] = d["OFFSET_P"]
 
         # FIXME:  This is in focal surface coordinates, but is petal-local.  Need
@@ -197,27 +199,28 @@ def convert_fp_calibs(fpcal, sim=False):
         state["TIME"][r] = state_time_str
         state["LOCATION"][r] = d["PETAL_LOC"] * 1000 + d["DEVICE_LOC"]
         state["STATE"][r] = valid_states["OK"]
+        # Even if we are simulating, we do want to mark broken fibers
+        if not d["FIBER_INTACT"]:
+            state["STATE"][r] |= valid_states["BROKEN"]
         if not sim:
             # We want the true state...
             if d["DEVICE_CLASSIFIED_NONFUNCTIONAL"]:
                 state["STATE"][r] |= valid_states["STUCK"]
-            if not d["FIBER_INTACT"]:
-                state["STATE"][r] |= valid_states["BROKEN"]
             if d["CLASSIFIED_AS_RETRACTED"]:
                 # This positioner is retracted.  Set the exclusion to the retracted
                 # one and also limit the phi angle range.
                 state["STATE"][r] |= valid_states["RESTRICT"]
                 state["EXCLUSION"][r] = "retracted"
-                state["MIN_P"] = restricted_positioner_phi(
-                    outer_clear_rotation + fp["LENGTH_R1"][r],
-                    fp["LENGTH_R1"][r],
-                    fp["LENGTH_R2"][r],
-                    fp["OFFSET_P"][r],
-                    fp["MIN_P"][r],
-                    fp["MAX_P"][r],
-                )
+                # The focalplane cal information defines the Eo_Phi angle to be the
+                # minimum Phi angle relative to the coordinate axis, not the offset.
+                # So to get MIN_P we must subtract the offset.
+                state["MIN_P"][r] = eo_phi - d["OFFSET_P"]
             else:
-                state["MIN_P"] = d["MIN_P"]
+                state["MIN_P"][r] = d["MIN_P"]
+        # The other positioner angles in the state are just the same as nominal
+        state["MAX_P"][r] = d["MAX_P"]
+        state["MIN_T"][r] = d["MIN_T"]
+        state["MAX_T"][r] = d["MAX_T"]
         # If the device is NOT good, track its current estimated location.
         if state["STATE"][r] == valid_states["OK"]:
             state["POS_P"][r] = 0.0
@@ -230,7 +233,7 @@ def convert_fp_calibs(fpcal, sim=False):
 
 
 def create_from_calibs(
-    calib_file, testdir=None, fibermaps=None, force=False, sim=False
+    calib_file, out_dir=None, reset=False, sim_good=False, commit=False, fibermaps=None
 ):
     """Construct a DESI focalplane from a calibration dump.
 
@@ -239,16 +242,18 @@ def create_from_calibs(
 
     Args:
         calib_file (str):  Path to the calibration dump.
-        testdir (str):  Override the output directory for testing.
-        fibermaps (list):  Override list of tuples (DocDB number,
-            DocDB version, DocDB csv file) of where to find the petal mapping
-            files.
-        force (bool):  If True, ignore the current focalplane model and
+        out_dir (str):  Override the output directory for testing.  Default writes to
+            $DESIMODEL/data/focalplane/
+        reset (bool):  If True, ignore the current focalplane model and
             create a new model from this calibration dump.  Default compares
             the new focalplane to the old and looks for changes in device
             state.  These changes are appended to the existing log.
-        sim (bool):  If True, clear all transient state issues and set hardware
+        sim_good (bool):  If True, clear all transient state issues and set hardware
             to be as "good as possible", for use in simulations.
+        commit (bool):  If True, attempt to commit the result.
+        fibermaps (list):  Override list of tuples (DocDB number,
+            DocDB version, DocDB csv file) of where to find the petal mapping
+            files.
 
     Returns:
         None
@@ -256,34 +261,61 @@ def create_from_calibs(
     """
     log = get_logger()
 
-    outdir = testdir
-    if outdir is None:
-        outdir = os.path.join(datadir(), "focalplane")
+    if out_dir is None:
+        out_dir = os.path.join(datadir(), "focalplane")
+        test_svn = os.path.join(datadir(), ".svn")
+        if not os.path.isdir(test_svn):
+            test_svn = os.path.join(os.path.dirname(datadir()), ".svn")
+            if not os.path.isdir(test_svn):
+                msg = "Output data directory:  {}".format(out_dir)
+                msg += "\nis not inside an svn checkout.  You will not be able to"
+                msg += "\ncommit these changes without copying them to a checkout."
+                log.warning(msg)
+    else:
+        log.warning("Using debug output directory %s", out_dir)
+        log.warning("Files cannot be used until placed in $DESIMODEL/data/focalplane")
 
     # Get the model from the calib file
     log.info("Loading calibration dump from %s ...", calib_file)
     fpcal = load_fp_calibs(calib_file)
 
     log.info("Converting calibration format ...")
-    fp, state, excl, date_str = convert_fp_calibs(fpcal, sim=sim)
+    fp, state, excl, date_str = convert_fp_calibs(fpcal, sim=sim_good)
 
     log.info("Calibration data retrieval date = %s", date_str)
 
-    if force:
+    if reset:
         # Ignore any previous focalplane info and dump out what we have
 
-        log.info("Writing new focalplane model ...")
-        out_fp_file = os.path.join(outdir, "desi-focalplane_{}.ecsv".format(date_str))
-        out_excl_file = os.path.join(outdir, "desi-exclusion_{}.yaml".format(date_str))
-        out_state_file = os.path.join(outdir, "desi-state_{}.ecsv".format(date_str))
+        log.info("Writing new focalplane model- ignoring previous ones...")
+        out_fp_file = os.path.join(out_dir, "desi-focalplane_{}.ecsv".format(date_str))
+        out_excl_file = os.path.join(
+            out_dir, "desi-exclusion_{}.yaml.gz".format(date_str)
+        )
+        out_state_file = os.path.join(out_dir, "desi-state_{}.ecsv".format(date_str))
 
         fp.write(out_fp_file, format="ascii.ecsv", overwrite=True)
 
         state.write(out_state_file, format="ascii.ecsv", overwrite=True)
 
-        with open(out_excl_file, "w") as pf:
-            yaml.dump(excl, pf, default_flow_style=False)
+        with gzip.open(out_excl_file, "wb") as pf:
+            yaml.dump(excl, stream=pf, encoding="utf-8", default_flow_style=False)
 
+        if commit:
+            cmesg = "Creating new focalplane model from DB sync {}".format(date_str)
+            sp.check_call(["svn", "update"], cwd=out_dir)
+            sp.check_call(
+                [
+                    "svn",
+                    "add",
+                    out_fp_file,
+                    out_excl_file,
+                    out_state_file,
+                ],
+                cwd=out_dir,
+            )
+            sp.check_call(["svn", "commit", "-m", cmesg], cwd=out_dir)
+            sp.check_call(["svn", "update"], cwd=out_dir)
     else:
         # Load the current focalplane and just update the state
 
@@ -298,93 +330,109 @@ def create_from_calibs(
 
         # Compare the old and new.
         checkcols = set(fp.colnames)
-        checkcols.remove("LOCATION")
         diff = device_compare(oldfp, fp, list(checkcols))
 
-        device_printdiff(diff)
+        # device_printdiff(diff)
 
         if len(diff) > 0:
             msg = (
                 "Existing focalplane device properties have changed."
-                "  Use the 'force' option to start with a new focalplane model."
+                "  Use the 'reset' option to start with a new focalplane model."
             )
-            raise RuntimeError(msg)
+            log.error(msg)
+            return
 
         # We got this far, which means that the focalplane data agrees.  Now
         # Look for differences in the state.
-        checkcols = [
-            "STATE",
-            "MIN_P",
-            "POS_P",
-            "POS_T",
-            "EXCLUSION",
-        ]
-        state_diff = device_compare(oldstate, state, checkcols)
+        checkcols = set(state.colnames)
+        checkcols.remove("TIME")
+        state_diff = device_compare(oldstate, state, list(checkcols))
 
-        if len(state_diff) > 0:
-            # We have some changes, load the full table and append.
-            state_file = os.path.join(outdir, "desi-state_{}.ecsv".format(oldtmstr))
-            st = Table.read(state_file, format="ascii.ecsv")
+        if len(state_diff) == 0:
+            log.info("New focalplane state is identical, no action needed.")
+            return
 
-            excl_file = os.path.join(outdir, "desi-exclusion_{}.ecsv".format(oldtmstr))
+        # We must have some changes, load the full table and append.
+        state_file = os.path.join(out_dir, "desi-state_{}.ecsv".format(oldtmstr))
+        st = Table.read(state_file, format="ascii.ecsv")
 
-            tmp_state = "{}.tmp".format(state_file)
-            prev_state = "{}.previous".format(state_file)
-            tmp_excl = "{}.tmp".format(excl_file)
-            prev_excl = "{}.previous".format(excl_file)
+        excl_file = os.path.join(out_dir, "desi-exclusion_{}.yaml.gz".format(oldtmstr))
 
-            need_excl_update = False
+        tmp_state = "{}.tmp".format(state_file)
+        prev_state = "{}.previous".format(state_file)
+        tmp_excl = "{}.tmp".format(excl_file)
+        prev_excl = "{}.previous".format(excl_file)
 
-            for loc, df in state_diff.items():
-                if df["old"] is None or df["new"] is None:
-                    # This should never happen, since it means that the LOCATION
-                    # value does not exist in either the previous or current
-                    # state.  We already checked for that above.
-                    msg = "LOCATION {} missing from old or new state.  Should never happen!".format(
-                        loc
-                    )
-                    raise RuntimeError(msg)
+        need_excl_update = False
 
-                new_st = df["new"]["STATE"]
-                new_excl = str(
-                    df["new"]["EXCLUSION"].tobytes().rstrip(b"\x00"), encoding="utf-8"
+        device_printdiff(state_diff)
+
+        for loc, df in state_diff.items():
+            if df["old"] is None or df["new"] is None:
+                # This should never happen, since it means that the LOCATION
+                # value does not exist in either the previous or current
+                # state.  We already checked for that above.
+                msg = "LOCATION {} missing from old or new state.  Should never happen!".format(
+                    loc
                 )
-                new_minp = df["new"]["MIN_P"]
-                new_posp = df["new"]["POS_P"]
-                new_post = df["new"]["POS_T"]
+                raise RuntimeError(msg)
 
-                msg = "Updating state for location {}:".format(loc)
-                msg += "\n  old: state = {}, POS_T = {}, POS_P = {}, MIN_P = {}, excl = {}".format(
-                    df["old"]["STATE"],
-                    df["old"]["POS_T"],
-                    df["old"]["POS_P"],
-                    df["old"]["MIN_P"],
-                    str(
-                        df["old"]["EXCLUSION"].tobytes().rstrip(b"\x00"),
-                        encoding="utf-8",
-                    ),
-                )
-                msg += "\n  new: state = {}, POS_T = {}, POS_P = {}, MIN_P = {}, excl = {}".format(
-                    new_st, new_post, new_posp, new_minp, new_excl
-                )
-                log.info(msg)
+            # new_st = df["new"]["STATE"]
 
-                st.add_row(
-                    [date_str, loc, new_st, new_post, new_posp, new_minp, new_excl]
-                )
+            # new_minp = df["new"]["MIN_P"]
+            # new_posp = df["new"]["POS_P"]
+            # new_post = df["new"]["POS_T"]
+            #
+            # msg = "Updating state for location {}:".format(loc)
+            # msg += "\n  old: state = {}, POS_T = {}, POS_P = {}, MIN_P = {}, excl = {}".format(
+            #     df["old"]["STATE"],
+            #     df["old"]["POS_T"],
+            #     df["old"]["POS_P"],
+            #     df["old"]["MIN_P"],
+            #     str(
+            #         df["old"]["EXCLUSION"].tobytes().rstrip(b"\x00"),
+            #         encoding="utf-8",
+            #     ),
+            # )
+            # msg += "\n  new: state = {}, POS_T = {}, POS_P = {}, MIN_P = {}, excl = {}".format(
+            #     new_st, new_post, new_posp, new_minp, new_excl
+            # )
+            # log.info(msg)
 
-                if new_excl not in oldexcl:
-                    oldexcl[new_excl] = excl[new_excl]
-                    need_excl_update = True
+            row = [df["new"][col] for col in df["new"].dtype.names]
+            st.add_row(row)
 
-            # Write to temp file then move into place
-            st.write(tmp_state, format="ascii.ecsv", overwrite=True)
-            shutil.copy2(state_file, prev_state)
-            os.rename(tmp_state, state_file)
+            new_excl = str(
+                df["new"]["EXCLUSION"].tobytes().rstrip(b"\x00"), encoding="utf-8"
+            )
+            if new_excl not in oldexcl:
+                oldexcl[new_excl] = excl[new_excl]
+                need_excl_update = True
 
-            # If we updated any exclusions, write a new file
-            if need_excl_update:
-                with open(temp_excl, "w") as pf:
-                    yaml.dump(oldexcl, pf, default_flow_style=False)
-                shutil.copy2(excl_file, prev_excl)
-                os.rename(tmp_excl, excl_file)
+        # Write to temp file then move into place
+        st.write(tmp_state, format="ascii.ecsv", overwrite=True)
+        shutil.copy2(state_file, prev_state)
+        os.rename(tmp_state, state_file)
+
+        # If we updated any exclusions, write a new file
+        if need_excl_update:
+            with gzip.open(temp_excl, "wb") as pf:
+                yaml.dump(oldexcl, pf, default_flow_style=False)
+            shutil.copy2(excl_file, prev_excl)
+            os.rename(tmp_excl, excl_file)
+
+        if commit:
+            cmesg = "Appending DB sync {} to focalplane model {}".format(
+                date_str, oldtmstr
+            )
+            sp.check_call(["svn", "update"], cwd=out_dir)
+            sp.check_call(
+                [
+                    "svn",
+                    "commit",
+                    "-m",
+                    cmesg,
+                ],
+                cwd=out_dir,
+            )
+            sp.check_call(["svn", "update"], cwd=out_dir)

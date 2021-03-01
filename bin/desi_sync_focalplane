@@ -19,14 +19,6 @@ def main():
     )
 
     parser.add_argument(
-        "--test",
-        type=str,
-        required=False,
-        default=None,
-        help="Override the output directory for testing.",
-    )
-
-    parser.add_argument(
         "--reset",
         required=False,
         default=False,
@@ -35,20 +27,37 @@ def main():
     )
 
     parser.add_argument(
-        "--simulation",
+        "--simulate_good",
         required=False,
         default=False,
         action="store_true",
-        help="Create a focalplane model for simulations.  All transient hardware issues are cleared",
+        help="Create a focalplane model for simulations.  Non-broken fibers set to good",
+    )
+
+    parser.add_argument(
+        "--debug_dir",
+        type=str,
+        required=False,
+        default=None,
+        help="Override the output directory for debugging.",
+    )
+
+    parser.add_argument(
+        "--commit",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Commit updated focalplane model to svn.",
     )
 
     args = parser.parse_args()
 
     create_from_calibs(
         args.calib_file,
-        testdir=args.test,
-        force=args.reset,
-        sim=args.simulation
+        out_dir=args.debug_dir,
+        reset=args.reset,
+        sim_good=args.simulate_good,
+        commit=args.commit,
     )
 
     return

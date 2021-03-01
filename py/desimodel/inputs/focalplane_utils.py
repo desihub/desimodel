@@ -27,8 +27,7 @@ valid_states = {
 
 
 def device_loc_to_type(loc):
-    """Get the fixed, hardcoded device type for a device location.
-    """
+    """Get the fixed, hardcoded device type for a device location."""
     if loc in [461, 501]:
         return "ETC"
     elif loc in [541, 542]:
@@ -36,8 +35,33 @@ def device_loc_to_type(loc):
     elif loc in [11, 75, 150, 239, 321, 439, 482, 496, 517, 534]:
         return "FIF"
     elif loc in [
-        38, 331, 438, 460, 478, 479, 480, 481, 497, 498, 499, 500, 513, 514,
-        515, 516, 527, 528, 529, 530, 531, 535, 536, 537, 538, 539, 540
+        38,
+        331,
+        438,
+        460,
+        478,
+        479,
+        480,
+        481,
+        497,
+        498,
+        499,
+        500,
+        513,
+        514,
+        515,
+        516,
+        527,
+        528,
+        529,
+        530,
+        531,
+        535,
+        536,
+        537,
+        538,
+        539,
+        540,
     ]:
         return "NON"
     else:
@@ -89,8 +113,7 @@ def restricted_positioner_phi(radius, theta_arm, phi_arm, offset_p, min_p, max_p
     # Use law of cosines to find max opening angle
     opening = np.degrees(
         np.arccos(
-            (radius**2 - theta_arm**2 - phi_arm**2) /
-            (-2.0 * theta_arm * phi_arm)
+            (radius ** 2 - theta_arm ** 2 - phi_arm ** 2) / (-2.0 * theta_arm * phi_arm)
         )
     )
     # Phi min is relative to the offset
@@ -98,8 +121,7 @@ def restricted_positioner_phi(radius, theta_arm, phi_arm, offset_p, min_p, max_p
 
 
 def create_device():
-    """Create an empty device property dictionary.
-    """
+    """Create an empty device property dictionary."""
     props = dict()
     props["PETAL"] = -1
     props["DEVICE"] = -1
@@ -154,10 +176,12 @@ def rotate_petals(fp):
             petalrot_rad = np.radians(petalrot_deg)
             x = fp[petal][dev]["OFFSET_X"]
             y = fp[petal][dev]["OFFSET_Y"]
-            fp[petal][dev]["OFFSET_X"] = \
+            fp[petal][dev]["OFFSET_X"] = (
                 np.cos(petalrot_rad) * x - np.sin(petalrot_rad) * y
-            fp[petal][dev]["OFFSET_Y"] = \
+            )
+            fp[petal][dev]["OFFSET_Y"] = (
                 np.sin(petalrot_rad) * x + np.cos(petalrot_rad) * y
+            )
             fp[petal][dev]["OFFSET_T"] += petalrot_deg
     return
 
@@ -195,7 +219,7 @@ def load_petal_fiber_map(existing=None, fibermaps=None):
             (4806, 4, "Petal_8_final_verification.csv"),
             (4810, 3, "Petal_9_final_verification.csv"),
             (4868, 5, "Petal_10_final_verification.csv"),
-            (4883, 4, "Petal_11_final_verification.csv")
+            (4883, 4, "Petal_11_final_verification.csv"),
         ]
     for docnum, docver, docname in fibermaps:
         fmfile = None
@@ -229,23 +253,26 @@ def load_petal_fiber_map(existing=None, fibermaps=None):
                     if blk not in fmslitcheck:
                         fmslitcheck[blk] = dict()
                     if fib in fmslitcheck[blk]:
-                        msg = "Petal ID {}, slitblock {}, blockfiber {}" \
-                            " already assigned to device {}.  " \
+                        msg = (
+                            "Petal ID {}, slitblock {}, blockfiber {}"
+                            " already assigned to device {}.  "
                             "Reassigning to device {}".format(
                                 pet, blk, fib, fmslitcheck[blk][fib], dev
                             )
+                        )
                         log.warning(msg)
                     fmslitcheck[blk][fib] = dev
                     if existing is None:
-                        if (pet not in fp):
+                        if pet not in fp:
                             fp[pet] = dict()
-                        if (dev not in fp[pet]):
+                        if dev not in fp[pet]:
                             fp[pet][dev] = dict()
                     else:
                         if (pet not in fp) or (dev not in fp[pet]):
-                            print("FAIL:  petal {}, dev {} not in fp".format(
-                                pet, dev
-                            ), flush=True)
+                            print(
+                                "FAIL:  petal {}, dev {} not in fp".format(pet, dev),
+                                flush=True,
+                            )
                     fp[pet][dev]["SLITBLOCK"] = blk
                     fp[pet][dev]["BLOCKFIBER"] = fib
                     fp[pet][dev]["CABLE"] = cable
@@ -277,10 +304,10 @@ def load_petal_fiber_map(existing=None, fibermaps=None):
     fp[6][261]["SLITBLOCK"] = 19
     fp[6][261]["BLOCKFIBER"] = 22
     fp[6][261]["CABLE"] = 6
-    fp[6][261]["CONDUIT"] = "E0"      # This conduit has one fewer than F3
-    fp[6][261]["FWHM"] = 0.0          # No information from file
-    fp[6][261]["FRD"] = 0.0           # No information from file
-    fp[6][261]["ABS"] = 0.0           # No information from file
+    fp[6][261]["CONDUIT"] = "E0"  # This conduit has one fewer than F3
+    fp[6][261]["FWHM"] = 0.0  # No information from file
+    fp[6][261]["FRD"] = 0.0  # No information from file
+    fp[6][261]["ABS"] = 0.0  # No information from file
     # ---------------------------
     # DESI-4883v4-Petal_11_final_verification.csv
     # Petal ID 11 is missing an entry for device location 484.  This
@@ -294,10 +321,10 @@ def load_petal_fiber_map(existing=None, fibermaps=None):
     fp[11][484]["SLITBLOCK"] = 3
     fp[11][484]["BLOCKFIBER"] = 3
     fp[11][484]["CABLE"] = 4
-    fp[11][484]["CONDUIT"] = "G0"     # This conduit has one fewer than G1
-    fp[11][484]["FWHM"] = 0.0         # No information from file
-    fp[11][484]["FRD"] = 0.0          # No information from file
-    fp[11][484]["ABS"] = 0.0          # No information from file
+    fp[11][484]["CONDUIT"] = "G0"  # This conduit has one fewer than G1
+    fp[11][484]["FWHM"] = 0.0  # No information from file
+    fp[11][484]["FRD"] = 0.0  # No information from file
+    fp[11][484]["ABS"] = 0.0  # No information from file
     return fp
 
 
@@ -329,21 +356,24 @@ def create_nominal(petal_loc):
     log = get_logger()
     fp = dict()
 
-    xls_fp_layout = docdb.download(
-        530, 14, "DESI-0530-v14 (Focal Plane Layout).xlsx")
+    xls_fp_layout = docdb.download(530, 14, "DESI-0530-v14 (Focal Plane Layout).xlsx")
     xls_sheet = "PositionerAndFiducialLocations"
     rowmin, rowmax = 49, 591
-    headers = docdb.xls_read_row(xls_fp_layout, xls_sheet, rowmin-1, "B", "S")
+    headers = docdb.xls_read_row(xls_fp_layout, xls_sheet, rowmin - 1, "B", "S")
     assert headers[0] == "device_location_id"
     assert headers[1] == "device_type"
     xls_devloc = docdb.xls_read_col(
-        xls_fp_layout, xls_sheet, "B", rowmin, rowmax, dtype=np.int32)
+        xls_fp_layout, xls_sheet, "B", rowmin, rowmax, dtype=np.int32
+    )
     xls_devtype = docdb.xls_read_col(
-        xls_fp_layout, xls_sheet, "C", rowmin, rowmax, dtype=str)
+        xls_fp_layout, xls_sheet, "C", rowmin, rowmax, dtype=str
+    )
     xls_dev_nominal_x = docdb.xls_read_col(
-        xls_fp_layout, xls_sheet, "D", rowmin, rowmax, dtype=np.float64)
+        xls_fp_layout, xls_sheet, "D", rowmin, rowmax, dtype=np.float64
+    )
     xls_dev_nominal_y = docdb.xls_read_col(
-        xls_fp_layout, xls_sheet, "E", rowmin, rowmax, dtype=np.float64)
+        xls_fp_layout, xls_sheet, "E", rowmin, rowmax, dtype=np.float64
+    )
     devtype = dict()
     dev_nominal_xy = dict()
     for loc, typ in zip(xls_devloc, xls_devtype):
@@ -384,16 +414,16 @@ def device_compare(fpold, fpnew, check):
 
     """
     out = dict()
-    olddiff = np.setdiff1d(fpold[:]["LOCATION"], fpnew[:]["LOCATION"])
-    rows = np.arange(len(fpold), dtype=np.int)[fpold[:]["LOCATION"] in olddiff]
+    olddiff = np.setdiff1d(fpold["LOCATION"], fpnew["LOCATION"])
+    rows = np.arange(len(fpold), dtype=np.int)[fpold["LOCATION"] in olddiff]
     for r in rows:
         loc = fpold[r]["LOCATION"]
         out[loc] = dict()
         out[loc]["old"] = fpold[r]
         out[loc]["new"] = None
     totdiff = set(olddiff)
-    newdiff = np.setdiff1d(fpnew[:]["LOCATION"], fpold[:]["LOCATION"])
-    rows = np.arange(len(fpnew), dtype=np.int)[fpnew[:]["LOCATION"] in newdiff]
+    newdiff = np.setdiff1d(fpnew["LOCATION"], fpold["LOCATION"])
+    rows = np.arange(len(fpnew), dtype=np.int)[fpnew["LOCATION"] in newdiff]
     for r in rows:
         loc = fnew[r]["LOCATION"]
         out[loc] = dict()
@@ -423,8 +453,7 @@ def device_compare(fpold, fpnew, check):
 
 
 def device_printdiff(diff):
-    """Print a diff dictionary created with device_compare().
-    """
+    """Print a diff dictionary created with device_compare()."""
     for loc, df in diff.items():
         print("Location {:04d}:".format(loc))
         ol = df["old"]
@@ -512,15 +541,13 @@ def update_exclusions(excl, paths=list()):
         log.info("Loading exclusion polygons from %s", pf)
         exprops = configobj.ConfigObj(pf, unrepr=True)
         if "NAME" not in exprops:
-            msg = "exclusion file {} does not contain a NAME parameter"\
-                .format(pf)
+            msg = "exclusion file {} does not contain a NAME parameter".format(pf)
             raise RuntimeError(msg)
         nm = exprops["NAME"]
         props = dict()
         ktheta_raw = np.transpose(np.array(exprops["KEEPOUT_THETA"]))
         props["theta"] = dict()
-        props["theta"]["segments"] = \
-            collision_to_segments(ktheta_raw)
+        props["theta"]["segments"] = collision_to_segments(ktheta_raw)
         props["theta"]["circles"] = list()
         kphi_raw = np.transpose(np.array(exprops["KEEPOUT_PHI"]))
         props["phi"] = dict()
@@ -528,13 +555,11 @@ def update_exclusions(excl, paths=list()):
         props["phi"]["circles"] = list()
         kpetal_raw = np.transpose(np.array(exprops["KEEPOUT_PTL"]))
         props["petal"] = dict()
-        props["petal"]["segments"] = \
-            collision_to_segments(kpetal_raw)
+        props["petal"]["segments"] = collision_to_segments(kpetal_raw)
         props["petal"]["circles"] = list()
         kgfa_raw = np.transpose(np.array(exprops["KEEPOUT_GFA"]))
         props["gfa"] = dict()
-        props["gfa"]["segments"] = \
-            collision_to_segments(kgfa_raw)
+        props["gfa"]["segments"] = collision_to_segments(kgfa_raw)
         props["gfa"]["circles"] = list()
         excl[nm] = props
     return
@@ -561,78 +586,228 @@ def create_tables(n_fp_rows, n_state_rows=None):
         n_state_rows = n_fp_rows
 
     fp_cols = [
-        Column(name="PETAL", length=n_fp_rows, dtype=np.int32,
-               description="Petal location [0-9]"),
-        Column(name="DEVICE", length=n_fp_rows, dtype=np.int32,
-               description="Device location on the petal"),
-        Column(name="LOCATION", length=n_fp_rows, dtype=np.int32,
-               description="PETAL * 1000 + DEVICE"),
-        Column(name="PETAL_ID", length=n_fp_rows, dtype=np.int32,
-               description="The physical petal ID"),
-        Column(name="DEVICE_ID", length=n_fp_rows, dtype=np.dtype("a9"),
-               description="The physical device ID string"),
-        Column(name="DEVICE_TYPE", length=n_fp_rows, dtype=np.dtype("a3"),
-               description="The device type (POS, ETC, FIF)"),
-        Column(name="SLITBLOCK", length=n_fp_rows, dtype=np.int32,
-               description="The slit block where this fiber goes"),
-        Column(name="BLOCKFIBER", length=n_fp_rows, dtype=np.int32,
-               description="The fiber index within the slit block"),
-        Column(name="CABLE", length=n_fp_rows, dtype=np.int32,
-               description="The cable ID"),
-        Column(name="CONDUIT", length=n_fp_rows, dtype=np.dtype("a3"),
-               description="The conduit"),
-        Column(name="FIBER", length=n_fp_rows, dtype=np.int32,
-               description="PETAL * 500 + SLITBLOCK * 25 + BLOCKFIBER"),
-        Column(name="FWHM", length=n_fp_rows, dtype=np.float64,
-               description="FWHM at f/3.9"),
-        Column(name="FRD", length=n_fp_rows, dtype=np.float64,
-               description="FRD Throughput"),
-        Column(name="ABS", length=n_fp_rows, dtype=np.float64,
-               description="ABS Throughput"),
-        Column(name="OFFSET_X", length=n_fp_rows, dtype=np.float64,
-               description="X location of positioner center", unit="mm"),
-        Column(name="OFFSET_Y", length=n_fp_rows, dtype=np.float64,
-               description="Y location of positioner center", unit="mm"),
-        Column(name="OFFSET_T", length=n_fp_rows, dtype=np.float64,
-               description="THETA zero point angle", unit="degrees"),
-        Column(name="OFFSET_P", length=n_fp_rows, dtype=np.float64,
-               description="PHI zero point angle", unit="degrees"),
-        Column(name="LENGTH_R1", length=n_fp_rows, dtype=np.float64,
-               description="Length of THETA arm", unit="mm"),
-        Column(name="LENGTH_R2", length=n_fp_rows, dtype=np.float64,
-               description="Length of PHI arm", unit="mm"),
-        Column(name="MAX_T", length=n_fp_rows, dtype=np.float64,
-               description="Maximum THETA angle relative to OFFSET_T",
-               unit="degrees"),
-        Column(name="MIN_T", length=n_fp_rows, dtype=np.float64,
-               description="Minimum THETA angle relative to OFFSET_T",
-               unit="degrees"),
-        Column(name="MAX_P", length=n_fp_rows, dtype=np.float64,
-               description="Maximum PHI angle relative to OFFSET_P",
-               unit="degrees"),
-        Column(name="MIN_P", length=n_fp_rows, dtype=np.float64,
-               description="Minimum PHI angle relative to OFFSET_P",
-               unit="degrees"),
+        Column(
+            name="PETAL",
+            length=n_fp_rows,
+            dtype=np.int32,
+            data=-1 * np.ones(n_fp_rows, dtype=np.int32),
+            description="Petal location [0-9]",
+        ),
+        Column(
+            name="DEVICE",
+            length=n_fp_rows,
+            dtype=np.int32,
+            data=-1 * np.ones(n_fp_rows, dtype=np.int32),
+            description="Device location on the petal",
+        ),
+        Column(
+            name="LOCATION",
+            length=n_fp_rows,
+            dtype=np.int32,
+            data=-1 * np.ones(n_fp_rows, dtype=np.int32),
+            description="PETAL * 1000 + DEVICE",
+        ),
+        Column(
+            name="PETAL_ID",
+            length=n_fp_rows,
+            dtype=np.int32,
+            data=-1 * np.ones(n_fp_rows, dtype=np.int32),
+            description="The physical petal ID",
+        ),
+        Column(
+            name="DEVICE_ID",
+            length=n_fp_rows,
+            dtype=np.dtype("a9"),
+            data=["UNKNOWN" for x in range(n_fp_rows)],
+            description="The physical device ID string",
+        ),
+        Column(
+            name="DEVICE_TYPE",
+            length=n_fp_rows,
+            dtype=np.dtype("a3"),
+            data=["NA" for x in range(n_fp_rows)],
+            description="The device type (POS, ETC, FIF)",
+        ),
+        Column(
+            name="SLITBLOCK",
+            length=n_fp_rows,
+            dtype=np.int32,
+            data=-1 * np.ones(n_fp_rows, dtype=np.int32),
+            description="The slit block where this fiber goes",
+        ),
+        Column(
+            name="BLOCKFIBER",
+            length=n_fp_rows,
+            dtype=np.int32,
+            data=-1 * np.ones(n_fp_rows, dtype=np.int32),
+            description="The fiber index within the slit block",
+        ),
+        Column(
+            name="CABLE",
+            length=n_fp_rows,
+            dtype=np.int32,
+            data=-1 * np.ones(n_fp_rows, dtype=np.int32),
+            description="The cable ID",
+        ),
+        Column(
+            name="CONDUIT",
+            length=n_fp_rows,
+            dtype=np.dtype("a3"),
+            data=["NA" for x in range(n_fp_rows)],
+            description="The conduit",
+        ),
+        Column(
+            name="FIBER",
+            length=n_fp_rows,
+            dtype=np.int32,
+            data=-1 * np.ones(n_fp_rows, dtype=np.int32),
+            description="PETAL * 500 + SLITBLOCK * 25 + BLOCKFIBER",
+        ),
+        Column(
+            name="FWHM",
+            length=n_fp_rows,
+            dtype=np.float32,
+            data=np.zeros(n_fp_rows, dtype=np.float32),
+            description="FWHM at f/3.9",
+        ),
+        Column(
+            name="FRD",
+            length=n_fp_rows,
+            dtype=np.float32,
+            data=np.zeros(n_fp_rows, dtype=np.float32),
+            description="FRD Throughput",
+        ),
+        Column(
+            name="ABS",
+            length=n_fp_rows,
+            dtype=np.float32,
+            data=np.zeros(n_fp_rows, dtype=np.float32),
+            description="ABS Throughput",
+        ),
+        Column(
+            name="OFFSET_X",
+            length=n_fp_rows,
+            dtype=np.float32,
+            data=np.zeros(n_fp_rows, dtype=np.float32),
+            description="X location of positioner center",
+            unit="mm",
+        ),
+        Column(
+            name="OFFSET_Y",
+            length=n_fp_rows,
+            dtype=np.float32,
+            data=np.zeros(n_fp_rows, dtype=np.float32),
+            description="Y location of positioner center",
+            unit="mm",
+        ),
+        Column(
+            name="OFFSET_T",
+            length=n_fp_rows,
+            dtype=np.float32,
+            data=np.zeros(n_fp_rows, dtype=np.float32),
+            description="THETA zero point angle",
+            unit="degrees",
+        ),
+        Column(
+            name="OFFSET_P",
+            length=n_fp_rows,
+            dtype=np.float32,
+            data=np.zeros(n_fp_rows, dtype=np.float32),
+            description="PHI zero point angle",
+            unit="degrees",
+        ),
+        Column(
+            name="LENGTH_R1",
+            length=n_fp_rows,
+            dtype=np.float32,
+            data=np.zeros(n_fp_rows, dtype=np.float32),
+            description="Length of THETA arm",
+            unit="mm",
+        ),
+        Column(
+            name="LENGTH_R2",
+            length=n_fp_rows,
+            dtype=np.float32,
+            data=np.zeros(n_fp_rows, dtype=np.float32),
+            description="Length of PHI arm",
+            unit="mm",
+        ),
     ]
 
     fp = Table()
     fp.add_columns(fp_cols)
 
     state_cols = [
-        Column(name="TIME", length=n_state_rows, dtype=np.dtype("a20"),
-               description="The timestamp of the event (UTC, ISO format)"),
-        Column(name="LOCATION", length=n_state_rows, dtype=np.int32,
-               description="Global device location (PETAL * 1000 + DEVICE)"),
-        Column(name="STATE", length=n_state_rows, dtype=np.uint32,
-               description="State bit field (good == 0)"),
-        Column(name="POS_T", length=n_state_rows, dtype=np.float32,
-               description="Current estimate of Theta arm angle"),
-        Column(name="POS_P", length=n_state_rows, dtype=np.float32,
-               description="Current estimate of Phi arm angle"),
-        Column(name="MIN_P", length=n_state_rows, dtype=np.float32,
-               description="Current minimum Phi angle (restricted reach)"),
-        Column(name="EXCLUSION", length=n_state_rows, dtype=np.dtype("a16"),
-               description="The exclusion polygon for this device"),
+        Column(
+            name="TIME",
+            length=n_state_rows,
+            dtype=np.dtype("a20"),
+            data=["UNKNOWN" for x in range(n_state_rows)],
+            description="The timestamp of the event (UTC, ISO format)",
+        ),
+        Column(
+            name="LOCATION",
+            length=n_state_rows,
+            dtype=np.int32,
+            data=np.zeros(n_state_rows, dtype=np.int32),
+            description="Global device location (PETAL * 1000 + DEVICE)",
+        ),
+        Column(
+            name="STATE",
+            length=n_state_rows,
+            dtype=np.uint32,
+            data=np.zeros(n_state_rows, dtype=np.uint32),
+            description="State bit field (good == 0)",
+        ),
+        Column(
+            name="POS_T",
+            length=n_state_rows,
+            dtype=np.float32,
+            data=np.zeros(n_state_rows, dtype=np.float32),
+            description="Current estimate of Theta arm angle",
+        ),
+        Column(
+            name="POS_P",
+            length=n_state_rows,
+            dtype=np.float32,
+            data=np.zeros(n_state_rows, dtype=np.float32),
+            description="Current estimate of Phi arm angle",
+        ),
+        Column(
+            name="MIN_P",
+            length=n_state_rows,
+            dtype=np.float32,
+            data=np.zeros(n_state_rows, dtype=np.float32),
+            description="Current minimum Phi angle",
+        ),
+        Column(
+            name="MAX_P",
+            length=n_state_rows,
+            dtype=np.float32,
+            data=np.zeros(n_state_rows, dtype=np.float32),
+            description="Current maximum Phi angle",
+        ),
+        Column(
+            name="MIN_T",
+            length=n_state_rows,
+            dtype=np.float32,
+            data=np.zeros(n_state_rows, dtype=np.float32),
+            description="Current minimum Theta angle",
+        ),
+        Column(
+            name="MAX_T",
+            length=n_state_rows,
+            dtype=np.float32,
+            data=np.zeros(n_state_rows, dtype=np.float32),
+            description="Current maximum Theta angle",
+        ),
+        Column(
+            name="EXCLUSION",
+            length=n_state_rows,
+            dtype=np.dtype("a16"),
+            data=["UNKNOWN" for x in range(n_state_rows)],
+            description="The exclusion polygon for this device",
+        ),
     ]
 
     state = Table()
@@ -660,14 +835,16 @@ def propagate_state(state, excl, oldstate, oldexcl):
         None
 
     """
-    old_row = {
-        y: x for x, y in enumerate(oldstate["LOCATION"])
-    }
+    old_row = {y: x for x, y in enumerate(oldstate["LOCATION"])}
     copyexcl = set()
+    copycols = list()
+    for col in state.colnames:
+        if col in oldstate.colnames:
+            copycols.append(col)
     for r in range(len(state)):
         loc = state[r]["LOCATION"]
         if loc in old_row:
-            for col in ["STATE", "EXCLUSION", "MIN_P", "POS_P", "POS_T"]:
+            for col in copycols:
                 state[r][col] = oldstate[old_row[loc]][col]
             copyexcl.add(state[r]["EXCLUSION"])
     for xcopy in copyexcl:

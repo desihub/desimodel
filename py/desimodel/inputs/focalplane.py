@@ -286,8 +286,6 @@ def create(
     # and devices.
     fp = create_nominal(petalloc)
 
-    # FIXME:  Add another option here to "use the database".
-
     if fakefiberpos:
         devices_from_fiberpos(fp)
     else:
