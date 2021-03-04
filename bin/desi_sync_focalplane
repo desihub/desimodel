@@ -19,6 +19,14 @@ def main():
     )
 
     parser.add_argument(
+        "--test",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Go through the process of updating the focalplane, but do not actually write new files.",
+    )
+
+    parser.add_argument(
         "--reset",
         required=False,
         default=False,
@@ -58,6 +66,7 @@ def main():
         reset=args.reset,
         sim_good=args.simulate_good,
         commit=args.commit,
+        test=args.test,
     )
 
     return

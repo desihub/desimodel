@@ -42,7 +42,7 @@ from .focalplane_utils import (
 
 def load_fp_calibs(path):
     """Load data dumped from the online system."""
-    fpcal = Table.read(path)
+    fpcal = Table.read(path, format="ascii.ecsv")
     return fpcal
 
 
@@ -233,7 +233,13 @@ def convert_fp_calibs(fpcal, sim=False):
 
 
 def create_from_calibs(
-    calib_file, out_dir=None, reset=False, sim_good=False, commit=False, fibermaps=None
+    calib_file,
+    out_dir=None,
+    reset=False,
+    sim_good=False,
+    commit=False,
+    test=False,
+    fibermaps=None,
 ):
     """Construct a DESI focalplane from a calibration dump.
 
@@ -251,6 +257,7 @@ def create_from_calibs(
         sim_good (bool):  If True, clear all transient state issues and set hardware
             to be as "good as possible", for use in simulations.
         commit (bool):  If True, attempt to commit the result.
+        test (bool):  If True, perform all operations but do not update any files.
         fibermaps (list):  Override list of tuples (DocDB number,
             DocDB version, DocDB csv file) of where to find the petal mapping
             files.
@@ -294,6 +301,14 @@ def create_from_calibs(
         )
         out_state_file = os.path.join(out_dir, "desi-state_{}.ecsv".format(date_str))
 
+        log.info("  Output focalplane:  %s", out_fp_file)
+        log.info("  Output state     :  %s", out_state_file)
+        log.info("  Output exclusions:  %s", out_excl_file)
+
+        if test:
+            log.info("Running with test==True, skipping file writes.")
+            return
+
         fp.write(out_fp_file, format="ascii.ecsv", overwrite=True)
 
         state.write(out_state_file, format="ascii.ecsv", overwrite=True)
@@ -332,9 +347,8 @@ def create_from_calibs(
         checkcols = set(fp.colnames)
         diff = device_compare(oldfp, fp, list(checkcols))
 
-        # device_printdiff(diff)
-
         if len(diff) > 0:
+            device_printdiff(diff)
             msg = (
                 "Existing focalplane device properties have changed."
                 "  Use the 'reset' option to start with a new focalplane model."
@@ -363,10 +377,10 @@ def create_from_calibs(
         tmp_excl = "{}.tmp".format(excl_file)
         prev_excl = "{}.previous".format(excl_file)
 
-        need_excl_update = False
-
         device_printdiff(state_diff)
 
+        n_new_states = 0
+        n_new_excl = 0
         for loc, df in state_diff.items():
             if df["old"] is None or df["new"] is None:
                 # This should never happen, since it means that the LOCATION
@@ -377,37 +391,27 @@ def create_from_calibs(
                 )
                 raise RuntimeError(msg)
 
-            # new_st = df["new"]["STATE"]
-
-            # new_minp = df["new"]["MIN_P"]
-            # new_posp = df["new"]["POS_P"]
-            # new_post = df["new"]["POS_T"]
-            #
-            # msg = "Updating state for location {}:".format(loc)
-            # msg += "\n  old: state = {}, POS_T = {}, POS_P = {}, MIN_P = {}, excl = {}".format(
-            #     df["old"]["STATE"],
-            #     df["old"]["POS_T"],
-            #     df["old"]["POS_P"],
-            #     df["old"]["MIN_P"],
-            #     str(
-            #         df["old"]["EXCLUSION"].tobytes().rstrip(b"\x00"),
-            #         encoding="utf-8",
-            #     ),
-            # )
-            # msg += "\n  new: state = {}, POS_T = {}, POS_P = {}, MIN_P = {}, excl = {}".format(
-            #     new_st, new_post, new_posp, new_minp, new_excl
-            # )
-            # log.info(msg)
-
             row = [df["new"][col] for col in df["new"].dtype.names]
             st.add_row(row)
+            n_new_states += 1
 
             new_excl = str(
                 df["new"]["EXCLUSION"].tobytes().rstrip(b"\x00"), encoding="utf-8"
             )
             if new_excl not in oldexcl:
                 oldexcl[new_excl] = excl[new_excl]
-                need_excl_update = True
+                n_new_excl += 1
+
+        log.info("Updating focalplane:  %s", oldtmstr)
+        log.info("  State log appending %d rows", n_new_states)
+        if n_new_excl > 0:
+            log.info("  Adding %d new exclusion shapes", n_new_excl)
+        else:
+            log.info("  No new exclusion shapes, not updating file")
+
+        if test:
+            log.info("Running with test==True, skipping file writes.")
+            return
 
         # Write to temp file then move into place
         st.write(tmp_state, format="ascii.ecsv", overwrite=True)
@@ -415,7 +419,7 @@ def create_from_calibs(
         os.rename(tmp_state, state_file)
 
         # If we updated any exclusions, write a new file
-        if need_excl_update:
+        if n_new_excl > 0:
             with gzip.open(temp_excl, "wb") as pf:
                 yaml.dump(oldexcl, pf, default_flow_style=False)
             shutil.copy2(excl_file, prev_excl)
