@@ -288,14 +288,20 @@ def convert_fp_calibs(fpcal, sim=False):
 
         state["TIME"][r] = state_time_str
         state["LOCATION"][r] = d["PETAL_LOC"] * 1000 + d["DEVICE_LOC"]
+
+        # Starting point is "good" with nominal MIN_P
         state["STATE"][r] = valid_states["OK"]
-        # Even if we are simulating, we do want to mark broken fibers
+        state["MIN_P"][r] = d["MIN_P"]
+
+        # Even if we are simulating, we want to mark both broken fibers and
+        # non-movable positioners.
         if not d["FIBER_INTACT"]:
             state["STATE"][r] |= valid_states["BROKEN"]
+        if d["DEVICE_CLASSIFIED_NONFUNCTIONAL"]:
+            state["STATE"][r] |= valid_states["STUCK"]
+
         if not sim:
-            # We want the true state...
-            if d["DEVICE_CLASSIFIED_NONFUNCTIONAL"]:
-                state["STATE"][r] |= valid_states["STUCK"]
+            # We want to also check for retracted positioners
             if d["CLASSIFIED_AS_RETRACTED"]:
                 # This positioner is retracted.  Set the exclusion to the retracted
                 # one and also limit the phi angle range.
@@ -305,8 +311,7 @@ def convert_fp_calibs(fpcal, sim=False):
                 # minimum Phi angle relative to the coordinate axis, not the offset.
                 # So to get MIN_P we must subtract the offset.
                 state["MIN_P"][r] = eo_phi - d["OFFSET_P"]
-            else:
-                state["MIN_P"][r] = d["MIN_P"]
+
         # The other positioner angles in the state are just the same as nominal
         state["MAX_P"][r] = d["MAX_P"]
         state["MIN_T"][r] = d["MIN_T"]
