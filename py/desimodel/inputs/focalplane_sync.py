@@ -46,6 +46,48 @@ def load_fp_calibs(path):
     return fpcal
 
 
+# Rotation matrices.  These few lines of code are copied from desimeter,
+# since it is the only thing that is needed from that package and there
+# is nothing even desi-specific here.
+
+
+def Rx(angle):  # all in radians
+    Rx = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [0.0, np.cos(angle), -np.sin(angle)],
+            [0.0, np.sin(angle), np.cos(angle)],
+        ]
+    )
+    return Rx
+
+
+def Ry(angle):  # all in radians
+    Ry = np.array(
+        [
+            [np.cos(angle), 0.0, np.sin(angle)],
+            [0.0, 1.0, 0.0],
+            [-np.sin(angle), 0.0, np.cos(angle)],
+        ]
+    )
+    return Ry
+
+
+def Rz(angle):  # all in radians
+    Rz = np.array(
+        [
+            [np.cos(angle), -np.sin(angle), 0.0],
+            [np.sin(angle), np.cos(angle), 0.0],
+            [0.0, 0.0, 1.0],
+        ]
+    )
+    return Rz
+
+
+def Rxyz(alpha, beta, gamma):  # yaw-pitch-roll system, all in radians
+    return Rz(gamma) @ Ry(beta) @ Rx(alpha)  # @ is matrix multiplication
+
+
 def convert_fp_calibs(fpcal, sim=False):
     """Convert the online system information.
 
@@ -73,6 +115,7 @@ def convert_fp_calibs(fpcal, sim=False):
 
     eo_phi = fpcal.meta["Eo_phi"]
     eo_radius = fpcal.meta["Eo_radius_with_margin"]
+    alignments = fpcal.meta["PETAL_ALIGNMENTS"]
 
     # Get the default exclusion polygons for theta, phi, GFA, and petal
     # boundaries
@@ -118,6 +161,13 @@ def convert_fp_calibs(fpcal, sim=False):
     # Get the fiber map from device location to spectrographs.
     fmap = load_petal_fiber_map()
 
+    # Build the transformation information for each petal alignment
+    petal_rot = dict()
+    petal_trans = dict()
+    for petal_id, align in alignments.items():
+        petal_rot[petal_id] = Rxyz(align["alpha"], align["beta"], align["gamma"])
+        petal_trans[petal_id] = np.array([align["Tx"], align["Ty"], align["Tz"]])
+
     n_rows = len(fpcal)
 
     fp, state = create_tables(n_rows)
@@ -157,11 +207,51 @@ def convert_fp_calibs(fpcal, sim=False):
         fp["OFFSET_Y"][r] = d["OFFSET_Y_CS5"]
         fp["OFFSET_P"][r] = d["OFFSET_P"]
 
-        # FIXME:  This is in focal surface coordinates, but is petal-local.  Need
-        # to rotate to correct petal location.  We should use desimeter for this
-        # conversion instead of the ideal case here.
-        petalrot_deg = (float(7 + fp["PETAL"][r]) * 36.0) % 360.0
-        fp["OFFSET_T"][r] = d["OFFSET_T"] + petalrot_deg
+        # The OFFSET_T angle is in petal coordinates.  We express this in global
+        # coordinates by transforming 2 points and computing the angle from that.
+
+        prot = petal_rot[d["PETAL_ID"]]
+        ptrans = petal_trans[d["PETAL_ID"]]
+        offset_pt_rad = np.radians(d["OFFSET_T"])
+        offset_pt_pnts = np.array(
+            [
+                [d["OFFSET_X_CS5"], d["OFFSET_Y_CS5"], 0.0],
+                [
+                    3.0 * np.cos(offset_pt_rad) + d["OFFSET_X_CS5"],
+                    3.0 * np.sin(offset_pt_rad) + d["OFFSET_Y_CS5"],
+                    0.0,
+                ],
+            ]
+        )
+        offset_fp_pnts = prot.dot(offset_pt_pnts.T).T + np.tile(ptrans, 2).reshape(
+            (2, -1)
+        )
+        offset_fp_rad = np.arctan2(
+            offset_fp_pnts[1, 1] - offset_fp_pnts[0, 1],
+            offset_fp_pnts[1, 0] - offset_fp_pnts[0, 0],
+        )
+        offset_fp_deg = np.degrees(offset_fp_rad)
+        if offset_fp_deg < -180.0:
+            offset_fp_deg += 360.0
+        if offset_fp_deg > 180.0:
+            offset_fp_deg -= 360.0
+
+        # # Sanity check that the alignment-transformed offset is "close" to the
+        # # expected value.
+        # petalrot_check = (float(7 + fp["PETAL"][r]) * 36.0) % 360.0
+        # petalrot_check += d["OFFSET_T"]
+        # if petalrot_check < -180.0:
+        #     petalrot_check += 360.0
+        # if petalrot_check > 180.0:
+        #     petalrot_check -= 360.0
+        # print(
+        #     "device {}, petal {}, offset_t = {}, check = {}".format(
+        #         fp["DEVICE"][r], fp["PETAL"][r], offset_fp_deg, petalrot_check
+        #     ),
+        #     flush=True,
+        # )
+
+        fp["OFFSET_T"][r] = offset_fp_deg
 
         # Set the FIBER
         fp["FIBER"][r] = -1
