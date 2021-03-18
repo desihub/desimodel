@@ -2,7 +2,12 @@
 desimodel Release Notes
 =======================
 
-0.14.1 (unreleased)
+0.14.2 (unreleased)
+-------------------
+
+* no changes yet
+
+0.14.1 (2021-03-18)
 -------------------
 
 * Add fastfiberacceptance code originally in specsim.
