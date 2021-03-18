@@ -413,19 +413,22 @@ def create_from_calibs(
 
         if commit:
             cmesg = "Creating new focalplane model from DB sync {}".format(date_str)
-            sp.check_call(["svn", "update"], cwd=out_dir)
-            sp.check_call(
-                [
-                    "svn",
-                    "add",
-                    out_fp_file,
-                    out_excl_file,
-                    out_state_file,
-                ],
-                cwd=out_dir,
-            )
-            sp.check_call(["svn", "commit", "-m", cmesg], cwd=out_dir)
-            sp.check_call(["svn", "update"], cwd=out_dir)
+            try:
+                sp.check_call(["svn", "update"], cwd=out_dir)
+                sp.check_call(
+                    [
+                        "svn",
+                        "add",
+                        out_fp_file,
+                        out_excl_file,
+                        out_state_file,
+                    ],
+                    cwd=out_dir,
+                )
+                sp.check_call(["svn", "commit", "-m", cmesg], cwd=out_dir)
+                sp.check_call(["svn", "update"], cwd=out_dir)
+            except sp.CalledProcessError:
+                log.error("svn update / commit returned an error")
     else:
         # Load the current focalplane and just update the state
 
@@ -524,14 +527,17 @@ def create_from_calibs(
             cmesg = "Appending DB sync {} to focalplane model {}".format(
                 date_str, oldtmstr
             )
-            sp.check_call(["svn", "update"], cwd=out_dir)
-            sp.check_call(
-                [
-                    "svn",
-                    "commit",
-                    "-m",
-                    cmesg,
-                ],
-                cwd=out_dir,
-            )
-            sp.check_call(["svn", "update"], cwd=out_dir)
+            try:
+                sp.check_call(["svn", "update"], cwd=out_dir)
+                sp.check_call(
+                    [
+                        "svn",
+                        "commit",
+                        "-m",
+                        cmesg,
+                    ],
+                    cwd=out_dir,
+                )
+                sp.check_call(["svn", "update"], cwd=out_dir)
+            except sp.CalledProcessError:
+                log.error("svn update / commit returned an error")
