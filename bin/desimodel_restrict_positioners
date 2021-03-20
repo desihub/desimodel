@@ -20,6 +20,8 @@ from astropy.table import Table, Column
 
 from desimodel.io import load_focalplane
 
+from desimodel.inputs.focalplane_utils import restricted_positioner_phi
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -102,18 +104,9 @@ def main():
         if theta_arm <= 0 or phi_arm <= 0:
             # this is not a positioner
             continue
-        phi_zero = np.radians(row["OFFSET_P"])
-        phi_min = np.radians(row["MIN_P"])
-        phi_max = np.radians(row["MAX_P"])
-        # Use law of cosines to find max opening angle
-        opening = np.degrees(
-            np.arccos(
-                (args.reach**2 - theta_arm**2 - phi_arm**2) /
-                (-2.0 * theta_arm * phi_arm)
-            )
+        row["MIN_P"] = restricted_positioner_phi(
+            args.reach, theta_arm, phi_arm, row["OFFSET_P"], row["MIN_P"], row["MAX_P"]
         )
-        # Phi min is relative to the offset
-        row["MIN_P"] = (180.0 - opening) - row["OFFSET_P"]
 
     out_fp_file = "desi-focalplane_{}.ecsv".format(args.out_date)
     out_excl_file = "desi-exclusion_{}.yaml".format(args.out_date)

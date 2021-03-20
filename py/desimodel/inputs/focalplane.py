@@ -30,7 +30,10 @@ from .focalplane_utils import (
     device_compare,
     device_printdiff,
     update_exclusions,
-    valid_states
+    valid_states,
+    create_tables,
+    load_petal_fiber_map,
+    propagate_state,
 )
 
 
@@ -56,8 +59,14 @@ def devices_from_fiberpos(fp):
 
     # There is no "PETAL_ID" for the fake fiberpos, so we use PETAL
     for pet, dev, devtyp, blk, fib, xoff, yoff in zip(
-            fpos["PETAL"], fpos["DEVICE"], fpos["DEVICE_TYPE"],
-            fpos["SLITBLOCK"], fpos["BLOCKFIBER"], fpos["X"], fpos["Y"]):
+        fpos["PETAL"],
+        fpos["DEVICE"],
+        fpos["DEVICE_TYPE"],
+        fpos["SLITBLOCK"],
+        fpos["BLOCKFIBER"],
+        fpos["X"],
+        fpos["Y"],
+    ):
         fp[pet][dev]["DEVICE_ID"] = "FAKE"
         fp[pet][dev]["DEVICE_TYPE"] = devtyp
         fp[pet][dev]["CABLE"] = 0
@@ -84,8 +93,9 @@ def devices_from_fiberpos(fp):
     return
 
 
-def devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
-                       fibermaps=None):
+def devices_from_files(
+    fp, posdir=None, fillfake=False, fakeoffset=False, fibermaps=None
+):
     """Populate focalplane properties from information in files.
 
     This populates the focalplane with device information gathered from
@@ -110,110 +120,8 @@ def devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
 
     """
     log = get_logger()
-    if fibermaps is None:
-        fibermaps = [
-            (4042, 5, "Petal_2_final_verification.csv"),
-            (4043, 7, "Petal_3_final_verification.csv"),
-            (4807, 2, "Petal_4_final_verification.csv"),
-            (4808, 3, "Petal_5_final_verification.csv"),
-            (4809, 2, "Petal_6_final_verification.csv"),
-            (4190, 6, "Petal_7_final_verification.csv"),
-            (4806, 4, "Petal_8_final_verification.csv"),
-            (4810, 3, "Petal_9_final_verification.csv"),
-            (4868, 5, "Petal_10_final_verification.csv"),
-            (4883, 4, "Petal_11_final_verification.csv")
-        ]
-    for docnum, docver, docname in fibermaps:
-        fmfile = None
-        try:
-            fmfile = docdb.download(docnum, docver, docname)
-        except IOError:
-            msg = "Could not download {}".format(docname)
-            log.error(msg)
-        fmslitcheck = dict()
-        firstline = True
-        with open(fmfile, newline="") as csvfile:
-            reader = csv.reader(csvfile, delimiter=",")
-            cols = dict()
-            for row in reader:
-                if firstline:
-                    for cnum, elem in enumerate(row):
-                        nm = elem.strip().rstrip()
-                        cols[nm] = cnum
-                    firstline = False
-                else:
-                    pet = int(row[cols["PETAL_ID"]])
-                    dev = int(row[cols["DEVICE_LOC"]])
-                    cable = int(row[cols["Cable_ID"]])
-                    conduit = row[cols["Conduit"]]
-                    fwhm = float(row[cols["FWHM@f/3.9"]])
-                    fthrough = float(row[cols["FRD_Throughput"]])
-                    athrough = float(row[cols["Abs_Throuhgput"]])
-                    blkfib = row[cols["slit_position"]].split(":")
-                    blk = int(blkfib[0])
-                    fib = int(blkfib[1])
-                    if blk not in fmslitcheck:
-                        fmslitcheck[blk] = dict()
-                    if fib in fmslitcheck[blk]:
-                        msg = "Petal ID {}, slitblock {}, blockfiber {}" \
-                            " already assigned to device {}.  " \
-                            "Reassigning to device {}".format(
-                                pet, blk, fib, fmslitcheck[blk][fib], dev
-                            )
-                        log.warning(msg)
-                    fmslitcheck[blk][fib] = dev
-                    if (pet not in fp) or (dev not in fp[pet]):
-                        print("FAIL:  petal {}, dev {} not in fp".format(
-                            pet, dev
-                        ), flush=True)
-                    fp[pet][dev]["SLITBLOCK"] = blk
-                    fp[pet][dev]["BLOCKFIBER"] = fib
-                    fp[pet][dev]["CABLE"] = cable
-                    fp[pet][dev]["CONDUIT"] = conduit
-                    fp[pet][dev]["FWHM"] = fwhm
-                    fp[pet][dev]["FRD"] = fthrough
-                    fp[pet][dev]["ABS"] = athrough
-    # HARD-CODED modifications.  These changes are to work around features
-    # in the files on DocDB.  Remove these as they are fixed upstream.
-    # Note that once we get information from the database, then these may
-    # no longer be needed.
-    # ---------------------------
-    # DESI-4807v2-Petal_4_final_verification.csv
-    # Petal ID 04 has a typo.  Device location 357 should be slitblock
-    # 19 and blockfiber 23 (it is marked as 24)
-    log.info("Correcting petal ID 4, location 357")
-    fp[4][357]["SLITBLOCK"] = 19
-    fp[4][357]["BLOCKFIBER"] = 23
-    # ---------------------------
-    # DESI-4809v2-Petal_6_final_verification.csv
-    # Petal ID 06 is missing an entry for device location 261.  This device
-    # location is assigned to positioner M03120 in the pos_settings files.
-    # Assign it to the one missing fiber location.
-    log.info("Correcting petal ID 6, location 261")
-    fp[6][261]["DEVICE_TYPE"] = "POS"
-    fp[6][261]["DEVICE_ID"] = "NONE"  # Populated below from pos_settings
-    fp[6][261]["SLITBLOCK"] = 19
-    fp[6][261]["BLOCKFIBER"] = 22
-    fp[6][261]["CABLE"] = 6
-    fp[6][261]["CONDUIT"] = "E0"      # This conduit has one fewer than F3
-    fp[6][261]["FWHM"] = 0.0          # No information from file
-    fp[6][261]["FRD"] = 0.0           # No information from file
-    fp[6][261]["ABS"] = 0.0           # No information from file
-    # ---------------------------
-    # DESI-4883v4-Petal_11_final_verification.csv
-    # Petal ID 11 is missing an entry for device location 484.  This
-    # device location is assigned to positioner M06847 in the pos_settings
-    # files.  Assign it to the one missing fiber location.
-    log.info("Correcting petal ID 11, location 484")
-    fp[11][484]["DEVICE_TYPE"] = "POS"
-    fp[11][484]["DEVICE_ID"] = "NONE"  # Populated below from pos_settings
-    fp[11][484]["SLITBLOCK"] = 3
-    fp[11][484]["BLOCKFIBER"] = 3
-    fp[11][484]["CABLE"] = 4
-    fp[11][484]["CONDUIT"] = "G0"     # This conduit has one fewer than G1
-    fp[11][484]["FWHM"] = 0.0         # No information from file
-    fp[11][484]["FRD"] = 0.0          # No information from file
-    fp[11][484]["ABS"] = 0.0          # No information from file
+
+    fp = load_petal_fiber_map(existing=fp, fibermaps=fibermaps)
 
     # Parse all the positioner files.
     pos = dict()
@@ -228,10 +136,9 @@ def devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
                     print("parsing {}".format(pfile), flush=True)
                     cnf = configobj.ConfigObj(pfile, unrepr=True)
                     # Is this device used?
-                    if ("DEVICE_LOC" not in cnf) \
-                            or (int(cnf["DEVICE_LOC"]) < 0):
+                    if ("DEVICE_LOC" not in cnf) or (int(cnf["DEVICE_LOC"]) < 0):
                         continue
-                    if ("PETAL_ID" not in cnf):
+                    if "PETAL_ID" not in cnf:
                         continue
                     pet = int(cnf["PETAL_ID"])
                     if (pet < 0) or (pet not in fp):
@@ -239,9 +146,10 @@ def devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
                     # Check that the positioner ID in the file name matches
                     # the file contents.
                     if file_dev != cnf["POS_ID"]:
-                        msg = "positioner file {} has device {} in its name "\
-                            "but contains POS_ID={}"\
-                            .format(f, file_dev, cnf["POS_ID"])
+                        msg = (
+                            "positioner file {} has device {} in its name "
+                            "but contains POS_ID={}".format(f, file_dev, cnf["POS_ID"])
+                        )
                         raise RuntimeError(msg)
                     # Add properties to dictionary
                     pos[file_dev] = cnf
@@ -252,13 +160,12 @@ def devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
         if dev not in fp[pet]:
             # This should never happen- all possible device locations
             # should have been pre-populated before calling this function.
-            msg = "Device location {} on petal ID {} does not exist".format(
-                dev, pet
-            )
+            msg = "Device location {} on petal ID {} does not exist".format(dev, pet)
             raise RuntimeError(msg)
         fp[pet][dev]["DEVICE_ID"] = devid
         t_min, t_max, p_min, p_max = compute_theta_phi_range(
-            props["PHYSICAL_RANGE_T"], props["PHYSICAL_RANGE_P"])
+            props["PHYSICAL_RANGE_T"], props["PHYSICAL_RANGE_P"]
+        )
         fp[pet][dev]["OFFSET_T"] = props["OFFSET_T"]
         fp[pet][dev]["OFFSET_P"] = props["OFFSET_P"]
         fp[pet][dev]["LENGTH_R1"] = props["LENGTH_R1"]
@@ -298,9 +205,17 @@ def devices_from_files(fp, posdir=None, fillfake=False, fakeoffset=False,
     return
 
 
-def create(testdir=None, posdir=None, fibermaps=None,
-           petalloc=None, startvalid=None, fillfake=False,
-           fakeoffset=False, fakefiberpos=False, reset=False):
+def create(
+    testdir=None,
+    posdir=None,
+    fibermaps=None,
+    petalloc=None,
+    startvalid=None,
+    fillfake=False,
+    fakeoffset=False,
+    fakefiberpos=False,
+    reset=False,
+):
     """Construct DESI focalplane and state files.
 
     This function gathers information from the following sources:
@@ -349,14 +264,13 @@ def create(testdir=None, posdir=None, fibermaps=None,
     if fakefiberpos and (posdir is not None):
         raise RuntimeError(
             "Cannot specify both fake positioners from fiberpos and real"
-            " devices from posdir")
+            " devices from posdir"
+        )
 
     if startvalid is None:
         startvalid = datetime.datetime.utcnow()
     else:
-        startvalid = datetime.datetime.strptime(
-            startvalid, "%Y-%m-%dT%H:%M:%S"
-        )
+        startvalid = datetime.datetime.strptime(startvalid, "%Y-%m-%dT%H:%M:%S")
     file_date = startvalid.isoformat(timespec="seconds")
 
     if (petalloc is None) and (posdir is not None):
@@ -372,20 +286,21 @@ def create(testdir=None, posdir=None, fibermaps=None,
     # and devices.
     fp = create_nominal(petalloc)
 
-    # FIXME:  Add another option here to "use the database".
-
     if fakefiberpos:
         devices_from_fiberpos(fp)
     else:
         devices_from_files(
-            fp, posdir=posdir, fillfake=fillfake, fakeoffset=fakeoffset,
-            fibermaps=fibermaps
+            fp,
+            posdir=posdir,
+            fillfake=fillfake,
+            fakeoffset=fakeoffset,
+            fibermaps=fibermaps,
         )
 
     # Now rotate the X / Y offsets based on the petal location.
     rotate_petals(fp)
 
-    # Construct the focaplane table
+    # Construct the focaplane and state tables
 
     nrows = 0
     allpetals = list(sorted(fp.keys()))
@@ -393,63 +308,7 @@ def create(testdir=None, posdir=None, fibermaps=None,
         devlist = list(sorted(fp[petal].keys()))
         nrows += len(devlist)
 
-    out_cols = [
-        Column(name="PETAL", length=nrows, dtype=np.int32,
-               description="Petal location [0-9]"),
-        Column(name="DEVICE", length=nrows, dtype=np.int32,
-               description="Device location on the petal"),
-        Column(name="LOCATION", length=nrows, dtype=np.int32,
-               description="PETAL * 1000 + DEVICE"),
-        Column(name="PETAL_ID", length=nrows, dtype=np.int32,
-               description="The physical petal ID"),
-        Column(name="DEVICE_ID", length=nrows, dtype=np.dtype("a9"),
-               description="The physical device ID string"),
-        Column(name="DEVICE_TYPE", length=nrows, dtype=np.dtype("a3"),
-               description="The device type (POS, ETC, FIF)"),
-        Column(name="SLITBLOCK", length=nrows, dtype=np.int32,
-               description="The slit block where this fiber goes"),
-        Column(name="BLOCKFIBER", length=nrows, dtype=np.int32,
-               description="The fiber index within the slit block"),
-        Column(name="CABLE", length=nrows, dtype=np.int32,
-               description="The cable ID"),
-        Column(name="CONDUIT", length=nrows, dtype=np.dtype("a3"),
-               description="The conduit"),
-        Column(name="FIBER", length=nrows, dtype=np.int32,
-               description="PETAL * 500 + SLITBLOCK * 25 + BLOCKFIBER"),
-        Column(name="FWHM", length=nrows, dtype=np.float64,
-               description="FWHM at f/3.9"),
-        Column(name="FRD", length=nrows, dtype=np.float64,
-               description="FRD Throughput"),
-        Column(name="ABS", length=nrows, dtype=np.float64,
-               description="ABS Throughput"),
-        Column(name="OFFSET_X", length=nrows, dtype=np.float64,
-               description="X location of positioner center", unit="mm"),
-        Column(name="OFFSET_Y", length=nrows, dtype=np.float64,
-               description="Y location of positioner center", unit="mm"),
-        Column(name="OFFSET_T", length=nrows, dtype=np.float64,
-               description="THETA zero point angle", unit="degrees"),
-        Column(name="OFFSET_P", length=nrows, dtype=np.float64,
-               description="PHI zero point angle", unit="degrees"),
-        Column(name="LENGTH_R1", length=nrows, dtype=np.float64,
-               description="Length of THETA arm", unit="mm"),
-        Column(name="LENGTH_R2", length=nrows, dtype=np.float64,
-               description="Length of PHI arm", unit="mm"),
-        Column(name="MAX_T", length=nrows, dtype=np.float64,
-               description="Maximum THETA angle relative to OFFSET_T",
-               unit="degrees"),
-        Column(name="MIN_T", length=nrows, dtype=np.float64,
-               description="Minimum THETA angle relative to OFFSET_T",
-               unit="degrees"),
-        Column(name="MAX_P", length=nrows, dtype=np.float64,
-               description="Maximum PHI angle relative to OFFSET_P",
-               unit="degrees"),
-        Column(name="MIN_P", length=nrows, dtype=np.float64,
-               description="Minimum PHI angle relative to OFFSET_P",
-               unit="degrees"),
-    ]
-
-    out_fp = Table()
-    out_fp.add_columns(out_cols)
+    out_fp, out_state = create_tables(nrows)
 
     # Populate the table
     dev_cols = [
@@ -462,7 +321,7 @@ def create(testdir=None, posdir=None, fibermaps=None,
         "MIN_T",
         "MAX_T",
         "MIN_P",
-        "MAX_P"
+        "MAX_P",
     ]
 
     row = 0
@@ -486,36 +345,89 @@ def create(testdir=None, posdir=None, fibermaps=None,
                 # This must not be a POS device
                 out_fp[row]["FIBER"] = -1
             else:
-                out_fp[row]["FIBER"] = \
-                    fp[petal][dev]["PETAL"] * 500 \
-                    + fp[petal][dev]["SLITBLOCK"] * 25 \
+                out_fp[row]["FIBER"] = (
+                    fp[petal][dev]["PETAL"] * 500
+                    + fp[petal][dev]["SLITBLOCK"] * 25
                     + fp[petal][dev]["BLOCKFIBER"]
+                )
             if (fp[petal][dev]["DEVICE_ID"] != "NONE") or fillfake:
                 for col in dev_cols:
                     if col in fp[petal][dev]:
                         out_fp[row][col] = fp[petal][dev][col]
+            out_state[row]["LOCATION"] = out_fp[row]["LOCATION"]
+            out_state[row]["STATE"] = valid_states["OK"]
+            out_state[row]["EXCLUSION"] = "default"
+            out_state[row]["TIME"] = file_date
             row += 1
 
+    # Now load the file(s) with the exclusion polygons
+    # Add the legacy polygons to the dictionary for reference.
+    # Also add an "unknown" polygon set which includes a large circle for the
+    # theta arm that is the size of the patrol radius.
+    excl = dict()
+
+    # First the THETA arm.
+    circs = [[[0.0 + 3.0, 0.0], 2.095]]
+    seg = [
+        [2.095 + 3.0, -0.474],
+        [1.358 + 3.0, -2.5],
+        [-0.229 + 3.0, -2.5],
+        [-1.241 + 3.0, -2.792],
+        [-2.095 + 3.0, -0.356],
+    ]
+    segs = [seg]
+    shp_theta = dict()
+    shp_theta["circles"] = circs
+    shp_theta["segments"] = segs
+
+    # Now the PHI arm
+    circs = [[[0.0 + 3.0, 0.0], 0.967]]
+    seg_upper = [[-3.0 + 3.0, 0.990], [0.0 + 3.0, 0.990]]
+    seg_lower = [
+        [-2.944 + 3.0, -1.339],
+        [-2.944 + 3.0, -2.015],
+        [-1.981 + 3.0, -1.757],
+        [-1.844 + 3.0, -0.990],
+        [0.0 + 3.0, -0.990],
+    ]
+    segs = [seg_upper, seg_lower]
+    shp_phi = dict()
+    shp_phi["circles"] = circs
+    shp_phi["segments"] = segs
+
+    excl["legacy"] = dict()
+    excl["legacy"]["theta"] = shp_theta
+    excl["legacy"]["phi"] = shp_phi
+
+    excl["unknown"] = dict()
+    excl["unknown"]["theta"] = dict()
+    excl["unknown"]["theta"]["circles"] = [[[0.0, 0.0], 6.0]]
+    excl["unknown"]["theta"]["segments"] = list()
+    excl["unknown"]["phi"] = dict()
+    excl["unknown"]["phi"]["circles"] = list()
+    excl["unknown"]["phi"]["segments"] = list()
+
+    # Get all available exclusion polygons from the desimodel data directory.
+
+    fpdir = os.path.join(datadir(), "focalplane")
+    excl_match = os.path.join(fpdir, "exclusions_*.conf")
+    excl_files = glob.glob(excl_match)
+    update_exclusions(excl, excl_files)
 
     # Propagate the device state.  Unless we have the reset option, we need
     # to load the current focalplane model and try to use the state from that.
     # We will choose a time that is one second before the currently selected
     # time.
 
-    oldfp = None
-    oldstate = None
-    oldexcl = dict()
-    old_loc_to_state = None
-    old_loc_to_excl = None
     if not reset:
         dtime = datetime.timedelta(seconds=1)
         oldtime = startvalid - dtime
 
         oldfp, oldexcl, oldstate, oldtmstr = load_focalplane(oldtime)
+        checkrows = np.where(oldstate["LOCATION"] == 7000)[0]
+        print(oldstate[checkrows])
 
-        log.info(
-            "Comparing generated focalplane to one from {}".format(oldtmstr)
-        )
+        log.info("Comparing generated focalplane to one from %s", oldtmstr)
 
         # Compare the old and new.  These are the device properties we care
         # about when propagating state.  In particular if positioner
@@ -528,148 +440,34 @@ def create(testdir=None, posdir=None, fibermaps=None,
             "DEVICE_ID",
             "DEVICE_TYPE",
             "SLITBLOCK",
-            "BLOCKFIBER"
+            "BLOCKFIBER",
         ]
         diff = device_compare(oldfp, out_fp, checkcols)
 
         device_printdiff(diff)
 
         if len(diff) > 0:
-            msg = "Existing focalplane device properties have changed."\
-                "  Refusing to propagate the device state.  Use the 'reset'"\
+            msg = (
+                "Existing focalplane device properties have changed."
+                "  Refusing to propagate the device state.  Use the 'reset'"
                 " option to start with a new device state."
+            )
             raise RuntimeError(msg)
 
-        old_loc_to_state = dict()
-        for loc, st in zip(oldstate[:]["LOCATION"], oldstate[:]["STATE"]):
-            old_loc_to_state[loc] = st
-
-        old_loc_to_excl = dict()
-        for loc, ex in zip(oldstate[:]["LOCATION"], oldstate[:]["EXCLUSION"]):
-            old_loc_to_excl[loc] = ex
-
-    # Create the state table.  Use existing state if we are propagating.
-
-    out_cols = [
-        Column(name="TIME", length=nrows, dtype=np.dtype("a20"),
-               description="The timestamp of the event (UTC, ISO format)"),
-        Column(name="PETAL", length=nrows, dtype=np.int32,
-               description="Petal location [0-9]"),
-        Column(name="DEVICE", length=nrows, dtype=np.int32,
-               description="Device location on the petal"),
-        Column(name="LOCATION", length=nrows, dtype=np.int32,
-               description="Global device location (PETAL * 1000 + DEVICE)"),
-        Column(name="STATE", length=nrows, dtype=np.uint32,
-               description="State bit field (good == 0)"),
-        Column(name="EXCLUSION", length=nrows, dtype=np.dtype("a9"),
-               description="The exclusion polygon for this device"),
-    ]
-
-    out_state = Table()
-    out_state.add_columns(out_cols)
-
-    row = 0
-    for petal in allpetals:
-        devlist = list(sorted(fp[petal].keys()))
-        for dev in devlist:
-            out_state[row]["TIME"] = file_date
-            out_state[row]["PETAL"] = fp[petal][dev]["PETAL"]
-            loc = fp[petal][dev]["PETAL"] * 1000 + dev
-            out_state[row]["LOCATION"] = loc
-            out_state[row]["DEVICE"] = dev
-            if reset:
-                out_state[row]["STATE"] = 0
-                out_state[row]["EXCLUSION"] = "default"
-            else:
-                out_state[row]["STATE"] = old_loc_to_state[loc]
-                out_state[row]["EXCLUSION"] = old_loc_to_excl[loc]
-            row += 1
-
-    # Now load the file(s) with the exclusion polygons
-    # Add the legacy polygons to the dictionary for reference.
-    # Also add an "unknown" polygon set which includes a large circle for the
-    # theta arm that is the size of the patrol radius.
-    poly = dict()
-
-    # First the THETA arm.
-    circs = [
-        [[0.0+3.0, 0.0], 2.095]
-    ]
-    seg = [
-        [2.095+3.0, -0.474],
-        [1.358+3.0, -2.5],
-        [-0.229+3.0, -2.5],
-        [-1.241+3.0, -2.792],
-        [-2.095+3.0, -0.356]
-    ]
-    segs = [seg]
-    shp_theta = dict()
-    shp_theta["circles"] = circs
-    shp_theta["segments"] = segs
-
-    # Now the PHI arm
-    circs = [
-        [[0.0+3.0, 0.0], 0.967]
-    ]
-    seg_upper = [
-        [-3.0+3.0, 0.990],
-        [0.0+3.0, 0.990]
-    ]
-    seg_lower = [
-        [-2.944+3.0, -1.339],
-        [-2.944+3.0, -2.015],
-        [-1.981+3.0, -1.757],
-        [-1.844+3.0, -0.990],
-        [0.0+3.0, -0.990]
-    ]
-    segs = [seg_upper, seg_lower]
-    shp_phi = dict()
-    shp_phi["circles"] = circs
-    shp_phi["segments"] = segs
-
-    poly["legacy"] = dict()
-    poly["legacy"]["theta"] = shp_theta
-    poly["legacy"]["phi"] = shp_phi
-
-    poly["unknown"] = dict()
-    poly["unknown"]["theta"] = dict()
-    poly["unknown"]["theta"]["circles"] = [
-        [[0.0, 0.0], 6.0]
-    ]
-    poly["unknown"]["theta"]["segments"] = list()
-    poly["unknown"]["phi"] = dict()
-    poly["unknown"]["phi"]["circles"] = list()
-    poly["unknown"]["phi"]["segments"] = list()
-
-    # Get all available exclusion polygons from the desimodel data directory.
-
-    fpdir = os.path.join(datadir(), "focalplane")
-    excl_match = os.path.join(fpdir, "exclusions_*.conf")
-    excl_files = glob.glob(excl_match)
-    update_exclusions(poly, excl_files)
-
-    # Merge the new and old exclusions.
-
-    excl = oldexcl
-    excl.update(poly)
+        propagate_state(out_state, excl, oldstate, oldexcl)
 
     # Ensure that the default polygon has been defined.
     if "default" not in excl.keys():
-        raise RuntimeError(
-            "No default exclusion polygon found in available files"
-        )
+        raise RuntimeError("No default exclusion polygon found in available files")
 
     # Now write out all of this collected information.  Also write out an
     # initial "state" log as a starting point.  Note that by having log
     # files (which contain datestamps) also have a "starting" date, it means
     # that we don't need a single log for the entire survey.
 
-    out_fp_file = os.path.join(
-        outdir, "desi-focalplane_{}.ecsv".format(file_date))
-    out_excl_file = os.path.join(
-        outdir, "desi-exclusion_{}.yaml".format(file_date))
-    out_state_file = os.path.join(
-        outdir, "desi-state_{}.ecsv".format(file_date))
+    out_fp_file = os.path.join(outdir, "desi-focalplane_{}.ecsv".format(file_date))
+    out_excl_file = os.path.join(outdir, "desi-exclusion_{}.yaml".format(file_date))
+    out_state_file = os.path.join(outdir, "desi-state_{}.ecsv".format(file_date))
 
     out_fp.write(out_fp_file, format="ascii.ecsv", overwrite=True)
     del out_fp

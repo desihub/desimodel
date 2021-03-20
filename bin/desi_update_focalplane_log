@@ -17,42 +17,75 @@ from desimodel.inputs.focalplane_utils import valid_states
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--location", type=int, required=False, default=None,
-                        help="The device location (petal * 1000 + device loc)"
-                        " modified by this event.")
+    parser.add_argument(
+        "--location",
+        type=int,
+        required=False,
+        default=None,
+        help="The device location (petal * 1000 + device loc)"
+        " modified by this event.",
+    )
 
-    parser.add_argument("--petal", type=int, required=False, default=None,
-                        help="The petal (focalplane location, not petal ID)"
-                        " modified by this event (--device must also be used)")
+    parser.add_argument(
+        "--petal",
+        type=int,
+        required=False,
+        default=None,
+        help="The petal (focalplane location, not petal ID)"
+        " modified by this event (--device must also be used)",
+    )
 
-    parser.add_argument("--device", type=int, required=False, default=None,
-                        help="The device location (--petal must also be given)"
-                        " modified by this event.")
+    parser.add_argument(
+        "--device",
+        type=int,
+        required=False,
+        default=None,
+        help="The device location (--petal must also be given)"
+        " modified by this event.",
+    )
 
-    parser.add_argument("--state", type=str, default=None, required=False,
-                        help="The new state to assign to the device."
-                        " Can be an integer or a valid state string (OK, "
-                        "STUCK, BROKEN).")
+    parser.add_argument(
+        "--state",
+        type=str,
+        default=None,
+        required=False,
+        help="The new state to assign to the device."
+        " Can be an integer or a valid state string (OK, "
+        "STUCK, BROKEN).",
+    )
 
-    parser.add_argument("--exclusion", type=str, default=None, required=False,
-                        help="The new exclusion polygon to assign to the"
-                        " device (e.g. 'legacy', 'default', etc)")
+    parser.add_argument(
+        "--exclusion",
+        type=str,
+        default=None,
+        required=False,
+        help="The new exclusion polygon to assign to the"
+        " device (e.g. 'legacy', 'default', etc)",
+    )
 
-    parser.add_argument("--time", type=str, required=False, default=None,
-                        help="Optional date/time (default is current "
-                        "date/time) when this event happens. "
-                        "Format is YYYY-MM-DDTHH:mm:ss in UTC time.")
+    parser.add_argument(
+        "--time",
+        type=str,
+        required=False,
+        default=None,
+        help="Optional date/time (default is current "
+        "date/time) when this event happens. "
+        "Format is YYYY-MM-DDTHH:mm:ss in UTC time.",
+    )
 
     args = parser.parse_args()
 
+    loc = None
     if args.location is None:
         if (args.petal is None) or (args.device is None):
-            raise RuntimeError(
-                "must specify either location or petal and device")
+            raise RuntimeError("must specify either location or petal and device")
+        loc = args.petal * 1000 + args.device
     else:
+        loc = args.location
         if (args.petal is not None) or (args.device is not None):
             raise RuntimeError(
-                "must specify either location or petal and device, not both")
+                "must specify either location or petal and device, not both"
+            )
 
     new_st = None
     if args.state is not None:
@@ -79,27 +112,21 @@ def main():
 
     # Find the properties of the specified device.
 
-    new_pet = args.petal
-    new_dev = args.device
     new_loc = args.location
     new_excl = args.exclusion
-    if args.location is not None:
-        for row in state:
-            if row["LOCATION"] == args.location:
-                new_pet = row["PETAL"]
-                new_dev = row["DEVICE"]
-                if new_st is None:
-                    new_st = row["STATE"]
-                if new_excl is None:
-                    new_excl = row["EXCLUSION"]
-    else:
-        for row in state:
-            if (row["PETAL"] == args.petal) and (row["DEVICE"] == args.device):
-                new_loc = row["LOCATION"]
-                if new_st is None:
-                    new_st = row["STATE"]
-                if new_excl is None:
-                    new_excl = row["EXCLUSION"]
+    new_pos_t = None
+    new_pos_p = None
+    new_min_p = None
+
+    for row in state:
+        if row["LOCATION"] == loc:
+            if new_st is None:
+                new_st = row["STATE"]
+            if new_excl is None:
+                new_excl = row["EXCLUSION"]
+            new_pos_t = row["POS_T"]
+            new_pos_p = row["POS_P"]
+            new_min_p = row["MIN_P"]
 
     fpdir = os.path.join(datadir(), "focalplane")
     state_file = os.path.join(fpdir, "desi-state_{}.ecsv".format(tmstr))
@@ -108,8 +135,8 @@ def main():
 
     # Now read the full state file and append
     st = Table.read(state_file, format="ascii.ecsv")
-    st.add_row([timestr, new_pet, new_loc, new_dev, new_st, new_excl])
-    st.write(tmp_state, format='ascii.ecsv')
+    st.add_row([timestr, loc, new_st, new_pos_t, new_pos_p, new_min_p, new_excl])
+    st.write(tmp_state, format="ascii.ecsv", overwrite=True)
 
     # now move the temp file into place
     shutil.copy2(state_file, prev_state)

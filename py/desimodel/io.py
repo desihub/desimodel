@@ -12,15 +12,19 @@ import warnings
 from datetime import datetime
 
 import yaml
+import gzip
 import numpy as np
 from astropy.io import fits
 from astropy.table import Table, Column
 
 from desiutil.log import get_logger
+
 log = get_logger()
 
 
 _thru = dict()
+
+
 def load_throughput(channel):
     """Returns specter Throughput object for the given channel 'b', 'r', or 'z'.
 
@@ -35,16 +39,21 @@ def load_throughput(channel):
         A specter throughput object.
     """
     import specter.throughput
+
     channel = channel.lower()
     global _thru
     if channel not in _thru:
-        thrufile = findfile('throughput/thru-{0}.fits'.format(channel))
+        thrufile = findfile("throughput/thru-{0}.fits".format(channel))
         _thru[channel] = specter.throughput.load_throughput(thrufile)
     return _thru[channel]
+
+
 #
 #
 #
 _psf = dict()
+
+
 def load_psf(channel):
     """Returns specter PSF object for the given channel 'b', 'r', or 'z'.
 
@@ -59,16 +68,21 @@ def load_psf(channel):
         A specter PSF object.
     """
     import specter.psf
+
     channel = channel.lower()
     global _psf
     if channel not in _psf:
-        psffile = findfile('specpsf/psf-{0}.fits'.format(channel))
+        psffile = findfile("specpsf/psf-{0}.fits".format(channel))
         _psf[channel] = specter.psf.load_psf(psffile)
     return _psf[channel]
+
+
 #
 #
 #
 _params = None
+
+
 def load_desiparams():
     """Returns DESI parameter dictionary loaded from ``$DESIMODEL/data/desi.yaml``.
 
@@ -79,30 +93,34 @@ def load_desiparams():
     """
     global _params
     if _params is None:
-        desiparamsfile = findfile('desi.yaml')
+        desiparamsfile = findfile("desi.yaml")
         with open(desiparamsfile) as par:
             _params = yaml.safe_load(par)
 
-        #- for temporary backwards compability after 'exptime' -> 'exptime_dark'
-        if ('exptime' not in _params) and ('exptime_dark' in _params):
-            _params['exptime'] = _params['exptime_dark']
+        # - for temporary backwards compability after 'exptime' -> 'exptime_dark'
+        if ("exptime" not in _params) and ("exptime_dark" in _params):
+            _params["exptime"] = _params["exptime_dark"]
 
-        #- Augment params with wavelength coverage from specpsf files
-        #- wavemin/max = min/max wavelength covered by *any* fiber on the CCD
-        #- wavemin/max_all = min/max wavelength covered by *all* fibers
-        for channel in ['b', 'r', 'z']:
-            hdr = fits.getheader(findfile('specpsf/psf-{}.fits'.format(channel)), 0)
-            _params['ccd'][channel]['wavemin'] = hdr['WAVEMIN']
-            _params['ccd'][channel]['wavemax'] = hdr['WAVEMAX']
-            _params['ccd'][channel]['wavemin_all'] = hdr['WMIN_ALL']
-            _params['ccd'][channel]['wavemax_all'] = hdr['WMAX_ALL']
+        # - Augment params with wavelength coverage from specpsf files
+        # - wavemin/max = min/max wavelength covered by *any* fiber on the CCD
+        # - wavemin/max_all = min/max wavelength covered by *all* fibers
+        for channel in ["b", "r", "z"]:
+            hdr = fits.getheader(findfile("specpsf/psf-{}.fits".format(channel)), 0)
+            _params["ccd"][channel]["wavemin"] = hdr["WAVEMIN"]
+            _params["ccd"][channel]["wavemax"] = hdr["WAVEMAX"]
+            _params["ccd"][channel]["wavemin_all"] = hdr["WMIN_ALL"]
+            _params["ccd"][channel]["wavemax_all"] = hdr["WMAX_ALL"]
 
     return _params
+
+
 #
 #
 #
 # Added and still needs to be committed and pushed to desihub
 _gfa = None
+
+
 def load_gfa():
     """Returns GFA table from ``$DESIMODEL/data/focalplane/gfa.ecsv``.
 
@@ -113,13 +131,17 @@ def load_gfa():
     """
     global _gfa
     if _gfa is None:
-        gfaFile = findfile('focalplane/gfa.ecsv')
-        _gfa = Table.read(gfaFile, format='ascii.ecsv')
+        gfaFile = findfile("focalplane/gfa.ecsv")
+        _gfa = Table.read(gfaFile, format="ascii.ecsv")
     return _gfa
+
+
 #
 #
 #
 _deviceloc = None
+
+
 def load_deviceloc():
     """Returns a table from ``$DESIMODEL/data/focalplane/fiberpos-all.fits``.
 
@@ -130,18 +152,21 @@ def load_deviceloc():
     """
     global _deviceloc
     if _deviceloc is None:
-        fiberposfile = findfile('focalplane/fiberpos-all.fits')
+        fiberposfile = findfile("focalplane/fiberpos-all.fits")
         _deviceloc = Table.read(fiberposfile)
 
-    #- Convert to upper case if needed
-    #- Make copy of colnames b/c they are updated during iteration
+    # - Convert to upper case if needed
+    # - Make copy of colnames b/c they are updated during iteration
     for col in list(_deviceloc.colnames):
         if col.islower():
             _deviceloc.rename_column(col, col.upper())
 
     return _deviceloc
 
+
 _fiberpos = None
+
+
 def load_fiberpos():
     """Returns fiberpos table from ``$DESIMODEL/data/focalplane/fiberpos.fits``.
 
@@ -152,34 +177,43 @@ def load_fiberpos():
     """
     global _fiberpos
     if _fiberpos is None:
-        fiberposfile = findfile('focalplane/fiberpos.fits')
+        fiberposfile = findfile("focalplane/fiberpos.fits")
         _fiberpos = Table.read(fiberposfile)
-        _fiberpos.sort('FIBER')
-        #- Convert to upper case if needed
-        #- Make copy of colnames b/c they are updated during iteration
+        _fiberpos.sort("FIBER")
+        # - Convert to upper case if needed
+        # - Make copy of colnames b/c they are updated during iteration
         for col in list(_fiberpos.colnames):
             if col.islower():
                 _fiberpos.rename_column(col, col.upper())
 
-        #- Temporary backwards compatibility for renamed columns
-        if 'POSITIONER' in _fiberpos.colnames:
-            warnings.warn('old fiberpos.fits with POSITIONER column instead of LOCATION; please update your $DESIMODEL checkout', DeprecationWarning)
-            _fiberpos['LOCATION'] = _fiberpos['POSITIONER']
+        # - Temporary backwards compatibility for renamed columns
+        if "POSITIONER" in _fiberpos.colnames:
+            warnings.warn(
+                "old fiberpos.fits with POSITIONER column instead of LOCATION; please update your $DESIMODEL checkout",
+                DeprecationWarning,
+            )
+            _fiberpos["LOCATION"] = _fiberpos["POSITIONER"]
         else:
-            _fiberpos['POSITIONER'] = _fiberpos['LOCATION']
+            _fiberpos["POSITIONER"] = _fiberpos["LOCATION"]
 
-
-        if 'SPECTROGRAPH' in _fiberpos.colnames:
-            warnings.warn('old fiberpos.fits with SPECTROGRAPH column instead of SPECTRO; please update your $DESIMODEL checkout', DeprecationWarning)
-            _fiberpos['SPECTRO'] = _fiberpos['SPECTROGRAPH']
+        if "SPECTROGRAPH" in _fiberpos.colnames:
+            warnings.warn(
+                "old fiberpos.fits with SPECTROGRAPH column instead of SPECTRO; please update your $DESIMODEL checkout",
+                DeprecationWarning,
+            )
+            _fiberpos["SPECTRO"] = _fiberpos["SPECTROGRAPH"]
         else:
-            _fiberpos['SPECTROGRAPH'] = _fiberpos['SPECTRO']
+            _fiberpos["SPECTROGRAPH"] = _fiberpos["SPECTRO"]
 
     return _fiberpos
+
+
 #
 #
 #
 _tiles = dict()
+
+
 def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
     """Return DESI tiles structure from ``$DESIMODEL/data/footprint/desi-tiles.fits``.
 
@@ -228,31 +262,35 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
 
     if tilesfile is None:
         # Use the default
-        tilesfile = findfile('footprint/desi-tiles.fits')
+        tilesfile = findfile("footprint/desi-tiles.fits")
     else:
         # If full path isn't included, check local vs $DESIMODEL/data/footprint
         tilepath, filename = os.path.split(tilesfile)
-        if tilepath == '':
+        if tilepath == "":
             have_local = os.path.isfile(tilesfile)
-            checkfile = findfile(os.path.join('footprint', tilesfile))
+            checkfile = findfile(os.path.join("footprint", tilesfile))
             have_dmdata = os.path.isfile(checkfile)
             if have_dmdata:
                 if have_local:
-                    msg = ('$DESIMODEL/data/footprint/{0} is shadowed by a local' +
-                           ' file. Choosing $DESIMODEL file.' +
-                           ' Use tilesfile="./{0}" if you want the local copy' +
-                           ' instead.').format(tilesfile)
+                    msg = (
+                        "$DESIMODEL/data/footprint/{0} is shadowed by a local"
+                        + " file. Choosing $DESIMODEL file."
+                        + ' Use tilesfile="./{0}" if you want the local copy'
+                        + " instead."
+                    ).format(tilesfile)
                     warnings.warn(msg)
                 tilesfile = checkfile
 
             if not (have_local or have_dmdata):
-                msg = ('File "{}" does not exist locally or in ' +
-                       '$DESIMODEL/data/footprint/!').format(tilesfile)
+                msg = (
+                    'File "{}" does not exist locally or in '
+                    + "$DESIMODEL/data/footprint/!"
+                ).format(tilesfile)
                 raise FileNotFoundError(msg)
 
-    #- standarize path location
+    # - standarize path location
     tilesfile = os.path.abspath(tilesfile.format(**os.environ))
-    log.debug('Loading tiles from %s', tilesfile)
+    log.debug("Loading tiles from %s", tilesfile)
 
     if cache and tilesfile in _tiles:
         tiledata = _tiles[tilesfile]
@@ -266,29 +304,35 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
         if any([c.bzero is not None for c in tiledata.columns]):
             foo = [_tiles[k].dtype for k in tiledata.dtype.names]
 
-        #- Check for out-of-date tiles file
-        if np.issubdtype(tiledata['OBSCONDITIONS'].dtype, np.unsignedinteger):
-            warnings.warn('Old desi-tiles.fits with uint16 OBSCONDITIONS; please update your $DESIMODEL checkout.', DeprecationWarning)
+        # - Check for out-of-date tiles file
+        if np.issubdtype(tiledata["OBSCONDITIONS"].dtype, np.unsignedinteger):
+            warnings.warn(
+                "Old desi-tiles.fits with uint16 OBSCONDITIONS; please update your $DESIMODEL checkout.",
+                DeprecationWarning,
+            )
 
-        #- load cache for next time
+        # - load cache for next time
         if cache:
             _tiles[tilesfile] = tiledata
 
-    #- Filter to only the DESI footprint if requested
+    # - Filter to only the DESI footprint if requested
     subset = np.ones(len(tiledata), dtype=bool)
     if onlydesi:
-        subset &= tiledata['IN_DESI'] > 0
+        subset &= tiledata["IN_DESI"] > 0
 
-    #- Filter out PROGRAM=EXTRA tiles if requested
+    # - Filter out PROGRAM=EXTRA tiles if requested
     if not extra:
-        subset &= ~np.char.startswith(tiledata['PROGRAM'], 'EXTRA')
+        subset &= ~np.char.startswith(tiledata["PROGRAM"], "EXTRA")
 
     if np.all(subset):
         return tiledata
     else:
         return tiledata[subset]
 
+
 _platescale = None
+
+
 def load_platescale():
     """Loads platescale.txt.
 
@@ -320,32 +364,35 @@ def load_platescale():
     if _platescale is not None:
         return _platescale
 
-    infile = findfile('focalplane/platescale.txt')
+    infile = findfile("focalplane/platescale.txt")
     columns = [
-        ('radius', 'f8'),
-        ('theta', 'f8'),
-        ('radial_platescale', 'f8'),
-        ('az_platescale', 'f8'),
-        ('arclength', 'f8'),
+        ("radius", "f8"),
+        ("theta", "f8"),
+        ("radial_platescale", "f8"),
+        ("az_platescale", "f8"),
+        ("arclength", "f8"),
     ]
     try:
-        _platescale = np.loadtxt(infile, usecols=[0,1,6,7,8], dtype=columns)
+        _platescale = np.loadtxt(infile, usecols=[0, 1, 6, 7, 8], dtype=columns)
     except IndexError:
-        #- no "arclength" column in this version of desimodel/data
-        #- Get info from separate rzs file instead
+        # - no "arclength" column in this version of desimodel/data
+        # - Get info from separate rzs file instead
 
-        _platescale = np.loadtxt(infile, usecols=[0,1,6,7,7], dtype=columns)
-        rzs = Table.read(findfile('focalplane/rzsn.txt'), format='ascii')
+        _platescale = np.loadtxt(infile, usecols=[0, 1, 6, 7, 7], dtype=columns)
+        rzs = Table.read(findfile("focalplane/rzsn.txt"), format="ascii")
 
         from scipy.interpolate import interp1d
         from numpy.lib.recfunctions import append_fields
-        arclength = interp1d(rzs['R'], rzs['S'], kind='quadratic')
-        _platescale['arclength'] = arclength(_platescale['radius'])
+
+        arclength = interp1d(rzs["R"], rzs["S"], kind="quadratic")
+        _platescale["arclength"] = arclength(_platescale["radius"])
 
     return _platescale
 
 
 _focalplane = None
+
+
 def load_focalplane(time=None):
     """Load the focalplane state that is valid for the given time.
 
@@ -371,9 +418,9 @@ def load_focalplane(time=None):
     if _focalplane is None:
         # First call, load all data files.
         fpdir = os.path.join(datadir(), "focalplane")
-        fppat = re.compile(r"desi-focalplane_(.*)\.ecsv")
-        stpat = re.compile(r"desi-state_(.*)\.ecsv")
-        expat = re.compile(r"desi-exclusion_(.*)\.yaml")
+        fppat = re.compile(r"^desi-focalplane_(.*)\.ecsv$")
+        stpat = re.compile(r"^desi-state_(.*)\.ecsv$")
+        expat = re.compile(r"^desi-exclusion_(.*)\.yaml.*$")
         fpraw = dict()
         msg = "Loading focalplanes from {}".format(fpdir)
         log.debug(msg)
@@ -405,8 +452,9 @@ def load_focalplane(time=None):
             for key in ["fp", "st", "ex"]:
                 if key not in files:
                     msg = "Focalplane state for time {} is missing one of \
-                          the 3 required files (focalplane, state, exclusion)"\
-                          .format(ts)
+                          the 3 required files (focalplane, state, exclusion)".format(
+                        ts
+                    )
                     raise RuntimeError(msg)
         # Now load the files for each time into our cached global variable.
         _focalplane = list()
@@ -415,8 +463,14 @@ def load_focalplane(time=None):
             fp = Table.read(fpraw[ts]["fp"], format="ascii.ecsv")
             st = Table.read(fpraw[ts]["st"], format="ascii.ecsv")
             ex = None
-            with open(fpraw[ts]["ex"], "r") as f:
-                ex = yaml.safe_load(f)
+            # First try to load uncompressed
+            try:
+                with open(fpraw[ts]["ex"], "r") as f:
+                    ex = yaml.safe_load(f)
+            except:
+                # Must be gzipped
+                with gzip.open(fpraw[ts]["ex"], "rb") as f:
+                    ex = yaml.safe_load(f)
             _focalplane.append((dt, fp, ex, st))
 
     # Search the list of states for the most recent time that is before our
@@ -453,46 +507,19 @@ def load_focalplane(time=None):
         tm = datetime.strptime(fullstate[row]["TIME"], "%Y-%m-%dT%H:%M:%S")
         if tm <= time:
             loc = fullstate[row]["LOCATION"]
-            pet = fullstate[row]["PETAL"]
-            dev = fullstate[row]["DEVICE"]
-            st = fullstate[row]["STATE"]
-            excl = fullstate[row]["EXCLUSION"]
-            if loc not in locstate:
-                locstate[loc] = dict()
-            locstate[loc]["PETAL"] = pet
-            locstate[loc]["DEVICE"] = dev
-            locstate[loc]["STATE"] = st
-            locstate[loc]["EXCLUSION"] = excl
+            locstate[loc] = fullstate[row]
 
-    nloc = len(locstate)
-    state_cols = [
-        Column(name="PETAL", length=nloc, dtype=np.int32,
-               description="Petal location [0-9]"),
-        Column(name="DEVICE", length=nloc, dtype=np.int32,
-               description="Device location on the petal"),
-        Column(name="LOCATION", length=nloc, dtype=np.int32,
-               description="Global device location (PETAL * 1000 + DEVICE)"),
-        Column(name="STATE", length=nloc, dtype=np.uint32,
-               description="State bit field (good == 0)"),
-        Column(name="EXCLUSION", length=nloc, dtype=np.dtype("a9"),
-               description="The exclusion polygon for this device"),
-    ]
-    state_data = Table()
-    state_data.add_columns(state_cols)
-    row = 0
+    rows = list()
     for loc in sorted(locstate.keys()):
-        state_data[row]["PETAL"] = locstate[loc]["PETAL"]
-        state_data[row]["DEVICE"] = locstate[loc]["DEVICE"]
-        state_data[row]["LOCATION"] = loc
-        state_data[row]["STATE"] = locstate[loc]["STATE"]
-        state_data[row]["EXCLUSION"] = locstate[loc]["EXCLUSION"]
-        row += 1
+        rows.append(locstate[loc])
+    state_data = Table(rows=rows, names=fullstate.colnames)
+    state_data.remove_column("TIME")
 
     return (fp_data, excl_data, state_data, tmstr)
 
 
 def reset_cache():
-    '''Reset I/O cache.'''
+    """Reset I/O cache."""
     global _thru, _psf, _params, _gfa, _fiberpos, _tiles, _platescale, _focalplane
     _thru = dict()
     _psf = dict()
@@ -505,7 +532,7 @@ def reset_cache():
 
 
 def load_target_info():
-    '''Loads data/targets/targets.yaml and returns the nested dictionary.
+    """Loads data/targets/targets.yaml and returns the nested dictionary.
 
     This is primarily syntactic sugar to avoid end users constructing
     paths and filenames by hand (which *e.g.* broke when targets.dat was
@@ -515,18 +542,19 @@ def load_target_info():
     -------
     :class:`dict`
         The dictionary read from the YAML file.
-    '''
-    targetsfile = findfile('targets/targets.yaml')
+    """
+    targetsfile = findfile("targets/targets.yaml")
     if not os.path.exists(targetsfile):
-        targetsfile = findfile('targets/targets.dat')
+        targetsfile = findfile("targets/targets.dat")
 
     with open(targetsfile) as fx:
         data = yaml.safe_load(fx)
 
     return data
 
+
 def load_pixweight(nside, pixmap=None):
-    '''Loads ``$DESIMODEL/data/footprint/desi-healpix-weights.fits``.
+    """Loads ``$DESIMODEL/data/footprint/desi-healpix-weights.fits``.
 
     Parameters
     ----------
@@ -539,26 +567,30 @@ def load_pixweight(nside, pixmap=None):
     -------
     Weight
         HEALPix weight map for the DESI footprint at the requested `nside`.
-    '''
+    """
     import healpy as hp
 
     if pixmap is not None:
-        log.debug('Using input pixel weight map of length {}.'.format(len(pixmap)))
+        log.debug("Using input pixel weight map of length {}.".format(len(pixmap)))
     else:
-        #ADM read in the standard pixel weights file
-        pixfile = findfile('footprint/desi-healpix-weights.fits')
+        # ADM read in the standard pixel weights file
+        pixfile = findfile("footprint/desi-healpix-weights.fits")
         with fits.open(pixfile) as hdulist:
             pixmap = hdulist[0].data
 
-    #ADM determine the file's nside, and flag a warning if the passed nside exceeds it
+    # ADM determine the file's nside, and flag a warning if the passed nside exceeds it
     npix = len(pixmap)
     truenside = hp.npix2nside(len(pixmap))
     if truenside < nside:
-        log.warning("downsampling is fuzzy...Passed nside={}, but file {} is stored at nside={}"
-                  .format(nside,pixfile,truenside))
+        log.warning(
+            "downsampling is fuzzy...Passed nside={}, but file {} is stored at nside={}".format(
+                nside, pixfile, truenside
+            )
+        )
 
-    #ADM resample the map
-    return hp.pixelfunc.ud_grade(pixmap,nside,order_in='NESTED',order_out='NESTED')
+    # ADM resample the map
+    return hp.pixelfunc.ud_grade(pixmap, nside, order_in="NESTED", order_out="NESTED")
+
 
 def findfile(filename):
     """Return full path to data file ``$DESIMODEL/data/filename``.
@@ -581,13 +613,15 @@ def findfile(filename):
     """
     return os.path.join(datadir(), filename)
 
+
 def datadir():
     """Returns location to desimodel data.
 
     If set, :envvar:`DESIMODEL` overrides data installed with the package.
     """
-    if 'DESIMODEL' in os.environ:
-        return os.path.abspath(os.path.join(os.environ['DESIMODEL'], 'data'))
+    if "DESIMODEL" in os.environ:
+        return os.path.abspath(os.path.join(os.environ["DESIMODEL"], "data"))
     else:
         import pkg_resources
-        return pkg_resources.resource_filename('desimodel', 'data')
+
+        return pkg_resources.resource_filename("desimodel", "data")
