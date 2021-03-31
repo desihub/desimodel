@@ -2,15 +2,24 @@
 desimodel Release Notes
 =======================
 
-0.14.2 (unreleased)
+0.14.3 (unreleased)
 -------------------
 
-* no changes yet
+* No changes yet.
+
+0.14.2 (2020-03-31)
+-------------------
+
+Data changes to svn, no code changes:
+
+* Added LYA TSNR2 templates.
+* Focalplane model updated 2021-03-17.
 
 0.14.1 (2021-03-18)
 -------------------
 
 * Add fastfiberacceptance code originally in specsim.
+* Add TSNR2 templates to svn data/tsnr/
 
 0.14.0 (2021-02-10)
 -------------------
