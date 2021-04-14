@@ -106,8 +106,7 @@ def convert_fp_calibs(fpcal, sim=False):
     """
     # Parse the calibration time
     cal_time_str = fpcal.meta["DATE_RETRIEVED"]
-    cal_time_raw = datetime.datetime.strptime(cal_time_str, "%Y-%m-%dT%H:%M:%S%z")
-    cal_time = cal_time_raw.replace(tzinfo=None)
+    cal_time = datetime.datetime.strptime(cal_time_str, "%Y-%m-%dT%H:%M:%S%z")
 
     state_time_str = cal_time.isoformat(timespec="seconds")
 
@@ -171,6 +170,11 @@ def convert_fp_calibs(fpcal, sim=False):
     n_rows = len(fpcal)
 
     fp, state = create_tables(n_rows)
+
+    # We only want to track the POS_P and POS_T values for positioners which are
+    # non-functional (stuck) or have a broken fiber, since these are the positioners
+    # we cannot move.
+    stuck_or_broken = valid_states["BROKEN"] | valid_states["STUCK"]
 
     kindx = 0
 
@@ -316,13 +320,13 @@ def convert_fp_calibs(fpcal, sim=False):
         state["MAX_P"][r] = d["MAX_P"]
         state["MIN_T"][r] = d["MIN_T"]
         state["MAX_T"][r] = d["MAX_T"]
-        # If the device is NOT good, track its current estimated location.
-        if state["STATE"][r] == valid_states["OK"]:
-            state["POS_P"][r] = 0.0
-            state["POS_T"][r] = 0.0
-        else:
+        # If the device is not movable, track its current estimated location.
+        if state["STATE"][r] & stuck_or_broken:
             state["POS_P"][r] = d["POS_P"]
             state["POS_T"][r] = d["POS_T"]
+        else:
+            state["POS_P"][r] = 0.0
+            state["POS_T"][r] = 0.0
 
     return (fp, state, excl, state_time_str)
 
@@ -433,7 +437,7 @@ def create_from_calibs(
         # Load the current focalplane and just update the state
 
         # Get the focalplane from one second before the current datestamp
-        cur_date = datetime.datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S")
+        cur_date = datetime.datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S%z")
         dtime = datetime.timedelta(seconds=1)
         oldtime = cur_date - dtime
 
@@ -467,6 +471,20 @@ def create_from_calibs(
         # We must have some changes, load the full table and append.
         state_file = os.path.join(out_dir, "desi-state_{}.ecsv".format(oldtmstr))
         st = Table.read(state_file, format="ascii.ecsv")
+
+        # If needed, promote the "TIME" state column to the new column type
+        if len(st["TIME"][0]) < 21:
+            newt = Column(
+                name="TIME",
+                length=len(st["TIME"]),
+                dtype=np.dtype("a30"),
+                description="The timestamp of the event (UTC, ISO format)",
+            )
+            for row, oldt in enumerate(st["TIME"]):
+                nt = datetime.datetime.strptime(oldt, "%Y-%m-%dT%H:%M:%S")
+                nt = nt.replace(tzinfo=datetime.timezone.utc)
+                newt[row] = nt.isoformat()
+            st.replace_column("TIME", newt)
 
         excl_file = os.path.join(out_dir, "desi-exclusion_{}.yaml.gz".format(oldtmstr))
 

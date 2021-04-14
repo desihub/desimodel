@@ -268,9 +268,9 @@ def create(
         )
 
     if startvalid is None:
-        startvalid = datetime.datetime.utcnow()
+        startvalid = datetime.datetime.now(tz=datetime.timezone.utc)
     else:
-        startvalid = datetime.datetime.strptime(startvalid, "%Y-%m-%dT%H:%M:%S")
+        startvalid = datetime.datetime.strptime(startvalid, "%Y-%m-%dT%H:%M:%S%z")
     file_date = startvalid.isoformat(timespec="seconds")
 
     if (petalloc is None) and (posdir is not None):

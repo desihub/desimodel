@@ -741,7 +741,7 @@ def create_tables(n_fp_rows, n_state_rows=None):
         Column(
             name="TIME",
             length=n_state_rows,
-            dtype=np.dtype("a20"),
+            dtype=np.dtype("a30"),
             data=["UNKNOWN" for x in range(n_state_rows)],
             description="The timestamp of the event (UTC, ISO format)",
         ),

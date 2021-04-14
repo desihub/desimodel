@@ -9,7 +9,7 @@ I/O utility functions for files in desimodel.
 import os
 import re
 import warnings
-from datetime import datetime
+from datetime import datetime, timezone
 
 import yaml
 import gzip
@@ -399,8 +399,8 @@ def load_focalplane(time=None):
     Parameters
     ----------
     time : :class:`~datetime.datetime`
-        The time to query. Default to current time
-        (:meth:`~datetime.datetime.now`).
+        The time to query with explicit timezone. Default to current time
+        (:meth:`~datetime.datetime.now`) with timezone UTC.
 
     Returns
     -------
@@ -409,14 +409,21 @@ def load_focalplane(time=None):
         The FP layout is a Table.  The exclusion polygons are a dictionary
         indexed by names that are referenced in the state.  The state
         is a Table.  The time string is the resulting UTC ISO format
-        time string used by the lookup.
+        time string for the creation date of the FP model.
     """
     if time is None:
-        time = datetime.now()
+        time = datetime.now(tz=timezone.utc)
+    elif time.tzinfo is None:
+        msg = "Requested focalplane time '{}' is not timezone-aware.  Assuming UTC.".format(time)
+        log.warning(msg)
+        time = time.replace(tzinfo=timezone.utc)
+
+    # Convert requested time to UTC
+    time = time.astimezone(tz=timezone.utc)
 
     global _focalplane
     if _focalplane is None:
-        # First call, load all data files.
+        # First call, parse all data files.
         fpdir = os.path.join(datadir(), "focalplane")
         fppat = re.compile(r"^desi-focalplane_(.*)\.ecsv$")
         stpat = re.compile(r"^desi-state_(.*)\.ecsv$")
@@ -459,63 +466,96 @@ def load_focalplane(time=None):
         # Now load the files for each time into our cached global variable.
         _focalplane = list()
         for ts in sorted(fpraw.keys()):
-            dt = datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S")
-            fp = Table.read(fpraw[ts]["fp"], format="ascii.ecsv")
-            st = Table.read(fpraw[ts]["st"], format="ascii.ecsv")
-            ex = None
-            # First try to load uncompressed
+            dt = None
+            file_dt = None
             try:
-                with open(fpraw[ts]["ex"], "r") as f:
-                    ex = yaml.safe_load(f)
-            except:
-                # Must be gzipped
-                with gzip.open(fpraw[ts]["ex"], "rb") as f:
-                    ex = yaml.safe_load(f)
-            _focalplane.append((dt, fp, ex, st))
+                file_dt = datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S%z")
+                dt = file_dt
+            except ValueError:
+                # This is an old file with implicit UTC times (no offset)
+                # Load it as-is and then set the time zone.
+                file_dt = datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S")
+                dt = file_dt.replace(tzinfo=timezone.utc)
+            _focalplane.append((
+                dt, file_dt, {
+                    "fp_file": fpraw[ts]["fp"],
+                    "st_file": fpraw[ts]["st"],
+                    "ex_file": fpraw[ts]["ex"],
+                    "fp_data": None,
+                    "st_data": None,
+                    "ex_data": None,
+                }
+            ))
 
     # Search the list of states for the most recent time that is before our
     # requested time.  There should not be too many different states, or else
     # we are using the wrong format for storing these.  Therefore, a linear
     # search should be fast enough.
-    fp_data = None
-    excl_data = None
-    fullstate = None
-    tmstr = None
-    for dt, fp, ex, st in _focalplane:
+    focalplane_props = None
+    file_tmstr = None
+    for dt, file_dt, props in _focalplane:
         if time >= dt:
-            fp_data = fp
-            excl_data = ex
-            fullstate = st
+            focalplane_props = props
             try:
-                tmstr = dt.isoformat(timespec="seconds")
+                file_tmstr = file_dt.isoformat(timespec="seconds")
             except TypeError:
                 # This must be python < 3.6, with no timespec option.
                 # Since the focalplane time is read from the file name without
                 # microseconds, the microseconds should be zero and so the
                 # default return string will be correct.
-                tmstr = dt.isoformat()
+                file_tmstr = file_dt.isoformat()
         else:
             break
 
-    if fullstate is None:
+    if focalplane_props is None:
         msg = "Cannot find focalplane for time {}".format(time)
         raise RuntimeError(msg)
 
+    # Load the data if this is the first time working with this focalplane
+    if focalplane_props["fp_data"] is None:
+        focalplane_props["fp_data"] = Table.read(
+            focalplane_props["fp_file"],
+            format="ascii.ecsv"
+        )
+        focalplane_props["st_data"] = Table.read(
+            focalplane_props["st_file"],
+            format="ascii.ecsv"
+        )
+        try:
+            # First try to load uncompressed
+            with open(focalplane_props["ex_file"], "r") as f:
+                focalplane_props["ex_data"] = yaml.safe_load(f)
+        except:
+            # Must be gzipped
+            with gzip.open(focalplane_props["ex_file"], "rb") as f:
+                focalplane_props["ex_data"] = yaml.safe_load(f)
+
     # Now "replay" the state up to our requested time.
+    st_data = focalplane_props["st_data"]
     locstate = dict()
-    for row in range(len(fullstate)):
-        tm = datetime.strptime(fullstate[row]["TIME"], "%Y-%m-%dT%H:%M:%S")
+    for row in range(len(st_data)):
+        try:
+            tm = datetime.strptime(st_data[row]["TIME"], "%Y-%m-%dT%H:%M:%S%z")
+        except ValueError:
+            # Old format with implicit UTC timezone
+            tm = datetime.strptime(st_data[row]["TIME"], "%Y-%m-%dT%H:%M:%S")
+            tm = tm.replace(tzinfo=timezone.utc)
         if tm <= time:
-            loc = fullstate[row]["LOCATION"]
-            locstate[loc] = fullstate[row]
+            loc = st_data[row]["LOCATION"]
+            locstate[loc] = st_data[row]
 
     rows = list()
     for loc in sorted(locstate.keys()):
         rows.append(locstate[loc])
-    state_data = Table(rows=rows, names=fullstate.colnames)
+    state_data = Table(rows=rows, names=st_data.colnames)
     state_data.remove_column("TIME")
 
-    return (fp_data, excl_data, state_data, tmstr)
+    return (
+        focalplane_props["fp_data"],
+        focalplane_props["ex_data"],
+        state_data,
+        file_tmstr
+    )
 
 
 def reset_cache():
