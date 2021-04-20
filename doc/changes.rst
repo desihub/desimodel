@@ -2,10 +2,27 @@
 desimodel Release Notes
 =======================
 
-0.14.3 (unreleased)
+0.15.1 (unreleased)
 -------------------
 
 * No changes yet.
+
+0.15.0 (2021-04-19)
+-------------------
+
+Code in GitHub:
+
+* Use UTC time everywhere in the focalplane model (PR `#147`_).
+  This is backwards compatible with old files, but new FP models will not
+  be readable by previous code tags.
+
+Data in svn:
+
+* DB sync 2021-04-03T23:53:23 appended to ``desi-state-2021-03-17T23:20:01.ecsv``.
+* DB sync 2021-04-10T20:00:39 appended to ``desi-state_2021-03-17T23:20:01.ecsv``.
+* DB sync 2021-04-13T20:00:30 appended to ``desi-state_2021-03-17T23:20:01.ecsv``.
+
+.. _`#147`: https://github.com/desihub/desimodel/pull/147
 
 0.14.2 (2020-03-31)
 -------------------
@@ -18,8 +35,9 @@ Data changes to svn, no code changes:
 0.14.1 (2021-03-18)
 -------------------
 
-* Add fastfiberacceptance code originally in specsim.
-* Add TSNR2 templates to svn data/tsnr/
+* Add fastfiberacceptance code originally in specsim (PR `#145`_).
+
+.. _`#145`: https://github.com/desihub/desimodel/pull/145
 
 0.14.0 (2021-02-10)
 -------------------
