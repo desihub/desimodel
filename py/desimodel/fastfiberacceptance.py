@@ -4,6 +4,8 @@ import numpy as np
 from scipy.interpolate import RegularGridInterpolator, interp1d
 
 
+def gaussian_fwhm(sigma):
+    return 2. * np.sqrt(2. * np.log(2.)) * sigma
 
 class FastFiberAcceptance(object):
     """
@@ -45,6 +47,8 @@ class FastFiberAcceptance(object):
             self._data[source] = data
             
             if dim == 2 :
+                assert source == 'POINT'
+                
                 # POINT: zero offset. 
                 self.psf_seeing_func[source] = interp1d(data[::-1,0], sigma[::-1], kind='linear', copy=True, bounds_error=False, assume_sorted=False, fill_value=(sigma[-1],sigma[0]))
                 
@@ -57,9 +61,14 @@ class FastFiberAcceptance(object):
 
         hdulist.close()
 
-    def psf_seeing(self, psf_fiberfrac):
+    def psf_seeing_sigma(self, psf_fiberfrac):
         return  self.psf_seeing_func["POINT"](psf_fiberfrac)
- 
+
+    def psf_seeing_fwhm(self, psf_fiberfrac):
+        sigma = self.psf_seeing_func["POINT"](psf_fiberfrac)
+
+        return gaussian_fwhm(sigma)
+            
     def rms(self,source,sigmas,offsets=None,hlradii=None) :
         """
         returns fiber acceptance fraction rms for the given source,sigmas,offsets
@@ -171,14 +180,33 @@ if __name__ == '__main__':
 
 
     x = FastFiberAcceptance()                                                                                                                                                                                                       
-
-    print(x._sigma[::-1])
-    print(x._data['POINT'][::-1,0])
     
     fiberfracs= np.arange(0.0,1.0, 0.01)
-    seeings= x.psf_seeing(fiberfracs)                                                                                                                                                                                               
+    seeings= x.psf_seeing_sigma(fiberfracs)
+    
+    avg_platescale = 1.52 / 107. # [''/microns].
 
+    seeings *= avg_platescale
+    
+    print(x._sigma[::-1])
+    print(x._sigma[::-1] * avg_platescale)
+    print(x._data['POINT'][::-1,0])
+    
     pl.plot(fiberfracs, seeings)
+    pl.plot(x._data['POINT'][::-1,0], x._sigma[::-1] * avg_platescale, marker='^', alpha=0.5)
+
     pl.xlabel('PSF FIBERFRAC')
-    pl.ylabel('SEEING FWHM [MICRONS]')
+    pl.ylabel('SEEING SIGMA [ARCSECONDS]')
     pl.show()                                                                                                                                                                                                                       
+
+    fwhms= x.psf_seeing_fwhm(fiberfracs)
+    fwhms *= avg_platescale
+
+    pl.plot(fiberfracs, fwhms)
+
+    pl.axhline(1.1, c='k', lw=0.5)
+    pl.axvline(0.6, c='k', lw=0.5)
+    
+    pl.xlabel('PSF FIBERFRAC')
+    pl.ylabel('SEEING FWHM [ARCSECONDS]')
+    pl.show()
