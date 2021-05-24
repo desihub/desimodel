@@ -59,9 +59,24 @@ if [ $? -ne 0 ]; then
     echo "Focalplane sync failed" >> "${logfile}"
 fi
 
-# Send notifications
+# Send notifications.
 
+# Get our webhook address from the environment
+slack_web_hook=${DESI_SLACKBOT_DESIMODEL_SYNC}
 
-
+if [ "x${slack_web_hook}" = "x" ]; then
+    echo "Environment variable DESI_SLACKBOT_DESIMODEL_SYNC not set- skipping notifications" >> "${logfile}"
+else
+    # Create the JSON payload.
+    slackjson="${logfile}_slack.json"
+    headtail=15
+    header=$(head -n ${headtail} ${logfile})
+    footer=$(tail -n ${headtail} ${logfile})
+    message="Focalplane DB sync (log at \`${logfile}\`):\n\`\`\`${header}\`\`\`\n(Snip)\n\`\`\`${footer}\`\`\`"
+    echo "{\"text\":\"$(echo -e ${message} | sed -e "s|'|\\\'|g")\"}" > "${slackjson}"
+    # Post it.
+    slackerror=$(curl -X POST -H 'Content-type: application/json' --data "$(cat ${slackjson})" ${slack_web_hook})
+    echo "Slack API post  ${slackerror}" >> "${logfile}"
+fi
 
 echo "Sync script finished at $(date -u --iso-8601=seconds)" >> "${logfile}"
