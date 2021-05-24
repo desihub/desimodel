@@ -83,3 +83,6 @@ else
 fi
 
 echo "Sync script finished at $(date -u --iso-8601=seconds)" >> "${logfile}"
+
+# Guard against accidental deletion
+chmod a-w "${logfile}"
