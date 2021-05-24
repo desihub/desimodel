@@ -536,8 +536,13 @@ def create_from_calibs(
 
         # If we updated any exclusions, write a new file
         if n_new_excl > 0:
-            with gzip.open(temp_excl, "wb") as pf:
-                yaml.dump(oldexcl, pf, default_flow_style=False)
+            with gzip.open(tmp_excl, "wb") as pf:
+                yaml.dump(
+                    oldexcl,
+                    stream=pf,
+                    encoding="utf-8",
+                    default_flow_style=False
+                )
             shutil.copy2(excl_file, prev_excl)
             os.rename(tmp_excl, excl_file)
 
