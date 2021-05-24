@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# IMPORTANT:  If you update this script, remember to copy it to
+# ~datasystems/desimodel_sync/ at KPNO.  This copy is needed so that
+# cron can find it in a fixed location independent of particular
+# versions of the software stack (this script loads the software
+# stack).
+
 # Ensure that we are running this as the datasystems user
 if [ $(whoami) != "datasystems" ]; then
     echo "You should only run this script at KPNO as the datasystems user"
