@@ -48,7 +48,7 @@ echo "Using focalplane sync script:  ${fpsync}" >> "${logfile}"
 # Find the newest calibration file
 caldir="/data/focalplane/calibration/"
 calfile=$(ls ${caldir} | egrep '[0-9]{8}T[0-9]{6}.*' | sort | tail -n 1)
-calpath="${caldir}/${calfile}"
+calpath="${caldir}${calfile}"
 echo "Found newest calibration file:  ${calpath}" >> "${logfile}"
 
 # Run it.
@@ -70,10 +70,7 @@ else
     # Create the JSON payload.
     slackjson="${logfile}_slack.json"
     headtail=15
-    header=$(head -n ${headtail} ${logfile})
-    footer=$(tail -n ${headtail} ${logfile})
-    message="Focalplane DB sync (log at \`${logfile}\`):\n\`\`\`${header}\`\`\`\n(Snip)\n\`\`\`${footer}\`\`\`"
-    echo "{\"text\":\"$(echo -e ${message} | sed -e "s|'|\\\'|g")\"}" > "${slackjson}"
+    echo -e "{\"text\":\"Focalplane DB sync (log at \`${logfile}\`):\n\`\`\`$(head -n ${headtail} ${logfile} | sed -e "s|'|\\\'|g")\`\`\`\n(Snip)\n\`\`\`$(tail -n ${headtail} ${logfile} | sed -e "s|'|\\\'|g")\`\`\`\"}" > "${slackjson}"
     # Post it.
     slackerror=$(curl -X POST -H 'Content-type: application/json' --data "$(cat ${slackjson})" ${slack_web_hook})
     echo "Slack API post  ${slackerror}" >> "${logfile}"
