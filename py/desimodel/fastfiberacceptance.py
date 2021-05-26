@@ -1,9 +1,11 @@
 import os
 import astropy.io.fits as pyfits
 import numpy as np
-from scipy.interpolate import RegularGridInterpolator
+from scipy.interpolate import RegularGridInterpolator, interp1d
 
 
+def gaussian_fwhm(sigma):
+    return 2. * np.sqrt(2. * np.log(2.)) * sigma
 
 class FastFiberAcceptance(object):
     """
@@ -15,7 +17,6 @@ class FastFiberAcceptance(object):
     are loaded.
     """
     def __init__(self,filename=None):
-
         if filename is None :
             if not "DESIMODEL" in os.environ :
                 print("need environment variable DESIMODEL or specify filename in constructor")
@@ -27,21 +28,46 @@ class FastFiberAcceptance(object):
         offset=hdulist["OFFSET"].data
         hlradius=hdulist["HLRAD"].data
 
+        self._sigma=sigma
+        self._offset=offset
+        self._hlradius=hlradius
+
+        self._data = {}
+
         self.fiber_acceptance_func = {}
         self.fiber_acceptance_rms_func = {}
-        for source in ["POINT","DISK","BULGE"] :
 
+        self.psf_seeing_func = {}
+
+        for source in ["POINT","DISK","BULGE"] :
             data=hdulist[source].data
             rms=hdulist[source[0]+"RMS"].data
             dim=len(data.shape)
+
+            self._data[source] = data
+
             if dim == 2 :
+                assert source == 'POINT'
+
+                # POINT: zero offset.
+                self.psf_seeing_func[source] = interp1d(data[::-1,0], sigma[::-1], kind='linear', copy=True, bounds_error=False, assume_sorted=False, fill_value=(sigma[-1],sigma[0]))
+
                 self.fiber_acceptance_func[source] = RegularGridInterpolator(points=(sigma,offset),values=data,method="linear",bounds_error=False,fill_value=None)
                 self.fiber_acceptance_rms_func[source] = RegularGridInterpolator(points=(sigma,offset),values=rms,method="linear",bounds_error=False,fill_value=None)
             elif dim == 3 :
+                # Not POINT
                 self.fiber_acceptance_func[source] = RegularGridInterpolator(points=(hlradius,sigma,offset),values=data,method="linear",bounds_error=False,fill_value=None)
                 self.fiber_acceptance_rms_func[source] = RegularGridInterpolator(points=(hlradius,sigma,offset),values=rms,method="linear",bounds_error=False,fill_value=None)
 
         hdulist.close()
+
+    def psf_seeing_sigma(self, psf_fiberfrac):
+        return  self.psf_seeing_func["POINT"](psf_fiberfrac)
+
+    def psf_seeing_fwhm(self, psf_fiberfrac):
+        sigma = self.psf_seeing_func["POINT"](psf_fiberfrac)
+
+        return gaussian_fwhm(sigma)
 
     def rms(self,source,sigmas,offsets=None,hlradii=None) :
         """
@@ -144,3 +170,47 @@ class FastFiberAcceptance(object):
         if was_scalar :
             return float(res[0])
         return res.reshape(original_shape)
+
+
+if __name__ == '__main__':
+    import numpy as np
+    import pylab as pl
+
+    from fastfiberacceptance import FastFiberAcceptance
+
+
+    x = FastFiberAcceptance()
+
+    fiberfracs= np.arange(0.0,1.0, 0.01)
+    seeings= x.psf_seeing_sigma(fiberfracs)
+
+    avg_platescale = 1.52 / 107. # [''/microns].
+
+    seeings *= avg_platescale
+
+    print(x._sigma[::-1])
+    print(x._sigma[::-1] * avg_platescale)
+    print(x._data['POINT'][::-1,0])
+
+    pl.figure()
+
+    pl.subplot(121)
+
+    pl.plot(fiberfracs, seeings)
+    pl.plot(x._data['POINT'][::-1,0], x._sigma[::-1] * avg_platescale, marker='^', alpha=0.5)
+    pl.xlabel('PSF FIBERFRAC')
+    pl.ylabel('SEEING SIGMA [ARCSECONDS]')
+
+    pl.subplot(122)
+
+    fwhms= x.psf_seeing_fwhm(fiberfracs)
+    fwhms *= avg_platescale
+
+    pl.plot(fiberfracs, fwhms)
+
+    pl.axhline(1.1, c='k', lw=0.5)
+    pl.axvline(0.6, c='k', lw=0.5)
+
+    pl.xlabel('PSF FIBERFRAC')
+    pl.ylabel('SEEING FWHM [ARCSECONDS]')
+    pl.show()
