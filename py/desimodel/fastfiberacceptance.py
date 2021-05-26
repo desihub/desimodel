@@ -33,25 +33,25 @@ class FastFiberAcceptance(object):
         self._hlradius=hlradius
 
         self._data = {}
-        
+
         self.fiber_acceptance_func = {}
         self.fiber_acceptance_rms_func = {}
 
         self.psf_seeing_func = {}
-        
+
         for source in ["POINT","DISK","BULGE"] :
             data=hdulist[source].data
             rms=hdulist[source[0]+"RMS"].data
             dim=len(data.shape)
 
             self._data[source] = data
-            
+
             if dim == 2 :
                 assert source == 'POINT'
-                
-                # POINT: zero offset. 
+
+                # POINT: zero offset.
                 self.psf_seeing_func[source] = interp1d(data[::-1,0], sigma[::-1], kind='linear', copy=True, bounds_error=False, assume_sorted=False, fill_value=(sigma[-1],sigma[0]))
-                
+
                 self.fiber_acceptance_func[source] = RegularGridInterpolator(points=(sigma,offset),values=data,method="linear",bounds_error=False,fill_value=None)
                 self.fiber_acceptance_rms_func[source] = RegularGridInterpolator(points=(sigma,offset),values=rms,method="linear",bounds_error=False,fill_value=None)
             elif dim == 3 :
@@ -68,7 +68,7 @@ class FastFiberAcceptance(object):
         sigma = self.psf_seeing_func["POINT"](psf_fiberfrac)
 
         return gaussian_fwhm(sigma)
-            
+
     def rms(self,source,sigmas,offsets=None,hlradii=None) :
         """
         returns fiber acceptance fraction rms for the given source,sigmas,offsets
@@ -174,30 +174,34 @@ class FastFiberAcceptance(object):
 
 if __name__ == '__main__':
     import numpy as np
-    import pylab as pl                                                                                                                                                                                                              
+    import pylab as pl
 
-    from fastfiberacceptance import FastFiberAcceptance                                                                                                                                                                             
+    from fastfiberacceptance import FastFiberAcceptance
 
 
-    x = FastFiberAcceptance()                                                                                                                                                                                                       
-    
+    x = FastFiberAcceptance()
+
     fiberfracs= np.arange(0.0,1.0, 0.01)
     seeings= x.psf_seeing_sigma(fiberfracs)
-    
+
     avg_platescale = 1.52 / 107. # [''/microns].
 
     seeings *= avg_platescale
-    
+
     print(x._sigma[::-1])
     print(x._sigma[::-1] * avg_platescale)
     print(x._data['POINT'][::-1,0])
-    
+
+    pl.figure()
+
+    pl.subplot(121)
+
     pl.plot(fiberfracs, seeings)
     pl.plot(x._data['POINT'][::-1,0], x._sigma[::-1] * avg_platescale, marker='^', alpha=0.5)
-
     pl.xlabel('PSF FIBERFRAC')
     pl.ylabel('SEEING SIGMA [ARCSECONDS]')
-    pl.show()                                                                                                                                                                                                                       
+
+    pl.subplot(122)
 
     fwhms= x.psf_seeing_fwhm(fiberfracs)
     fwhms *= avg_platescale
@@ -206,7 +210,7 @@ if __name__ == '__main__':
 
     pl.axhline(1.1, c='k', lw=0.5)
     pl.axvline(0.6, c='k', lw=0.5)
-    
+
     pl.xlabel('PSF FIBERFRAC')
     pl.ylabel('SEEING FWHM [ARCSECONDS]')
     pl.show()
