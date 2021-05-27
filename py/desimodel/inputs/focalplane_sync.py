@@ -15,7 +15,7 @@ import subprocess as sp
 
 import ast
 
-import yaml
+import json
 
 import numpy as np
 
@@ -396,7 +396,7 @@ def create_from_calibs(
         log.info("Writing new focalplane model- ignoring previous ones...")
         out_fp_file = os.path.join(out_dir, "desi-focalplane_{}.ecsv".format(date_str))
         out_excl_file = os.path.join(
-            out_dir, "desi-exclusion_{}.yaml.gz".format(date_str)
+            out_dir, "desi-exclusion_{}.json.gz".format(date_str)
         )
         out_state_file = os.path.join(out_dir, "desi-state_{}.ecsv".format(date_str))
 
@@ -412,8 +412,8 @@ def create_from_calibs(
 
         state.write(out_state_file, format="ascii.ecsv", overwrite=True)
 
-        with gzip.open(out_excl_file, "wb") as pf:
-            yaml.dump(excl, stream=pf, encoding="utf-8", default_flow_style=False)
+        with gzip.open(out_excl_file, "wt", encoding="utf8") as pf:
+            json.dump(excl, pf, indent=4)
 
         if commit:
             cmesg = "Creating new focalplane model from DB sync {}".format(date_str)
@@ -486,7 +486,7 @@ def create_from_calibs(
                 newt[row] = nt.isoformat()
             st.replace_column("TIME", newt)
 
-        excl_file = os.path.join(out_dir, "desi-exclusion_{}.yaml.gz".format(oldtmstr))
+        excl_file = os.path.join(out_dir, "desi-exclusion_{}.json.gz".format(oldtmstr))
 
         tmp_state = "{}.tmp".format(state_file)
         prev_state = "{}.previous".format(state_file)
@@ -536,12 +536,11 @@ def create_from_calibs(
 
         # If we updated any exclusions, write a new file
         if n_new_excl > 0:
-            with gzip.open(tmp_excl, "wb") as pf:
-                yaml.dump(
+            with gzip.open(tmp_excl, "wt", encoding='utf8') as pf:
+                json.dump(
                     oldexcl,
-                    stream=pf,
-                    encoding="utf-8",
-                    default_flow_style=False
+                    pf,
+                    indent=4
                 )
             shutil.copy2(excl_file, prev_excl)
             os.rename(tmp_excl, excl_file)
