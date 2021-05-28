@@ -319,6 +319,9 @@ def create(
         "OFFSET_P",
         "LENGTH_R1",
         "LENGTH_R2",
+    ]
+
+    st_cols = [
         "MIN_T",
         "MAX_T",
         "MIN_P",
@@ -355,6 +358,9 @@ def create(
                 for col in dev_cols:
                     if col in fp[petal][dev]:
                         out_fp[row][col] = fp[petal][dev][col]
+                for col in st_cols:
+                    if col in fp[petal][dev]:
+                        out_state[row][col] = fp[petal][dev][col]
             out_state[row]["LOCATION"] = out_fp[row]["LOCATION"]
             out_state[row]["STATE"] = valid_states["OK"]
             out_state[row]["EXCLUSION"] = "default"

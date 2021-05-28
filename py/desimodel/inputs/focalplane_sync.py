@@ -10,12 +10,14 @@ import os
 import datetime
 import shutil
 import gzip
+import re
 
 import subprocess as sp
 
 import ast
 
 import json
+import yaml
 
 import numpy as np
 
@@ -486,7 +488,19 @@ def create_from_calibs(
                 newt[row] = nt.isoformat()
             st.replace_column("TIME", newt)
 
-        excl_file = os.path.join(out_dir, "desi-exclusion_{}.json.gz".format(oldtmstr))
+        excl_file = None
+        for test_ext in ["json.gz", "yaml.gz"]:
+            excl_file = os.path.join(
+                out_dir,
+                "desi-exclusion_{}.{}".format(oldtmstr, test_ext)
+            )
+            if os.path.isfile(excl_file):
+                break
+            else:
+                excl_file = None
+        if excl_file is None:
+            msg = "Attempting to sync to an ancient focalplane model with uncompressed YAML exclusion polygons"
+            raise RuntimeError(msg)
 
         tmp_state = "{}.tmp".format(state_file)
         prev_state = "{}.previous".format(state_file)
@@ -537,11 +551,22 @@ def create_from_calibs(
         # If we updated any exclusions, write a new file
         if n_new_excl > 0:
             with gzip.open(tmp_excl, "wt", encoding='utf8') as pf:
-                json.dump(
-                    oldexcl,
-                    pf,
-                    indent=4
-                )
+                if re.match(r".*json.*", excl_file) is not None:
+                    # New format
+                    json.dump(
+                        oldexcl,
+                        pf,
+                        indent=4
+                    )
+                else:
+                    # Old format
+                    yaml.dump(
+                        oldexcl,
+                        stream=pf,
+                        encoding="utf-8",
+                        default_flow_style=False
+                    )
+
             shutil.copy2(excl_file, prev_excl)
             os.rename(tmp_excl, excl_file)
 
