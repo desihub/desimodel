@@ -527,7 +527,6 @@ def load_focalplane(time=None):
             loadroutine = json.load
         else:
             loadroutine = yaml.safe_load
-        print(focalplane_props['ex_file'])
         try:
             # First try to load uncompressed
             with open(focalplane_props["ex_file"], "r") as f:
