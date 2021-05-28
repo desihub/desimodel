@@ -59,7 +59,7 @@ echo "Found newest calibration file:  ${calpath}" >> "${logfile}"
 
 # Run it.
 failed="no"
-eval ${fpsync} --calib_file ${calpath} --commit 2>&1 >> "${logfile}"
+eval ${fpsync} --calib_file ${calpath} --commit >> "${logfile}" 2>&1
 if [ $? -ne 0 ]; then
     failed="yes"
     echo "Focalplane sync failed" >> "${logfile}"
