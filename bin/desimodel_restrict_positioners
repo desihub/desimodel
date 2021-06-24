@@ -14,7 +14,8 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 
-import yaml
+import json
+import gzip
 
 from astropy.table import Table, Column
 
@@ -109,7 +110,7 @@ def main():
         )
 
     out_fp_file = "desi-focalplane_{}.ecsv".format(args.out_date)
-    out_excl_file = "desi-exclusion_{}.yaml".format(args.out_date)
+    out_excl_file = "desi-exclusion_{}.json.gz".format(args.out_date)
     out_state_file = "desi-state_{}.ecsv".format(args.out_date)
 
     fp.write(out_fp_file, format="ascii.ecsv", overwrite=True)
@@ -140,8 +141,8 @@ def main():
 
     out_state.write(out_state_file, format="ascii.ecsv", overwrite=True)
 
-    with open(out_excl_file, "w") as pf:
-        yaml.dump(excl, pf, default_flow_style=False)
+    with gzip.open(out_excl_file, "wt", encoding="utf8") as pf:
+        json.dump(excl, pf, indent=4)
 
 if __name__ == "__main__":
     main()

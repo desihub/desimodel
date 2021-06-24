@@ -10,11 +10,13 @@ import os
 import datetime
 import shutil
 import gzip
+import re
 
 import subprocess as sp
 
 import ast
 
+import json
 import yaml
 
 import numpy as np
@@ -396,7 +398,7 @@ def create_from_calibs(
         log.info("Writing new focalplane model- ignoring previous ones...")
         out_fp_file = os.path.join(out_dir, "desi-focalplane_{}.ecsv".format(date_str))
         out_excl_file = os.path.join(
-            out_dir, "desi-exclusion_{}.yaml.gz".format(date_str)
+            out_dir, "desi-exclusion_{}.json.gz".format(date_str)
         )
         out_state_file = os.path.join(out_dir, "desi-state_{}.ecsv".format(date_str))
 
@@ -412,8 +414,8 @@ def create_from_calibs(
 
         state.write(out_state_file, format="ascii.ecsv", overwrite=True)
 
-        with gzip.open(out_excl_file, "wb") as pf:
-            yaml.dump(excl, stream=pf, encoding="utf-8", default_flow_style=False)
+        with gzip.open(out_excl_file, "wt", encoding="utf8") as pf:
+            json.dump(excl, pf, indent=4)
 
         if commit:
             cmesg = "Creating new focalplane model from DB sync {}".format(date_str)
@@ -436,10 +438,9 @@ def create_from_calibs(
     else:
         # Load the current focalplane and just update the state
 
-        # Get the focalplane from one second before the current datestamp
+        # Get the focalplane from the current datestamp
         cur_date = datetime.datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S%z")
-        dtime = datetime.timedelta(seconds=1)
-        oldtime = cur_date - dtime
+        oldtime = cur_date
 
         oldfp, oldexcl, oldstate, oldtmstr = load_focalplane(oldtime)
 
@@ -486,7 +487,19 @@ def create_from_calibs(
                 newt[row] = nt.isoformat()
             st.replace_column("TIME", newt)
 
-        excl_file = os.path.join(out_dir, "desi-exclusion_{}.yaml.gz".format(oldtmstr))
+        excl_file = None
+        for test_ext in ["json.gz", "yaml.gz"]:
+            excl_file = os.path.join(
+                out_dir,
+                "desi-exclusion_{}.{}".format(oldtmstr, test_ext)
+            )
+            if os.path.isfile(excl_file):
+                break
+            else:
+                excl_file = None
+        if excl_file is None:
+            msg = "Attempting to sync to an ancient focalplane model with uncompressed YAML exclusion polygons"
+            raise RuntimeError(msg)
 
         tmp_state = "{}.tmp".format(state_file)
         prev_state = "{}.previous".format(state_file)
@@ -536,13 +549,23 @@ def create_from_calibs(
 
         # If we updated any exclusions, write a new file
         if n_new_excl > 0:
-            with gzip.open(tmp_excl, "wb") as pf:
-                yaml.dump(
-                    oldexcl,
-                    stream=pf,
-                    encoding="utf-8",
-                    default_flow_style=False
-                )
+            with gzip.open(tmp_excl, "wt", encoding='utf8') as pf:
+                if re.match(r".*json.*", excl_file) is not None:
+                    # New format
+                    json.dump(
+                        oldexcl,
+                        pf,
+                        indent=4
+                    )
+                else:
+                    # Old format
+                    yaml.dump(
+                        oldexcl,
+                        stream=pf,
+                        encoding="utf-8",
+                        default_flow_style=False
+                    )
+
             shutil.copy2(excl_file, prev_excl)
             os.rename(tmp_excl, excl_file)
 

@@ -427,7 +427,7 @@ def load_focalplane(time=None):
         fpdir = os.path.join(datadir(), "focalplane")
         fppat = re.compile(r"^desi-focalplane_(.*)\.ecsv$")
         stpat = re.compile(r"^desi-state_(.*)\.ecsv$")
-        expat = re.compile(r"^desi-exclusion_(.*)\.yaml.*$")
+        expat = re.compile(r"^desi-exclusion_(.*)\.(?:yaml|json).*$")
         fpraw = dict()
         msg = "Loading focalplanes from {}".format(fpdir)
         log.debug(msg)
@@ -521,14 +521,20 @@ def load_focalplane(time=None):
             focalplane_props["st_file"],
             format="ascii.ecsv"
         )
+        if (focalplane_props['ex_file'].endswith('.json') or
+            focalplane_props['ex_file'].endswith('.json.gz')):
+            import json
+            loadroutine = json.load
+        else:
+            loadroutine = yaml.safe_load
         try:
             # First try to load uncompressed
             with open(focalplane_props["ex_file"], "r") as f:
-                focalplane_props["ex_data"] = yaml.safe_load(f)
+                focalplane_props["ex_data"] = loadroutine(f)
         except:
             # Must be gzipped
             with gzip.open(focalplane_props["ex_file"], "rb") as f:
-                focalplane_props["ex_data"] = yaml.safe_load(f)
+                focalplane_props["ex_data"] = loadroutine(f)
 
     # Now "replay" the state up to our requested time.
     st_data = focalplane_props["st_data"]

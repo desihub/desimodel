@@ -10,7 +10,8 @@ import os
 import datetime
 import re
 import csv
-import yaml
+import json
+import gzip
 import glob
 
 import configobj
@@ -318,6 +319,9 @@ def create(
         "OFFSET_P",
         "LENGTH_R1",
         "LENGTH_R2",
+    ]
+
+    st_cols = [
         "MIN_T",
         "MAX_T",
         "MIN_P",
@@ -354,6 +358,9 @@ def create(
                 for col in dev_cols:
                     if col in fp[petal][dev]:
                         out_fp[row][col] = fp[petal][dev][col]
+                for col in st_cols:
+                    if col in fp[petal][dev]:
+                        out_state[row][col] = fp[petal][dev][col]
             out_state[row]["LOCATION"] = out_fp[row]["LOCATION"]
             out_state[row]["STATE"] = valid_states["OK"]
             out_state[row]["EXCLUSION"] = "default"
@@ -466,7 +473,7 @@ def create(
     # that we don't need a single log for the entire survey.
 
     out_fp_file = os.path.join(outdir, "desi-focalplane_{}.ecsv".format(file_date))
-    out_excl_file = os.path.join(outdir, "desi-exclusion_{}.yaml".format(file_date))
+    out_excl_file = os.path.join(outdir, "desi-exclusion_{}.json.gz".format(file_date))
     out_state_file = os.path.join(outdir, "desi-state_{}.ecsv".format(file_date))
 
     out_fp.write(out_fp_file, format="ascii.ecsv", overwrite=True)
@@ -476,9 +483,9 @@ def create(
     del out_state
 
     # Now write out the exclusion polygons.  Since these are not tabular, we
-    # write to a YAML file.
+    # write to a JSON file.
 
-    with open(out_excl_file, "w") as pf:
-        yaml.dump(excl, pf, default_flow_style=False)
+    with gzip.open(out_excl_file, "wt", encoding='utf8') as pf:
+        json.dump(excl, pf, indent=4)
 
     return

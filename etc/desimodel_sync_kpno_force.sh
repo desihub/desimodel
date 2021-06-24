@@ -1,10 +1,7 @@
 #!/bin/bash
 
 # IMPORTANT:  If you update this script, remember to copy it to
-# ~datasystems/desimodel_sync/ at KPNO.  This copy is needed so that
-# cron can find it in a fixed location independent of particular
-# versions of the software stack (this script loads the software
-# stack).
+# ~datasystems/desimodel_sync/ at KPNO.
 
 # Ensure that we are running this as the datasystems user
 if [ $(whoami) != "datasystems" ]; then
@@ -58,11 +55,13 @@ calpath="${caldir}${calfile}"
 echo "Found newest calibration file:  ${calpath}" >> "${logfile}"
 
 # Run it.
+echo "Forcing creation of new focalplane model!" >> "${logfile}"
+
 failed="no"
-eval ${fpsync} --calib_file ${calpath} --commit >> "${logfile}" 2>&1
+eval ${fpsync} --calib_file ${calpath} --commit --reset >> "${logfile}" 2>&1
 if [ $? -ne 0 ]; then
     failed="yes"
-    echo "Focalplane sync failed" >> "${logfile}"
+    echo "Focalplane creation failed" >> "${logfile}"
 fi
 
 # Send notifications.

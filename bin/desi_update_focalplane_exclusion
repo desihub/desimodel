@@ -7,7 +7,8 @@ import argparse
 
 from datetime import datetime
 
-import yaml
+import json
+import gzip
 
 from desimodel.io import load_focalplane, datadir
 
@@ -54,11 +55,11 @@ def main():
     # Write out
 
     fpdir = os.path.join(datadir(), "focalplane")
-    excl_file = os.path.join(fpdir, "desi-exclusion_{}.yaml".format(tmstr))
+    excl_file = os.path.join(fpdir, "desi-exclusion_{}.json.gz".format(tmstr))
     tmp_excl = "{}.tmp".format(excl_file)
 
-    with open(tmp_excl, "w") as tf:
-        yaml.dump(exclude, tf, default_flow_style=False)
+    with gzip.open(tmp_excl, "wt", encoding="utf8") as tf:
+        json.dump(exclude, tf, indent=4)
 
     os.rename(tmp_excl, excl_file)
 
