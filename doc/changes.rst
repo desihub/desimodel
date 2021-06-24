@@ -2,13 +2,18 @@
 desimodel Release Notes
 =======================
 
-0.15.1 (unreleased)
+0.16.0 (unreleased)
 -------------------
 
 * Update ``etc/desimodel_sync_kpno_cron.sh`` for automatically syncing the
   focalplane model to the latest DB dump (PR `#148`_).
+* Add fiberfrac to PSF seeing conversions (PR `#149`_).
+* Move from positioner exclusion yaml format to much faster json format
+  (PR `#150`_).
 
 .. _`#148`: https://github.com/desihub/desimodel/pull/148
+.. _`#149`: https://github.com/desihub/desimodel/pull/149
+.. _`#150`: https://github.com/desihub/desimodel/pull/150
 
 0.15.0 (2021-04-19)
 -------------------
