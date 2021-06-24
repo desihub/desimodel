@@ -438,10 +438,9 @@ def create_from_calibs(
     else:
         # Load the current focalplane and just update the state
 
-        # Get the focalplane from one second before the current datestamp
+        # Get the focalplane from the current datestamp
         cur_date = datetime.datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S%z")
-        dtime = datetime.timedelta(seconds=1)
-        oldtime = cur_date - dtime
+        oldtime = cur_date
 
         oldfp, oldexcl, oldstate, oldtmstr = load_focalplane(oldtime)
 
