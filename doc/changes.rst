@@ -2,7 +2,12 @@
 desimodel Release Notes
 =======================
 
-0.16.0 (unreleased)
+0.17.0 (unreleased)
+-------------------
+
+* no changes yet
+
+0.16.0 (2021-06-25)
 -------------------
 
 * Update ``etc/desimodel_sync_kpno_cron.sh`` for automatically syncing the
