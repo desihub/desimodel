@@ -65,6 +65,10 @@ if [ $? -ne 0 ]; then
     echo "Focalplane sync failed" >> "${logfile}"
 fi
 
+module swap desimodel/master
+echo "Updating $DESIMODEL/data." >> "${logfile}"
+svn up $DESIMODEL/data >> "${logfile}"
+
 # Send notifications.
 
 # Get our webhook address from the environment
