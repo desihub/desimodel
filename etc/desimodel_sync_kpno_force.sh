@@ -36,6 +36,7 @@ export DESI_PRODUCT_ROOT="${desiconda}"
 export DESI_ROOT=/data/datasystems
 export DESI_TARGET=${DESI_ROOT}/target
 export DESI_SURVEYOPS=${DESI_ROOT}/survey/ops/surveyops/trunk
+export DESIMODEL_CENTRAL_REPO=${DESI_ROOT}/survey/ops/desimodel/trunk
 
 module use ${DESI_PRODUCT_ROOT}/modulefiles
 module load desiconda
@@ -63,6 +64,9 @@ if [ $? -ne 0 ]; then
     failed="yes"
     echo "Focalplane creation failed" >> "${logfile}"
 fi
+
+echo "Updating $DESIMODEL_CENTRAL_REPO." >> "${logfile}"
+svn up $DESIMODEL_CENTRAL_REPO >> "${logfile}"
 
 # Send notifications.
 
