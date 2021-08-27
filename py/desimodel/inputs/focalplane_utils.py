@@ -325,6 +325,22 @@ def load_petal_fiber_map(existing=None, fibermaps=None):
     fp[11][484]["FWHM"] = 0.0  # No information from file
     fp[11][484]["FRD"] = 0.0  # No information from file
     fp[11][484]["ABS"] = 0.0  # No information from file
+    # ---------------------------
+    # DESI-4883v4-Petal_11_final_verification.csv
+    # PETAL_ID=11 in PETAL_LOC=6 DEVICE_LOC=98,99 have their fiber info swapped
+    # See https://github.com/desihub/desispec/issues/1380
+    log.info("Correcting swapped fibers on PETAL_ID=11, PETAL_LOC=6, DEVICE_LOC=98,99")
+    fp[11][98]["SLITBLOCK"] = 17
+    fp[11][98]["BLOCKFIBER"] = 4
+    fp[11][99]["SLITBLOCK"] = 16
+    fp[11][99]["BLOCKFIBER"] = 2
+    # double check loc6098=fiber3429 and loc6099=fiber3402
+    petal_loc = 6
+    loc98_fiber = petal_loc*500 + fp[11][98]["SLITBLOCK"]*25 + fp[11][98]["BLOCKFIBER"]
+    loc99_fiber = petal_loc*500 + fp[11][99]["SLITBLOCK"]*25 + fp[11][99]["BLOCKFIBER"]
+    assert loc98_fiber == 3429
+    assert loc99_fiber == 3402
+
     return fp
 
 
