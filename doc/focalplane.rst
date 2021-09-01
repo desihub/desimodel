@@ -10,11 +10,10 @@ positioner is a unique device connected to a fiber.  The fibers travel to the
 spectrographs and are connected to a position on a slitblock.  Each positioner
 has a range of angular motion along two axes (theta and phi).
 
-As of October, 2019, much of this information is scattered across many
-documents.  We want to gather it all into one place for use in offline
-analysis.  Eventually this information will be consolidated into a database and
-our focalplane model will be based on that database instead of the many
-individual pieces of upstream information.
+The canonical focalplane calibration is stored in the ICS database,
+but we want to copy it into desimodel for offline analysis and to be
+able to tag exactly what version was used for fiber assignment and
+data processing runs.
 
 The focalplane model currently uses the CS5 coordinate system for the X/Y
 locations of devices on the focalplane.
@@ -47,21 +46,16 @@ files, then please open an issue to document your use case.
 Inputs
 ============
 
-The current inputs require a local svn checkout of the pos_settings directory
-of the focalplane repo
-(https://desi.lbl.gov/trac/browser/code/focalplane/fp_settings/pos_settings).
-This is a directory of python ConfigObj files, one per device.  These file
-contain the measured arm lengths and angle ranges for each device.
+Focalplane models are generated and updated from ICS database dumps at KPNO in
+``/data/focalplane/calibration/*.ecsv``.
 
-Additionally, the following DocDB files are downloaded and parsed.  The
-positioner locations from DocDB 0530 are the designed locations in CS5.  The
-petal verification files contain the mapping of fiber focalplane location to
-slitblock location.
+Additionally, the following DocDB files are downloaded and parsed to
+get the mapping of fiber focalplane
+location to slitblock location (i.e. fiber number on the spectrographs).
 
 ==============   ===========
 DocDB Number     Purpose
 ==============   ===========
-0530             X / Y locations of positioner centers in petal coordinates
 4042             Petal verification for petal ID 02
 4043             Petal verification for petal ID 03
 4807             Petal verification for petal ID 04
@@ -74,49 +68,62 @@ DocDB Number     Purpose
 4042             Petal verification for petal ID 11
 ==============   ===========
 
-The mapping from petal ID to petal location on the focalplane is passed as a
-commandline option to the script that generates the focalplane model.
-
 
 Generating a New Model
 ==========================
 
-A new focalplane model is generated with the desi_generate_focalplane script:
+Under normal circumstances focalplane updates are done daily by a KPNO cronjob
+running ``etc/desimodel_sync_kpno_cron.sh`` (update existing model)
+or ``etc/desimodel_sync_kpno_force.sh`` (use ``--reset`` to make a new model).
+The rest of this section documents what those are doing "under the hood",
+but it should not be necessary to run by hand.
 
-.. include:: generate_focalplane.inc
+A new focalplane model is generated with the ``desi_sync_focalplane`` script:
 
-This script will download and cache some files from DocDB.  It also requires
-that you have a local svn checkout of the pos_settings files.  Many of the
-commandline options are for testing / debugging against previous
-representations of the DESI instrument.  A typical use of the this script would
-be::
+.. code-block:: console
 
-    desi_generate_focalplane \
-        --startvalid 2019-10-10T00:00:00 \
-        --pos_settings /path/to/svn/fp_settings/pos_settings \
-        --petal_id2loc '4:0,5:1,6:2,3:3,8:4,10:5,11:6,2:7,7:8,9:9'
+    usage: desi_sync_focalplane [-h] --calib_file CALIB_FILE [--test] [--reset]
+                                [--simulate_good] [--debug_dir DEBUG_DIR]
+                                [--commit]
 
-This creates a new focalplane model in the desimodel data directory.  The
-default above is to check that the new focalplane has the same petal / device /
-fiber mapping as the previous one, and then to propagate the positioner state
-as the starting point of the new focalplane.  You can override this behavior by
-using the ``--reset`` option, which starts with all positioners in some default
-state (like "good").  If you do not specify the reset option but some hardware
-mapping has changed, then the code will raise an error and exit.
+    optional arguments:
+      -h, --help            show this help message and exit
+      --calib_file CALIB_FILE
+                            The ECSV database dump file
+      --test                Go through the process of updating the focalplane, but
+                            do not actually write new files.
+      --reset               Create a new focalplane model from the calib file,
+                            ignoring all previous state information
+      --simulate_good       Create a focalplane model for simulations. Non-broken
+                            fibers set to good
+      --debug_dir DEBUG_DIR
+                            Override the output directory for debugging.
+      --commit              Commit updated focalplane model to svn.
 
-The positioner exclusion polygons include a couple of built-in ones and then
-every file in the desimodel data directory with a name
-``${DESIMODEL}/data/focalplane/exclusions_*.conf`` is read and added to the
-available exclusion polygons.  One of these files must contain the name
-"default".  If propagating an existing focalplane state, the existing exclusion
-polygons are used and then replaced by newer built-in ones and anything found
-in the data directory.
+
+Note that the ``--reset`` option generates a new focalplane model,
+while without that option it updates the state ledger of the current
+focalplane model for only the positioners that changed.  In addition to
+the ``--calib_file`` input with the latest ICS database focalplane dump,
+this script automatically downloads the necessary DocDB entries listed above,
+which requires you to have DESI DocDB credentials stored in your
+``$HOME/.netrc`` file.
+
+See desimodel tags 0.16.0 and prior for documentation of an older script
+``desi_generate_focalplane`` which uses lab-measured focalplane metrology
+from DESI SVN ``code/focalplane/fp_settings/pos_settings`` to create
+a new focalplane model.  This has been removed from
+newer versions of desimodel in favor of loading the metrology as measured
+in-situ at KPNO.
 
 
 Updating the State of a Model
 ================================
 
-After a focalplane model is created, one can update the state of an individual
+After a focalplane model is created, the state can be updated by rerunning
+``desi_sync_focalplane`` with a new ICS database dump without using the
+``--reset`` option.  If needed, one can override the database to
+update the state of an individual
 positioner with the following command line tool:
 
 .. include:: update_focalplane_state.inc
