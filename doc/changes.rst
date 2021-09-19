@@ -2,10 +2,21 @@
 desimodel Release Notes
 =======================
 
-0.17.0 (unreleased)
+0.18.0 (unreleased)
 -------------------
 
-* no changes yet
+* No changes yet.
+
+0.17.0 (2021-09-19)
+-------------------
+
+* On focal plane sync, update KPNO-wide default DESIMODEL/data checkout.
+  (PR `#151`_).
+* Handle swapped fibers 3429, 3402 (PR `#152`_).
+* Remove deprecated focal plane generation routine, update associated docs.
+
+.. _`#151`: https://github.com/desihub/desimodel/pull/151
+.. _`#152`: https://github.com/desihub/desimodel/pull/152
 
 0.16.0 (2021-06-25)
 -------------------
