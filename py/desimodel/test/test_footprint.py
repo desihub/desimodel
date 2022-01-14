@@ -242,6 +242,19 @@ class TestFootprint(unittest.TestCase):
         pix = footprint.tiles2pix(16, tiles=tiles, per_tile=False)
         self.assertEqual(set(pix), set(allpix))
 
+        #- also works with TILERA, TILEDEC
+        tiles.rename_column('RA', 'TILERA')
+        tiles.rename_column('DEC', 'TILEDEC')
+        pix2 = footprint.tiles2pix(16, tiles=tiles, per_tile=False)
+        self.assertTrue(np.all(pix == pix2))
+
+        #- also works with dict and numpy structured array
+        pix3 = footprint.tiles2pix(16, tiles=np.array(tiles), per_tile=False)
+        self.assertTrue(np.all(pix == pix3))
+        tdict = dict(RA=list(tiles['TILERA']), DEC=list(tiles['TILEDEC']))
+        pix4 = footprint.tiles2pix(16, tiles=tdict, per_tile=False)
+        self.assertTrue(np.all(pix == pix4))
+
     def test_tileids2pix(self):
         tiles = io.load_tiles()
         pix = footprint.tileids2pix(16, tiles['TILEID'][0:3])
@@ -340,6 +353,6 @@ class TestFootprint(unittest.TestCase):
 def test_suite():
     """Allows testing of only this module with the command::
 
-        python setup.py test -m <modulename>
+        python setup.py test -m desimodel.test.test_footprint
     """
     return unittest.defaultTestLoader.loadTestsFromName(__name__)
