@@ -35,11 +35,11 @@ import desisim.io
 import desisim.util
 import desitarget
 import desispec.io
-import desimodel.io    
+import desimodel.io
 
 def sim_spectra(wave, flux, program, obsconditions=None,
                 sourcetype=None, expid=0, seed=0, specsim_config_file="desi"):
-    
+
     """
     Simulate spectra from an input set of wavelength and flux and writes a FITS file in the Spectra format that can
     be used as input to the redshift fitter.
@@ -50,7 +50,7 @@ def sim_spectra(wave, flux, program, obsconditions=None,
                flux has to be in units of 10^-17 ergs/s/cm2/A
         program : dark, lrg, qso, gray, grey, elg, bright, mws, bgs
             ignored if obsconditions is not None
-    
+
     Optional:
         obsconditions : dictionnary of observation conditions with SEEING EXPTIME AIRMASS MOONFRAC MOONALT MOONSEP
         sourcetype : list of string, allowed values are (sky,elg,lrg,qso,bgs,star), type of sources, used for fiber aperture loss , default is star
@@ -58,43 +58,43 @@ def sim_spectra(wave, flux, program, obsconditions=None,
         seed : random seed
         skyerr : fractional sky subtraction error
     """
-    
+
     log = get_logger()
-    
+
     if len(flux.shape)==1 :
         flux=flux.reshape((1,flux.size))
     nspec=flux.shape[0]
-    
+
     log.info("Starting simulation of {} spectra".format(nspec))
-    
-    if sourcetype is None :        
+
+    if sourcetype is None :
         sourcetype = np.array(["star" for i in range(nspec)])
     log.debug("sourcetype = {}".format(sourcetype))
-    
+
     tileid  = 0
     telera  = 0
-    teledec = 0    
+    teledec = 0
     dateobs = time.gmtime()
     night   = desisim.obs.get_night(utc=dateobs)
     program = program.lower()
-        
-       
-    frame_fibermap = desispec.io.fibermap.empty_fibermap(nspec)    
+
+
+    frame_fibermap = desispec.io.fibermap.empty_fibermap(nspec)
     frame_fibermap.meta["FLAVOR"]="custom"
     frame_fibermap.meta["NIGHT"]=night
     frame_fibermap.meta["EXPID"]=expid
-    
-    # add DESI_TARGET 
-    tm = desitarget.targetmask.desi_mask    
+
+    # add DESI_TARGET
+    tm = desitarget.targetmask.desi_mask
     frame_fibermap['DESI_TARGET'][sourcetype=="lrg"]=tm.LRG
     frame_fibermap['DESI_TARGET'][sourcetype=="elg"]=tm.ELG
     frame_fibermap['DESI_TARGET'][sourcetype=="qso"]=tm.QSO
     frame_fibermap['DESI_TARGET'][sourcetype=="sky"]=tm.SKY
     frame_fibermap['DESI_TARGET'][sourcetype=="bgs"]=tm.BGS_ANY
-    
+
     # add dummy TARGETID
     frame_fibermap['TARGETID']=np.arange(nspec).astype(int)
-         
+
     # spectra fibermap has two extra fields : night and expid
     # This would be cleaner if desispec would provide the spectra equivalent
     # of desispec.io.empty_fibermap()
@@ -107,7 +107,7 @@ def sim_spectra(wave, flux, program, obsconditions=None,
     for s in range(nspec):
         for tp in frame_fibermap.dtype.fields:
             spectra_fibermap[s][tp] = frame_fibermap[s][tp]
-    
+
     if obsconditions is None:
         if program in ['dark', 'lrg', 'qso']:
             obsconditions = desisim.simexp.reference_conditions['DARK']
@@ -162,21 +162,21 @@ def sim_spectra(wave, flux, program, obsconditions=None,
     ii = (wavemin <= wave) & (wave <= wavemax)
 
     flux_unit = 1e-17 * units.erg / (units.Angstrom * units.s * units.cm ** 2 )
-    
+
     wave = wave[ii]*units.Angstrom
     flux = flux[:,ii]*flux_unit
-    
+
     nspec = flux.shape[0]
-    
-    
-    sim = desisim.simexp.simulate_spectra(wave, flux, fibermap=frame_fibermap, 
+
+
+    sim = desisim.simexp.simulate_spectra(wave, flux, fibermap=frame_fibermap,
                                           obsconditions=obsconditions, seed=seed,specsim_config_file = specsim_config_file)
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
     # full wave array
     wmin=1e12
     wmax=0.
@@ -185,17 +185,17 @@ def sim_spectra(wave, flux, program, obsconditions=None,
         twave = table['wavelength'].astype(float)
         wmin = min(wmin,np.min(twave))
         wmax = max(wmax,np.max(twave))
-        if dwave==0 : 
+        if dwave==0 :
             dwave=twave[1]-twave[0]
         else :
             assert(np.abs(dwave-(twave[1]-twave[0]))<0.0001)
-    
+
     wave=np.linspace(wmin,wmax,int((wmax-wmin)/dwave)+1)
     log.debug("wmin wmax dwave wave= {} {} {} {}".format(wmin,wmax,dwave,wave))
-    
+
     sivarflux = np.zeros((nspec,wave.size))
     sivar     = np.zeros((nspec,wave.size))
-        
+
     # total signal on all cameras
     for table in sim.camera_output :
         twave = table['wavelength'].astype(float)
@@ -204,17 +204,17 @@ def sim_spectra(wave, flux, program, obsconditions=None,
         for s in range(nspec) :
             sivar[s]     += np.interp(wave,twave,tivar[s],left=0,right=0)
             sivarflux[s] += np.interp(wave,twave,tivarflux[s],left=0,right=0)
-    
-            
+
+
     scale=1e17
     flux = np.zeros(sivar.shape)
     for s in range(nspec) :
         ii=(sivar[s]>0)
         flux[s,ii] = sivarflux[s,ii]/sivar[s,ii] * scale
     ivar = sivar / scale**2
-    
+
     return wave,flux,ivar
-    
+
 
 
 def main():
@@ -237,7 +237,7 @@ def main():
                         help = 'path to specsim configuration file')
     parser.add_argument('--prefix', type = str, default = "sn-spec-lya",
                         help = 'prefix for output S/N files')
-    
+
 
     header_string="# using {}".format(os.path.basename(sys.argv[0]))
     for arg in sys.argv[1:] :
@@ -247,15 +247,15 @@ def main():
         header_string+="# run by {}\n".format(os.environ["USER"])
     header_string+="# on {}".format(datetime.date.today())
     print(header_string)
-    
-    
+
+
     args = parser.parse_args()
-    
+
     log = get_logger()
 
     obsconditions = desisim.simexp.reference_conditions['DARK']
     obsconditions["EXPTIME"]=args.total_exptime/args.nexp
-    
+
 
     # We require that the DESIMODEL environment variable is set.
     if 'DESIMODEL' not in os.environ:
@@ -272,10 +272,10 @@ def main():
     flux = x[1:] # these are mean QSO spectra at different redshifts
     # this is the same grid in the infile file, can't be changed here!
     zqs = np.linspace(2.0, 4.75, 12)
-    
+
     assert(flux.shape[0] == zqs.size)
-    
-   
+
+
     # figure out magnitude
     try:
         band = args.ab_magnitude[0]
@@ -285,28 +285,28 @@ def main():
         print('Invalid ab-magnitude parameter. '
               +'Valid syntax is, e.g. g=22.0 or r=21.5.')
         return -1
-    
+
     if args.single_mag :
         mags=[abmag]
     else :
         min_m=19.25
         dm=0.5
-        Nm=np.ceil((abmag-min_m)/dm)
+        Nm=int(np.ceil((abmag-min_m)/dm))
         mags = np.linspace(min_m, min_m+Nm*dm, Nm+1)
 
     if args.verbose: print('mags', mags)
-        
+
     # compute magnitudes of QSO spectra in input file
-    # assuming flux is prop to ergs/s/cm2/A 
+    # assuming flux is prop to ergs/s/cm2/A
     # (norme does not matter because the spectra will be rescaled)
-    
+
     filter_response = load_filter("SDSS_"+band.upper())
     fluxunits       = 1e-17 * units.erg / units.s / units.cm**2 / units.Angstrom
     infile_mags     = np.zeros(flux.shape[0])
     for s in range(flux.shape[0]) :
         infile_mags[s] = filter_response.get_ab_magnitude(flux[s]*fluxunits,wave)
         print(s,infile_mags[s])
-    
+
     for mag in mags:
         if args.verbose: print('generate file for %s = %f' % (band,mag) )
 
@@ -314,19 +314,19 @@ def main():
         scaled_flux = np.zeros(flux.shape)
         for s in range(flux.shape[0]) :
             scaled_flux[s] = 10**(-0.4*(mag-infile_mags[s])) * flux[s]
-        
+
         # simulating
         sourcetype = np.array(["qso" for i in range(flux.shape[0])])
-        
+
         sim_wave,sim_flux,sim_ivar = sim_spectra(wave, scaled_flux, program="dark", obsconditions=obsconditions, sourcetype=sourcetype, specsim_config_file=args.config)
         sim_snr = np.sqrt(sim_ivar)*sim_flux/np.sqrt(np.gradient(sim_wave)) # S/N per sqrt(A)
 
         # compute snr for the sum of the exposures
         sim_snr *= np.sqrt(args.nexp)
-        
+
         # for each wavelength, we will store a SN per redshift
         collect_results = []
-        
+
         #  min_wavelength,max_wavelength,wavelength_step
         for i,zq in enumerate(zqs):
             # store values for each wavelength
@@ -336,10 +336,10 @@ def main():
                     collect_results.append(new_row)
                 else:
                     collect_results[j]['snr_'+str(zq)] = sim_snr[i,j]
-        
+
         # Save the results to file
         fname = args.prefix+'-'+band+str(mag)+'-t'+str(int(args.total_exptime))+'-nexp'+str(int(args.nexp))+'.dat'
-        
+
         log.info('Saving results to %s' % fname)
         # Try opening the requested output file.
         with open(fname,'w') as out:
