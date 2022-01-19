@@ -108,9 +108,9 @@ def tiles2pix(nside, tiles=None, radius=None, per_tile=False, fact=2**7):
 
     Args:
         nside (int): HEALPix `nside`, ``2**k`` where 0 < k < 30.
-        tiles (array-like or Table-like, optional): Integer tile IDs,
-            or ``None`` to use all DESI tiles from
-            :func:`desimodel.io.load_tiles`.
+        tiles (Table-like, optional): tiles with columns RA,DEC or
+            TILERA,TILEDEC, or None to load
+            :func:`desimodel.io.load_tiles` (deprecated)
         radius (float, optional): tile radius in degrees;
             if ``None`` use :func:`desimodel.focalplane.get_tile_radius_deg`.
         per_tile (bool, optional): If ``True``, return a list of arrays of
@@ -128,15 +128,35 @@ def tiles2pix(nside, tiles=None, radius=None, per_tile=False, fact=2**7):
     import healpy as hp
     from .focalplane import get_tile_radius_deg
     if tiles is None:
+        log.warning('DESIMODEL tiles table is deprecated')
         tiles = load_tiles()
 
     if radius is None:
         radius = get_tile_radius_deg()
 
-    theta, phi = np.radians(90-tiles['DEC']), np.radians(tiles['RA'])
+    if isinstance(tiles, dict):
+        from astropy.table import Table
+        tiles = Table(tiles)
+
+    for col in ['RA', 'TILERA']:
+        if col in tiles.dtype.names:
+            ra = tiles[col]
+            break
+    else:
+        raise ValueError('tiles table needs RA or TILERA')
+
+    for col in ['DEC', 'TILEDEC']:
+        if col in tiles.dtype.names:
+            dec = tiles[col]
+            break
+    else:
+        raise ValueError('tiles table needs DEC or TILEDEC')
+
+
+    theta, phi = np.radians(90-dec), np.radians(ra)
     vec = hp.ang2vec(theta, phi)
     ipix = [hp.query_disc(nside, vec[i], radius=np.radians(radius),
-                inclusive=True, nest=True, fact=fact) for i in range(len(tiles))]
+                inclusive=True, nest=True, fact=fact) for i in range(len(ra))]
     if per_tile:
         return ipix
     else:
