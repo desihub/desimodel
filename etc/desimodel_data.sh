@@ -13,7 +13,7 @@ if [[ -z "${DESIMODEL_VERSION}" ]]; then
     echo "DESIMODEL_VERSION is not set!"
     exit 1
 fi
-if [[ "${DESIMODEL_VERSION}" == "tags/master" ]]; then
+if [[ "${DESIMODEL_VERSION}" == "tags/main" ]]; then
     svn checkout https://desi.lbl.gov/svn/code/desimodel/trunk/data
 else
     svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_VERSION}/data
