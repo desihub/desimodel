@@ -43,7 +43,7 @@ jobs:
                 python -m pip install -U 'astropy${{ matrix.astropy-version }}'
                 python -m pip cache remove fitsio
                 python -m pip install --no-deps --force-reinstall --ignore-installed 'fitsio${{ matrix.fitsio-version }}'
-                python -m pip install pyyaml scipy healpy
+                python -m pip install pyyaml scipy healpy matplotlib
                 svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_DATA}/data
             - name: Run the test
               run: DESIMODEL=$(pwd) pytest
@@ -81,7 +81,7 @@ jobs:
                 python -m pip install -U 'astropy${{ matrix.astropy-version }}'
                 python -m pip cache remove fitsio
                 python -m pip install --no-deps --force-reinstall --ignore-installed 'fitsio${{ matrix.fitsio-version }}'
-                python -m pip install pyyaml scipy healpy
+                python -m pip install pyyaml scipy healpy matplotlib
                 svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_DATA}/data
             - name: Run the test with coverage
               run: DESIMODEL=$(pwd) pytest --cov
