@@ -1,4 +1,5 @@
 setuptools
+requests
 pyyaml
 numpy
 scipy
