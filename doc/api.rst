@@ -5,7 +5,13 @@ The desimodel package/API
 .. automodule:: desimodel
     :members:
 
+.. automodule:: desimodel.fastfiberacceptance
+    :members:
+
 .. automodule:: desimodel.focalplane
+    :members:
+
+.. automodule:: desimodel.focalplane.fieldrot
     :members:
 
 .. automodule:: desimodel.focalplane.geometry
@@ -33,6 +39,12 @@ The desimodel package/API
     :members:
 
 .. automodule:: desimodel.inputs.focalplane
+    :members:
+
+.. automodule:: desimodel.inputs.focalplane_sync
+    :members:
+
+.. automodule:: desimodel.inputs.focalplane_utils
     :members:
 
 .. automodule:: desimodel.inputs.gfa

@@ -2,6 +2,22 @@
 desimodel
 =========
 
+
+|Actions Status| |Coveralls Status| |Documentation Status|
+
+.. |Actions Status| image:: https://github.com/desihub/desimodel/workflows/CI/badge.svg
+    :target: https://github.com/desihub/desimodel/actions
+    :alt: GitHub Actions CI Status
+
+.. |Coveralls Status| image:: https://coveralls.io/repos/desihub/desimodel/badge.svg
+    :target: https://coveralls.io/github/desihub/desimodel
+    :alt: Test Coverage Status
+
+.. |Documentation Status| image:: https://readthedocs.org/projects/desimodel/badge/?version=latest
+    :target: https://desimodel.readthedocs.io/en/latest/
+    :alt: Documentation Status
+
+
 Introduction
 ------------
 
@@ -156,26 +172,7 @@ Full Documentation
 
 Please visit `desimodel on Read the Docs`_
 
-.. image:: http://readthedocs.org/projects/desimodel/badge/?version=latest
-    :target: http://desimodel.readthedocs.io/en/latest/?badge=latest
-    :alt: Documentation Status
-
-.. _`desimodel on Read the Docs`: http://desimodel.readthedocs.io/en/latest/
-
-Travis Build Status
--------------------
-
-.. image:: https://img.shields.io/travis/desihub/desimodel.svg
-    :target: https://travis-ci.org/desihub/desimodel
-    :alt: Travis Build Status
-
-
-Test Coverage Status
---------------------
-
-.. image:: https://coveralls.io/repos/desihub/desimodel/badge.svg?branch=master&service=github
-    :target: https://coveralls.io/github/desihub/desimodel?branch=master
-    :alt: Test Coverage Status
+.. _`desimodel on Read the Docs`: https://desimodel.readthedocs.io/en/latest/
 
 License
 -------

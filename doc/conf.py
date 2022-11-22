@@ -39,13 +39,12 @@ extensions = [
 
 # Configuration for intersphinx, copied from astropy.
 intersphinx_mapping = {
-    'python': ('http://docs.python.org/3/', None),
-    # 'python3': ('http://docs.python.org/3/', path.abspath(path.join(path.dirname(__file__), 'local/python3links.inv'))),
-    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
-    'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
-    'matplotlib': ('http://matplotlib.org/', None),
-    'astropy': ('http://docs.astropy.org/en/stable/', None),
-    'h5py': ('http://docs.h5py.org/en/latest/', None)
+    'python': ('https://docs.python.org/3/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
+    'matplotlib': ('https://matplotlib.org/', None),
+    'astropy': ('https://docs.astropy.org/en/stable/', None),
+    'healpy': ('https://healpy.readthedocs.io/en/stable/', None)
     }
 
 # Add any paths that contain templates here, relative to this directory.
@@ -121,7 +120,8 @@ napoleon_include_private_with_doc = True
 # some external dependencies are not met at build time and break the
 # building process.
 autodoc_mock_imports = []
-for missing in ('astropy', 'configobj', 'desiutil', 'healpy', 'numpy', 'scipy', 'specter', 'yaml'):
+for missing in ('astropy', 'configobj', 'desiutil', 'healpy',
+                'matplotlib', 'numpy', 'scipy', 'specter', 'yaml'):
     try:
         foo = import_module(missing)
     except ImportError:

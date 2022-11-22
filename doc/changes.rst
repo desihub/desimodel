@@ -5,7 +5,15 @@ desimodel Release Notes
 0.18.0 (unreleased)
 -------------------
 
-* No changes yet.
+* Add missing Python modules to ``doc/api.rst`` (PR `#163`_).
+* Update the extra data download when installing with :command:`desiInstall`
+  (PR `#159`_).
+* Fix :func:`~desimodel.footprint.tiles2pix` to allow ``TILERA``, ``TILEDEC``
+  (PR `#156`_).
+
+.. _`#156`: https://github.com/desihub/desimodel/pull/156
+.. _`#159`: https://github.com/desihub/desimodel/pull/159
+.. _`#163`: https://github.com/desihub/desimodel/pull/163
 
 0.17.0 (2021-09-19)
 -------------------
