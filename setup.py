@@ -51,7 +51,7 @@ if os.path.isdir('bin'):
 setup_keywords['provides'] = [setup_keywords['name']]
 setup_keywords['python_requires'] = '>=3.5'
 setup_keywords['zip_safe'] = False
-setup_keywords['use_2to3'] = False
+# setup_keywords['use_2to3'] = False
 setup_keywords['packages'] = find_packages('py')
 setup_keywords['package_dir'] = {'': 'py'}
 setup_keywords['cmdclass'] = {'module_file': ds.DesiModule,

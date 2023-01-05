@@ -24,9 +24,9 @@ class FastFiberAcceptance(object):
             filename=os.path.join(os.environ["DESIMODEL"],"data/throughput/galsim-fiber-acceptance.fits")
         hdulist=pyfits.open(filename)
 
-        sigma=hdulist["SIGMA"].data
-        offset=hdulist["OFFSET"].data
-        hlradius=hdulist["HLRAD"].data
+        sigma=hdulist["SIGMA"].data.astype('=f8')
+        offset=hdulist["OFFSET"].data.astype('=f8')
+        hlradius=hdulist["HLRAD"].data.astype('=f8')
 
         self._sigma=sigma
         self._offset=offset
@@ -40,8 +40,8 @@ class FastFiberAcceptance(object):
         self.psf_seeing_func = {}
 
         for source in ["POINT","DISK","BULGE"] :
-            data=hdulist[source].data
-            rms=hdulist[source[0]+"RMS"].data
+            data=hdulist[source].data.astype('=f8')
+            rms=hdulist[source[0]+"RMS"].data.astype('=f8')
             dim=len(data.shape)
 
             self._data[source] = data
