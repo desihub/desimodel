@@ -2,7 +2,12 @@
 desimodel Release Notes
 =======================
 
-0.18.0 (unreleased)
+0.18.1 (unreleased)
+-------------------
+
+* No changes yet.
+
+0.18.0 (2023-01-05)
 -------------------
 
 * Add missing Python modules to ``doc/api.rst`` (PR `#163`_).
@@ -21,9 +26,12 @@ desimodel Release Notes
 0.17.0 (2021-09-19)
 -------------------
 
-* On focal plane sync, update KPNO-wide default DESIMODEL/data checkout.
+Changes for syncing focalplane model with ICS database focalplane calibrations:
+
+* On focal plane sync, update KPNO-wide default DESIMODEL/data checkout first.
   (PR `#151`_).
-* Handle swapped fibers 3429, 3402 (PR `#152`_).
+* Handle swapped fibers 3429,3402 at locations 98,99 on
+  PETAL_LOC=6 (PETAL_ID=11) (PR `#152`_).
 * Remove deprecated focal plane generation routine, update associated docs.
 
 .. _`#151`: https://github.com/desihub/desimodel/pull/151
