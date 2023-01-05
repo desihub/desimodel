@@ -10,10 +10,13 @@ desimodel Release Notes
   (PR `#159`_).
 * Fix :func:`~desimodel.footprint.tiles2pix` to allow ``TILERA``, ``TILEDEC``
   (PR `#156`_).
+* fastfiberacceptance use ``.astype('=f8')`` to force native endianness
+  for scipy>=1.10.0 compatibility (PR `#164`_).
 
 .. _`#156`: https://github.com/desihub/desimodel/pull/156
 .. _`#159`: https://github.com/desihub/desimodel/pull/159
 .. _`#163`: https://github.com/desihub/desimodel/pull/163
+.. _`#164`: https://github.com/desihub/desimodel/pull/164
 
 0.17.0 (2021-09-19)
 -------------------
