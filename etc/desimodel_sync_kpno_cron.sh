@@ -24,13 +24,13 @@ logfile="${logdir}/${logname}"
 
 echo "Running at ${logdate}" > "${logfile}"
 
-# Get the latest desiconda install
-desiconda=$(ls -d /software/datasystems/desiconda/20* | sort | tail -n 1)
+# Use the latest default desiconda version
+desiconda=/software/datasystems/desiconda/default
 
 # Get the latest stable version of desimodules
 desimodules=$(ls -d ${desiconda}/modulefiles/desimodules/2* | sort -V | tail -n 1 | xargs basename)
 
-echo "Using latest desiconda:  ${desiconda}" >> "${logfile}"
+echo "Using default desiconda:  ${desiconda}" >> "${logfile}"
 echo "Using latest stable version of desimodules:  ${desimodules}" >> "${logfile}"
 
 # Set up environment
@@ -44,6 +44,7 @@ export DESIMODEL_CENTRAL_REPO=${DESI_ROOT}/survey/ops/desimodel/trunk
 module use ${DESI_PRODUCT_ROOT}/modulefiles
 module load desiconda
 module load desimodules/${desimodules}
+module swap desimodel/0.17.0
 
 echo "Using desimodel data svn trunk at ${svntrunk}" >> "${logfile}"
 export DESIMODEL="${svntrunk}"
