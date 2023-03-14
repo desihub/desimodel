@@ -59,6 +59,11 @@ calfile=$(ls ${caldir} | egrep '[0-9]{8}T[0-9]{6}.*' | sort | tail -n 1)
 calpath="${caldir}${calfile}"
 echo "Found newest calibration file:  ${calpath}" >> "${logfile}"
 
+# Make sure that any locally modified files are removed
+echo "Ensuring clean svn tree at ${DESIMODEL}" >> "${logfile}"
+svn revert -R "${svntrunk}/data" >> "${logfile}"
+svn up "${svntrunk}/data" >> "${logfile}"
+
 # Run it.
 failed="no"
 eval ${fpsync} --calib_file ${calpath} --commit >> "${logfile}" 2>&1
