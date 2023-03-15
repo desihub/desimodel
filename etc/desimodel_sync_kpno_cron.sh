@@ -24,13 +24,13 @@ logfile="${logdir}/${logname}"
 
 echo "Running at ${logdate}" > "${logfile}"
 
-# Get the latest desiconda install
-desiconda=$(ls -d /software/datasystems/desiconda/20* | sort | tail -n 1)
+# Use the latest default desiconda version
+desiconda=/software/datasystems/desiconda/default
 
 # Get the latest stable version of desimodules
 desimodules=$(ls -d ${desiconda}/modulefiles/desimodules/2* | sort -V | tail -n 1 | xargs basename)
 
-echo "Using latest desiconda:  ${desiconda}" >> "${logfile}"
+echo "Using default desiconda:  ${desiconda}" >> "${logfile}"
 echo "Using latest stable version of desimodules:  ${desimodules}" >> "${logfile}"
 
 # Set up environment
@@ -44,6 +44,7 @@ export DESIMODEL_CENTRAL_REPO=${DESI_ROOT}/survey/ops/desimodel/trunk
 module use ${DESI_PRODUCT_ROOT}/modulefiles
 module load desiconda
 module load desimodules/${desimodules}
+module swap desimodel/0.17.0
 
 echo "Using desimodel data svn trunk at ${svntrunk}" >> "${logfile}"
 export DESIMODEL="${svntrunk}"
@@ -58,16 +59,42 @@ calfile=$(ls ${caldir} | egrep '[0-9]{8}T[0-9]{6}.*' | sort | tail -n 1)
 calpath="${caldir}${calfile}"
 echo "Found newest calibration file:  ${calpath}" >> "${logfile}"
 
-# Run it.
-failed="no"
-eval ${fpsync} --calib_file ${calpath} --commit >> "${logfile}" 2>&1
-if [ $? -ne 0 ]; then
-    failed="yes"
-    echo "Focalplane sync failed" >> "${logfile}"
-fi
+# Make sure that any locally modified files are removed
+echo "Ensuring clean svn tree at ${DESIMODEL}" >> "${logfile}"
+svn revert -R "${svntrunk}/data" >> "${logfile}"
+svn up "${svntrunk}/data" >> "${logfile}"
 
-echo "Updating $DESIMODEL_CENTRAL_REPO." >> "${logfile}"
-svn up $DESIMODEL_CENTRAL_REPO >> "${logfile}"
+# Run it, without committing result.
+eval ${fpsync} --calib_file ${calpath} >> "${logfile}" 2>&1
+if [ $? -ne 0 ]; then
+    echo "Focalplane sync failed" >> "${logfile}"
+else
+    echo "Focalplane sync completed" >> "${logfile}"
+    # Make sure we can load the resulting hardware model
+    echo "Try loading focalplane model at ${DESIMODEL}... " >> "${logfile}"
+    PYTHON_CODE=$(cat <<END
+import desimodel.io
+try:
+    hw = desimodel.io.load_focalplane()
+    print("yes")
+except:
+    print("no")
+END
+)
+    result="$(python3 -c "$PYTHON_CODE")"
+    if [ "x$result" = "xyes" ]; then
+	echo "SUCCESS" >> "${logfile}"
+	# Now commit result
+	mesg="Appending DB sync ${calfile} to current focalplane model"
+	svn commit -m "${mesg}" "${svntrunk}/data" >> "${logfile}"
+	svn up "${svntrunk}/data" >> "${logfile}"
+	echo "Updating $DESIMODEL_CENTRAL_REPO." >> "${logfile}"
+	svn up "${DESIMODEL_CENTRAL_REPO}" >> "${logfile}"
+    else
+	echo "FAIL" >> "${logfile}"
+	echo "Refusing to commit broken update.  Restore the *.previous files." >> "${logfile}"
+    fi
+fi
 
 # Send notifications.
 
