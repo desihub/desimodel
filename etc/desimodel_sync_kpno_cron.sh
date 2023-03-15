@@ -64,16 +64,37 @@ echo "Ensuring clean svn tree at ${DESIMODEL}" >> "${logfile}"
 svn revert -R "${svntrunk}/data" >> "${logfile}"
 svn up "${svntrunk}/data" >> "${logfile}"
 
-# Run it.
-failed="no"
-eval ${fpsync} --calib_file ${calpath} --commit >> "${logfile}" 2>&1
+# Run it, without committing result.
+eval ${fpsync} --calib_file ${calpath} >> "${logfile}" 2>&1
 if [ $? -ne 0 ]; then
-    failed="yes"
     echo "Focalplane sync failed" >> "${logfile}"
+else
+    echo "Focalplane sync completed" >> "${logfile}"
+    # Make sure we can load the resulting hardware model
+    echo "Try loading focalplane model at ${DESIMODEL}... " >> "${logfile}"
+    PYTHON_CODE=$(cat <<END
+import desimodel.io
+try:
+    hw = desimodel.io.load_focalplane()
+    print("yes")
+except:
+    print("no")
+END
+)
+    result="$(python3 -c "$PYTHON_CODE")"
+    if [ "x$result" = "xyes" ]; then
+	echo "SUCCESS" >> "${logfile}"
+	# Now commit result
+	mesg="Appending DB sync ${calfile} to current focalplane model"
+	svn commit -m "${mesg}" "${svntrunk}/data" >> "${logfile}"
+	svn up "${svntrunk}/data" >> "${logfile}"
+	echo "Updating $DESIMODEL_CENTRAL_REPO." >> "${logfile}"
+	svn up "${DESIMODEL_CENTRAL_REPO}" >> "${logfile}"
+    else
+	echo "FAIL" >> "${logfile}"
+	echo "Refusing to commit broken update.  Restore the *.previous files." >> "${logfile}"
+    fi
 fi
-
-echo "Updating $DESIMODEL_CENTRAL_REPO." >> "${logfile}"
-svn up $DESIMODEL_CENTRAL_REPO >> "${logfile}"
 
 # Send notifications.
 

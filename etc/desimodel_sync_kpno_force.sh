@@ -64,15 +64,14 @@ svn up "${svntrunk}/data" >> "${logfile}"
 # Run it.
 echo "Forcing creation of new focalplane model!" >> "${logfile}"
 
-failed="no"
 eval ${fpsync} --calib_file ${calpath} --commit --reset >> "${logfile}" 2>&1
 if [ $? -ne 0 ]; then
-    failed="yes"
     echo "Focalplane creation failed" >> "${logfile}"
+else
+    echo "Focalplane sync completed" >> "${logfile}"
+    echo "Updating $DESIMODEL_CENTRAL_REPO." >> "${logfile}"
+    svn up $DESIMODEL_CENTRAL_REPO >> "${logfile}"
 fi
-
-echo "Updating $DESIMODEL_CENTRAL_REPO." >> "${logfile}"
-svn up $DESIMODEL_CENTRAL_REPO >> "${logfile}"
 
 # Send notifications.
 
