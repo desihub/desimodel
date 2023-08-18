@@ -5,7 +5,13 @@ desimodel Release Notes
 0.18.1 (unreleased)
 -------------------
 
-* No changes yet.
+* Change default file for :func:`~desimodel.io.loadtiles` [`PR #168`_]:
+  * Now reads from :envvar:`SURVEYOPS` ``(/trunk/ops/tiles-main.ecsv)``
+  * Also adds option to limit tiles to specified ``PROGRAM`` names.
+  * Will now automatically load both `.fits` and `.ecsv` files.
+  * Addresses `issue #167`_.
+
+.. _`#168`: https://github.com/desihub/desimodel/pull/168
 
 0.18.0 (2023-01-05)
 -------------------
