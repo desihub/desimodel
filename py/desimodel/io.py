@@ -264,18 +264,18 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
 
     if tilesfile is None:
         # Use the default
-        tilesfile = findfile("footprint/desi-tiles.fits")
+        tilesfile = findfile("tiles-main.ecsv")
     else:
         # If full path isn't included, check local vs $DESIMODEL/data/footprint
         tilepath, filename = os.path.split(tilesfile)
         if tilepath == "":
             have_local = os.path.isfile(tilesfile)
-            checkfile = findfile(os.path.join("footprint", tilesfile))
+            checkfile = findfile(os.path.join(tilesfile))
             have_dmdata = os.path.isfile(checkfile)
             if have_dmdata:
                 if have_local:
                     msg = (
-                        "$DESIMODEL/data/footprint/{0} is shadowed by a local"
+                        "$SURVEYOPS/(trunk)/ops/{0} is shadowed by a local"
                         + " file. Choosing $DESIMODEL file."
                         + ' Use tilesfile="./{0}" if you want the local copy'
                         + " instead."
@@ -286,7 +286,7 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
             if not (have_local or have_dmdata):
                 msg = (
                     'File "{}" does not exist locally or in '
-                    + "$DESIMODEL/data/footprint/!"
+                    + "$SURVEYOPS/(trunk)/ops/!"
                 ).format(tilesfile)
                 raise FileNotFoundError(msg)
 
@@ -294,25 +294,32 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
     tilesfile = os.path.abspath(tilesfile.format(**os.environ))
     log.debug("Loading tiles from %s", tilesfile)
 
+    # ADM allow reading from either .fits or .ecsv files.
+    # ADM guard against the possibility that the file is zipped.
+    if ".fits" in os.path.basename(tilesfile):
+        fits = True
+
     if cache and tilesfile in _tiles:
         tiledata = _tiles[tilesfile]
     else:
-        with fits.open(tilesfile, memmap=False) as hdulist:
-            tiledata = hdulist[1].data
-        #
-        # Temporary workaround for problem identified in
-        # https://github.com/desihub/desimodel/issues/30
-        #
-        if any([c.bzero is not None for c in tiledata.columns]):
-            foo = [_tiles[k].dtype for k in tiledata.dtype.names]
+        if fits:
+            with fits.open(tilesfile, memmap=False) as hdulist:
+                tiledata = hdulist[1].data
+            #
+            # Temporary workaround for problem identified in
+            # https://github.com/desihub/desimodel/issues/30
+            #
+            if any([c.bzero is not None for c in tiledata.columns]):
+                foo = [_tiles[k].dtype for k in tiledata.dtype.names]
 
-        # - Check for out-of-date tiles file
-        if np.issubdtype(tiledata["OBSCONDITIONS"].dtype, np.unsignedinteger):
-            warnings.warn(
-                "Old desi-tiles.fits with uint16 OBSCONDITIONS; please update your $DESIMODEL checkout.",
-                DeprecationWarning,
-            )
-
+            # - Check for out-of-date tiles file
+            if np.issubdtype(tiledata["OBSCONDITIONS"].dtype, np.unsignedinteger):
+                warnings.warn(
+                    "Old desi-tiles.fits with uint16 OBSCONDITIONS; please update your $DESIMODEL checkout.",
+                    DeprecationWarning,
+                )
+        else:
+            tiledata = Table.read(tilesfile)
         # - load cache for next time
         if cache:
             _tiles[tilesfile] = tiledata
