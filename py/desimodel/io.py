@@ -215,7 +215,7 @@ _tiles = dict()
 
 
 def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
-    """Return DESI tiles structure from ``$DESIMODEL/data/footprint/desi-tiles.fits``.
+    """Return DESI tiles structure from ``$SURVEYOPS/trunk/ops/tiles-main.ecsv``.
 
     Parameters
     ----------
@@ -252,10 +252,12 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
     If the parameter `tilesfile` is set, this function uses the following
     search method:
 
+    0. Paths corresponding to both $SURVEYOPS/trunk/ops and $SURVEYOPS/ops are
+       always both checked, to cover different svn checkout approaches.
     1. If the value includes an explicit path, even ``./``, use that file.
     2. If the value does *not* include an explicit path, *and* the file name
-       is identical to a file in ``$DESIMODEL/data/footprint/``, use the
-       file in ``$DESIMODEL/data/footprint/`` and issue a warning.
+       is identical to a file in ``$SURVEYOPS/trunk/ops/``, use the
+       file in ``$SURVEYOPS/trunk/ops/`` and issue a warning.
     3. If no matching file can be found at all, raise an exception.
     """
     global _tiles
@@ -638,13 +640,17 @@ def load_pixweight(nside, pixmap=None):
     return hp.pixelfunc.ud_grade(pixmap, nside, order_in="NESTED", order_out="NESTED")
 
 
-def findfile(filename):
+def findfile(filename, surveyops=False):
     """Return full path to data file ``$DESIMODEL/data/filename``.
 
     Parameters
     ----------
     filename : :class:`str`
         Name of the file, relative to the desimodel data directory.
+
+    surveyops : :class:`bool`
+        If ``True`` then find the relevant path for the $SURVEYOPS
+        directory rather than the $DESIMODEL directory.
 
     Returns
     -------
@@ -657,17 +663,34 @@ def findfile(filename):
     desimodel data would be installed with the package and :envvar:`DESIMODEL`
     would become an optional override.
     """
-    return os.path.join(datadir(), filename)
+    return os.path.join(datadir(surveyops), filename)
 
 
-def datadir():
+def datadir(surveyops=False):
     """Returns location to desimodel data.
+
+    Parameters
+    ----------
+    surveyops : :class:`bool`
+        If ``True`` then find the relevant path for the $SURVEYOPS
+        directory rather than the $DESIMODEL directory.
 
     If set, :envvar:`DESIMODEL` overrides data installed with the package.
     """
-    if "DESIMODEL" in os.environ:
-        return os.path.abspath(os.path.join(os.environ["DESIMODEL"], "data"))
+    if surveyops:
+        if "SURVEYOPS" in os.environ:
+            surveyops = os.environ["SURVEYOPS"]
+            # ADM test whether surveyops directory was checked out to trunk.
+            if os.path.isdir(os.path.join(surveyops, "trunk", "ops")):
+                surveyops = os.path.join(surveyops, "trunk")
+            return os.path.abspath(os.path.join(surveyops, "ops"))
+        else:
+            # ADM as a last resort, try the default location at NERSC.
+            return "/global/cfs/cdirs/desi/survey/ops/surveyops/trunk/ops/"
     else:
-        import pkg_resources
+        if "DESIMODEL" in os.environ:
+            return os.path.abspath(os.path.join(os.environ["DESIMODEL"], "data"))
+        else:
+            import pkg_resources
 
-        return pkg_resources.resource_filename("desimodel", "data")
+            return pkg_resources.resource_filename("desimodel", "data")
