@@ -267,9 +267,9 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True, programs=
 
     if tilesfile is None:
         # Use the default
-        tilesfile = findfile("tiles-main.ecsv")
+        tilesfile = findfile("tiles-main.ecsv", surveyops=True)
     else:
-        # If full path isn't included, check local vs $DESIMODEL/data/footprint
+        # If full path isn't included, check local vs $SURVEYOPS/ops
         tilepath, filename = os.path.split(tilesfile)
         if tilepath == "":
             have_local = os.path.isfile(tilesfile)
@@ -279,7 +279,7 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True, programs=
                 if have_local:
                     msg = (
                         "$SURVEYOPS/(trunk)/ops/{0} is shadowed by a local"
-                        + " file. Choosing $DESIMODEL file."
+                        + " file. Choosing $SURVEYOPS file."
                         + ' Use tilesfile="./{0}" if you want the local copy'
                         + " instead."
                     ).format(tilesfile)
@@ -299,8 +299,7 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True, programs=
 
     # ADM allow reading from either .fits or .ecsv files.
     # ADM guard against the possibility that the file is zipped.
-    if ".fits" in os.path.basename(tilesfile):
-        fits = True
+    fits = ".fits" in os.path.basename(tilesfile)
 
     if cache and tilesfile in _tiles:
         tiledata = _tiles[tilesfile]
@@ -340,8 +339,10 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True, programs=
     if programs is not None:
         # ADM guard against a single string being passed.
         programs = np.atleast_1d(programs)
+        isprog = np.zeros(len(tiledata), dtype=bool)
         for program in programs:
-            subset &= tiledata["PROGRAM"] == program
+            isprog |= tiledata["PROGRAM"] == program
+        subset &= isprog
 
     if np.all(subset):
         return tiledata
