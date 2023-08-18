@@ -337,10 +337,11 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True, programs=
         subset &= ~np.char.startswith(tiledata["PROGRAM"], "EXTRA")
 
     # ADM filter to program names if requested.
-    # ADM guard against a string being passed.
-    programs = np.atleast_1d(programs)
-    for program in programs:
-        subset &= tiledata["PROGRAM"] == program
+    if programs is not None:
+        # ADM guard against a single string being passed.
+        programs = np.atleast_1d(programs)
+        for program in programs:
+            subset &= tiledata["PROGRAM"] == program
 
     if np.all(subset):
         return tiledata
