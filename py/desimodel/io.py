@@ -273,7 +273,7 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True, programs=
         tilepath, filename = os.path.split(tilesfile)
         if tilepath == "":
             have_local = os.path.isfile(tilesfile)
-            checkfile = findfile(os.path.join(tilesfile))
+            checkfile = findfile(tilesfile, surveyops=True)
             have_dmdata = os.path.isfile(checkfile)
             if have_dmdata:
                 if have_local:
@@ -299,12 +299,12 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True, programs=
 
     # ADM allow reading from either .fits or .ecsv files.
     # ADM guard against the possibility that the file is zipped.
-    fits = ".fits" in os.path.basename(tilesfile)
+    isfits = ".fits" in os.path.basename(tilesfile)
 
     if cache and tilesfile in _tiles:
         tiledata = _tiles[tilesfile]
     else:
-        if fits:
+        if isfits:
             with fits.open(tilesfile, memmap=False) as hdulist:
                 tiledata = hdulist[1].data
             #
