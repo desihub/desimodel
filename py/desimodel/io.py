@@ -214,7 +214,7 @@ def load_fiberpos():
 _tiles = dict()
 
 
-def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
+def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True, programs=None):
     """Return DESI tiles structure from ``$SURVEYOPS/trunk/ops/tiles-main.ecsv``.
 
     Parameters
@@ -229,6 +229,9 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
     cache : :class:`bool`, optional
         If ``False``, force reload of data from tiles file, instead of
         using cached values.
+    programs : :class:`list` or `str`, optional
+        Pass a list of program names to restrict to only those programs,
+        e.g. ["DARK", "BACKUP"].
 
     Returns
     -------
@@ -332,6 +335,12 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
     # - Filter out PROGRAM=EXTRA tiles if requested
     if not extra:
         subset &= ~np.char.startswith(tiledata["PROGRAM"], "EXTRA")
+
+    # ADM filter to program names if requested.
+    # ADM guard against a string being passed.
+    programs = np.atleast_1d(programs)
+    for program in programs:
+        subset &= tiledata["PROGRAM"] == program
 
     if np.all(subset):
         return tiledata
