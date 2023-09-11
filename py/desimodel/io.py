@@ -24,6 +24,10 @@ log = get_logger()
 
 _thru = dict()
 
+# ADM raise a custom exception when an environment variable is missing.
+class MissingEnvVar(Exception):
+    pass
+
 
 def load_throughput(channel):
     """Returns specter Throughput object for the given channel 'b', 'r', or 'z'.
@@ -215,7 +219,7 @@ _tiles = dict()
 
 
 def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True, programs=None):
-    """Return DESI tiles structure from ``$SURVEYOPS/trunk/ops/tiles-main.ecsv``.
+    """Return DESI tiles structure from ``$DESI_SURVEYOPS/trunk/ops/tiles-main.ecsv``.
 
     Parameters
     ----------
@@ -255,12 +259,13 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True, programs=
     If the parameter `tilesfile` is set, this function uses the following
     search method:
 
-    0. Paths corresponding to both $SURVEYOPS/trunk/ops and $SURVEYOPS/ops are
-       always both checked, to cover different svn checkout approaches.
+    0. Paths corresponding to both $DESI_SURVEYOPS/trunk/ops and
+       $DESI_SURVEYOPS/ops are always both checked, to cover different
+       svn checkout approaches.
     1. If the value includes an explicit path, even ``./``, use that file.
-    2. If the value does *not* include an explicit path, *and* the file name
-       is identical to a file in ``$SURVEYOPS/trunk/ops/``, use the
-       file in ``$SURVEYOPS/trunk/ops/`` and issue a warning.
+    2. If the value does *not* include an explicit path, *and* the file 
+       name is identical to a file in ``$DESI_SURVEYOPS/trunk/ops/``, use 
+       the file in ``$DESI_SURVEYOPS/trunk/ops/`` and issue a warning.
     3. If no matching file can be found at all, raise an exception.
     """
     global _tiles
@@ -269,7 +274,7 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True, programs=
         # Use the default
         tilesfile = findfile("tiles-main.ecsv", surveyops=True)
     else:
-        # If full path isn't included, check local vs $SURVEYOPS/ops
+        # If full path isn't included, check local vs $DESI_SURVEYOPS/ops
         tilepath, filename = os.path.split(tilesfile)
         if tilepath == "":
             have_local = os.path.isfile(tilesfile)
@@ -278,8 +283,8 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True, programs=
             if have_dmdata:
                 if have_local:
                     msg = (
-                        "$SURVEYOPS/(trunk)/ops/{0} is shadowed by a local"
-                        + " file. Choosing $SURVEYOPS file."
+                        "$DESI_SURVEYOPS/(trunk)/ops/{0} is shadowed by a local"
+                        + " file. Choosing $DESI_SURVEYOPS file."
                         + ' Use tilesfile="./{0}" if you want the local copy'
                         + " instead."
                     ).format(tilesfile)
@@ -289,7 +294,7 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True, programs=
             if not (have_local or have_dmdata):
                 msg = (
                     'File "{}" does not exist locally or in '
-                    + "$SURVEYOPS/(trunk)/ops/!"
+                    + "$DESI_SURVEYOPS/(trunk)/ops/!"
                 ).format(tilesfile)
                 raise FileNotFoundError(msg)
 
@@ -667,7 +672,7 @@ def findfile(filename, surveyops=False):
         Name of the file, relative to the desimodel data directory.
 
     surveyops : :class:`bool`
-        If ``True`` then find the relevant path for the $SURVEYOPS
+        If ``True`` then find the relevant path for the $DESI_SURVEYOPS
         directory rather than the $DESIMODEL directory.
 
     Returns
@@ -690,21 +695,21 @@ def datadir(surveyops=False):
     Parameters
     ----------
     surveyops : :class:`bool`
-        If ``True`` then find the relevant path for the $SURVEYOPS
+        If ``True`` then find the relevant path for the $DESI_SURVEYOPS
         directory rather than the $DESIMODEL directory.
 
     If set, :envvar:`DESIMODEL` overrides data installed with the package.
     """
     if surveyops:
-        if "SURVEYOPS" in os.environ:
-            surveyops = os.environ["SURVEYOPS"]
+        if "DESI_SURVEYOPS" in os.environ:
+            surveyops = os.environ["DESI_SURVEYOPS"]
             # ADM test whether surveyops directory was checked out to trunk.
             if os.path.isdir(os.path.join(surveyops, "trunk", "ops")):
                 surveyops = os.path.join(surveyops, "trunk")
             return os.path.abspath(os.path.join(surveyops, "ops"))
+        # ADM raise a custom exception if $DESI_SURVEYOPS is not set.
         else:
-            # ADM as a last resort, try the default location at NERSC.
-            return "/global/cfs/cdirs/desi/survey/ops/surveyops/trunk/ops/"
+            raise MissingEnvVar(f"$DESI_SURVEYOPS is not set")
     else:
         if "DESIMODEL" in os.environ:
             return os.path.abspath(os.path.join(os.environ["DESIMODEL"], "data"))
