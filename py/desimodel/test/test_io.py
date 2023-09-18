@@ -30,6 +30,15 @@ except KeyError:
     desimodel_available = False
     specter_available = False
     specter_message = desimodel_message
+#
+# Try to load the DESI_SURVEYOPS environment variable.
+#
+surveyops_available = True
+surveyops_message = "The DESI_SURVEYOPS directory was not detected"
+try:
+    _ = os.environ['DESI_SURVEYOPS']
+except KeyError:
+    surveyops_available = False
 
 
 class TestIO(unittest.TestCase):
@@ -225,7 +234,7 @@ class TestIO(unittest.TestCase):
         self.assertEqual(len(io._tiles), 2)
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
-    def test_tiles_consistency(self):
+    def test_tiles_consistency_old(self):
         """Test consistency of tile files.
 
         - Validate different tile loading schemes.
@@ -235,7 +244,7 @@ class TestIO(unittest.TestCase):
         fitstiles = io.findfile('footprint/desi-tiles.fits')
         ecsvtiles = io.findfile('footprint/desi-tiles.ecsv')
         # tf=TilesFits  tt=TilesTable  te=TilesEcsv
-        tf = io.load_tiles(onlydesi=False, extra=True)
+        tf = io.load_tiles(onlydesi=False, extra=True, surveyops=False)
         tt = Table.read(fitstiles)
         te = Table.read(ecsvtiles, format='ascii.ecsv')
 
@@ -259,6 +268,25 @@ class TestIO(unittest.TestCase):
             self.assertTrue((program[-1] != ' ') and (program[-1] != b' '))
         for program in set(te['PROGRAM']):
             self.assertTrue((program[-1] != ' ') and (program[-1] != b' '))
+
+
+    @unittest.skipUnless(surveyops_available, surveyops_message)
+    def validate_tile_load(self):
+        """Validate different tile loading schemes.
+
+        Also assure that PROGRAM column has no trailing whitespace.
+        """
+        ecsvtiles = io.findfile("tiles-main.ecsv", surveyops=True)
+        tt = io.load_tiles(onlydesi=False, extra=True)
+        te = Table.read(ecsvtiles, format='ascii.ecsv')
+
+        self.assertEqual(sorted(tt.dtype.names), sorted(te.colnames))
+
+        for program in set(tf['PROGRAM']):
+            self.assertTrue((program[-1] != ' ') and (program[-1] != b' '))
+        for program in set(tt['PROGRAM']):
+            self.assertTrue((program[-1] != ' ') and (program[-1] != b' '))
+
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_trim_data(self):

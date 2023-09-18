@@ -24,6 +24,7 @@ log = get_logger()
 
 _thru = dict()
 
+
 # ADM raise a custom exception when an environment variable is missing.
 class MissingEnvVar(Exception):
     pass
@@ -218,7 +219,8 @@ def load_fiberpos():
 _tiles = dict()
 
 
-def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True, programs=None):
+def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True,
+               programs=None, surveyops=True):
     """Return DESI tiles structure from ``$DESI_SURVEYOPS/trunk/ops/tiles-main.ecsv``.
 
     Parameters
@@ -236,6 +238,9 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True, programs=
     programs : :class:`list` or `str`, optional
         Pass a list of program names to restrict to only those programs,
         e.g. ["DARK", "BACKUP"].
+    surveyops : :class:`bool`
+        If ``True`` then find the relevant path for the $DESI_SURVEYOPS
+        directory rather than the $DESIMODEL directory.
 
     Returns
     -------
@@ -263,8 +268,8 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True, programs=
        $DESI_SURVEYOPS/ops are always both checked, to cover different
        svn checkout approaches.
     1. If the value includes an explicit path, even ``./``, use that file.
-    2. If the value does *not* include an explicit path, *and* the file 
-       name is identical to a file in ``$DESI_SURVEYOPS/trunk/ops/``, use 
+    2. If the value does *not* include an explicit path, *and* the file
+       name is identical to a file in ``$DESI_SURVEYOPS/trunk/ops/``, use
        the file in ``$DESI_SURVEYOPS/trunk/ops/`` and issue a warning.
     3. If no matching file can be found at all, raise an exception.
     """
@@ -272,13 +277,16 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True, programs=
 
     if tilesfile is None:
         # Use the default
-        tilesfile = findfile("tiles-main.ecsv", surveyops=True)
+        if surveyops:
+            tilesfile = findfile("tiles-main.ecsv", surveyops=surveyops)
+        else:
+            tilesfile = findfile("footprint/desi-tiles.fits", surveyops=surveyops)
     else:
         # If full path isn't included, check local vs $DESI_SURVEYOPS/ops
         tilepath, filename = os.path.split(tilesfile)
         if tilepath == "":
             have_local = os.path.isfile(tilesfile)
-            checkfile = findfile(tilesfile, surveyops=True)
+            checkfile = findfile(tilesfile, surveyops=surveyops)
             have_dmdata = os.path.isfile(checkfile)
             if have_dmdata:
                 if have_local:
