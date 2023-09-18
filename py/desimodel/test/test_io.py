@@ -174,8 +174,47 @@ class TestIO(unittest.TestCase):
         self.assertEqual(npix,12*nside*nside)
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
+    def test_load_tiles_old(self):
+        """Test loading of tile files for old default DESIMODEL case.
+        """
+        # starting clean
+        self.assertEqual(io._tiles, {})
+        t0 = io.load_tiles(cache=False, surveyops=False)
+        self.assertEqual(len(io._tiles), 0)
+        # loading tiles fills the cache with one items
+        t1 = io.load_tiles(onlydesi=False, surveyops=False)
+        self.assertEqual(len(io._tiles), 1)
+        tile_cache_id1 = id(list(io._tiles.values())[0])
+        # reloading, even with a filter, shouldn't change cache
+        t2 = io.load_tiles(onlydesi=True, surveyops=False)
+        self.assertEqual(len(io._tiles), 1)
+        tile_cache_id2 = id(list(io._tiles.values())[0])
+        self.assertEqual(tile_cache_id1, tile_cache_id2)
+        #- Temporarily support OBSCONDITIONS as u2 (old) or i4 (new)
+        self.assertTrue(np.issubdtype(t1['OBSCONDITIONS'].dtype, np.signedinteger) or
+                        np.issubdtype(t1['OBSCONDITIONS'].dtype, np.unsignedinteger) )
+        self.assertTrue(np.issubdtype(t2['OBSCONDITIONS'].dtype, np.signedinteger) or
+                        np.issubdtype(t2['OBSCONDITIONS'].dtype, np.unsignedinteger) )
+        self.assertLess(len(t2), len(t1))
+        # All tiles in DESI are also in full set.
+        self.assertTrue(np.all(np.in1d(t2['TILEID'], t1['TILEID'])))
+        # I think this is the exact same test as above, except using set theory.
+        self.assertEqual(len(set(t2.TILEID) - set(t1.TILEID)), 0)
+        t3 = io.load_tiles(onlydesi=False, surveyops=False)
+        tile_cache_id3 = id(list(io._tiles.values())[0])
+        self.assertEqual(tile_cache_id1, tile_cache_id3)
+        self.assertTrue(np.issubdtype(t3['OBSCONDITIONS'].dtype, np.signedinteger) or
+                        np.issubdtype(t3['OBSCONDITIONS'].dtype, np.unsignedinteger) )
+        # Check for extra tiles.
+        a = io.load_tiles(extra=False, surveyops=False)
+        self.assertEqual(np.sum(np.char.startswith(a['PROGRAM'], 'EXTRA')), 0)
+        b = io.load_tiles(extra=True, surveyops=False)
+        self.assertGreater(np.sum(np.char.startswith(b['PROGRAM'], 'EXTRA')), 0)
+        self.assertLess(len(a), len(b))
+
+    @unittest.skipUnless(surveyops_available, surveyops_message)
     def test_load_tiles(self):
-        """Test loading of tile files.
+        """Test loading of tile files for default DESI_SURVEYOPS case.
         """
         # starting clean
         self.assertEqual(io._tiles, {})
@@ -190,27 +229,12 @@ class TestIO(unittest.TestCase):
         self.assertEqual(len(io._tiles), 1)
         tile_cache_id2 = id(list(io._tiles.values())[0])
         self.assertEqual(tile_cache_id1, tile_cache_id2)
-        #- Temporarily support OBSCONDITIONS as u2 (old) or i4 (new)
-        self.assertTrue(np.issubdtype(t1['OBSCONDITIONS'].dtype, np.signedinteger) or
-                        np.issubdtype(t1['OBSCONDITIONS'].dtype, np.unsignedinteger) )
-        self.assertTrue(np.issubdtype(t2['OBSCONDITIONS'].dtype, np.signedinteger) or
-                        np.issubdtype(t2['OBSCONDITIONS'].dtype, np.unsignedinteger) )
         self.assertLess(len(t2), len(t1))
         # All tiles in DESI are also in full set.
         self.assertTrue(np.all(np.in1d(t2['TILEID'], t1['TILEID'])))
-        # I think this is the exact same test as above, except using set theory.
-        self.assertEqual(len(set(t2.TILEID) - set(t1.TILEID)), 0)
         t3 = io.load_tiles(onlydesi=False)
         tile_cache_id3 = id(list(io._tiles.values())[0])
         self.assertEqual(tile_cache_id1, tile_cache_id3)
-        self.assertTrue(np.issubdtype(t3['OBSCONDITIONS'].dtype, np.signedinteger) or
-                        np.issubdtype(t3['OBSCONDITIONS'].dtype, np.unsignedinteger) )
-        # Check for extra tiles.
-        a = io.load_tiles(extra=False)
-        self.assertEqual(np.sum(np.char.startswith(a['PROGRAM'], 'EXTRA')), 0)
-        b = io.load_tiles(extra=True)
-        self.assertGreater(np.sum(np.char.startswith(b['PROGRAM'], 'EXTRA')), 0)
-        self.assertLess(len(a), len(b))
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_load_tiles_alt(self):
