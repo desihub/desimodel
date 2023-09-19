@@ -393,7 +393,7 @@ def load_platescale():
 _focalplane = None
 
 
-def load_focalplane(time=None):
+def load_focalplane(time=None, get_time_range=False):
     """Load the focalplane state that is valid for the given time.
 
     Parameters
@@ -411,6 +411,9 @@ def load_focalplane(time=None):
         is a Table.  The time string is the resulting UTC ISO format
         time string for the creation date of the FP model.
     """
+    # Time range over which this FP model is valid.
+    time_lo = time_hi = None
+
     if time is None:
         time = datetime.now(tz=timezone.utc)
     elif time.tzinfo is None:
@@ -504,7 +507,9 @@ def load_focalplane(time=None):
                 # microseconds, the microseconds should be zero and so the
                 # default return string will be correct.
                 file_tmstr = file_dt.isoformat()
+            time_lo = dt
         else:
+            time_hi = dt
             break
 
     if focalplane_props is None:
@@ -549,6 +554,10 @@ def load_focalplane(time=None):
         if tm <= time:
             loc = st_data[row]["LOCATION"]
             locstate[loc] = st_data[row]
+            time_lo = tm
+        else:
+            time_hi = tm
+            break
 
     rows = list()
     for loc in sorted(locstate.keys()):
@@ -556,13 +565,15 @@ def load_focalplane(time=None):
     state_data = Table(rows=rows, names=st_data.colnames)
     state_data.remove_column("TIME")
 
-    return (
+    rtn = (
         focalplane_props["fp_data"],
         focalplane_props["ex_data"],
         state_data,
         file_tmstr
     )
-
+    if get_time_range:
+        return rtn + (time_lo, time_hi)
+    return rtn
 
 def reset_cache():
     """Reset I/O cache."""
