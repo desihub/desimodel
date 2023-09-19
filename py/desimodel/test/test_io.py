@@ -52,10 +52,12 @@ class TestIO(unittest.TestCase):
         cls.tempdir = tempfile.mkdtemp(prefix='testio-')
         cls.trimdir = os.path.join(cls.tempdir, 'trim')
         cls.testfile = os.path.join(cls.tempdir, 'test-abc123.fits')
+        cls.testecsvfile = os.path.join(cls.tempdir, 'test-abc123.ecsv')
 
     @classmethod
     def tearDownClass(cls):
         if os.path.exists(cls.tempdir):
+            _ = os.system(f"chmod -R +w {cls.tempdir}")
             import shutil
             shutil.rmtree(cls.tempdir)
 
@@ -237,21 +239,44 @@ class TestIO(unittest.TestCase):
         self.assertEqual(tile_cache_id1, tile_cache_id3)
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
-    def test_load_tiles_alt(self):
+    def test_load_tiles_alt_old(self):
+        """Test alternative tile-load for old default DATAMODEL case
+        """
         # starting clean
         self.assertEqual(io._tiles, {})
-        t1 = Table(io.load_tiles())
+        t1 = Table(io.load_tiles(surveyops=False))
         t1.write(self.testfile)
         #- no path; should fail since that file isn't in $DESIMODEL/data/footprint/
         if sys.version_info.major == 2:
             with self.assertRaises(IOError):
-                t2 = io.load_tiles(tilesfile=os.path.basename(self.testfile))
+                t2 = io.load_tiles(tilesfile=os.path.basename(self.testfile),
+                                   surveyops=False)
         else:
             with self.assertRaises(FileNotFoundError):
-                t2 = io.load_tiles(tilesfile=os.path.basename(self.testfile))
+                t2 = io.load_tiles(tilesfile=os.path.basename(self.testfile),
+                                   surveyops=False)
 
         #- with path, should work:
-        t2 = Table(io.load_tiles(tilesfile=self.testfile))
+        t2 = Table(io.load_tiles(tilesfile=self.testfile, surveyops=False))
+        self.assertTrue(np.all(t1 == t2))
+
+        #- cache should have two items now
+        self.assertEqual(len(io._tiles), 2)
+
+    @unittest.skipUnless(surveyops_available, surveyops_message)
+    def test_load_tiles_alt(self):
+        """Test alternative tile-load for default DESI_SURVEYOPS case.
+        """
+        # starting clean
+        self.assertEqual(io._tiles, {})
+        t1 = Table(io.load_tiles())
+        t1.write(self.testecsvfile)
+        #- no path; should fail since that file isn't in $DESIMODEL/data/footprint/
+        with self.assertRaises(FileNotFoundError):
+            t2 = io.load_tiles(tilesfile=os.path.basename(self.testecsvfile))
+
+        #- with path, should work:
+        t2 = Table(io.load_tiles(tilesfile=self.testecsvfile))
         self.assertTrue(np.all(t1 == t2))
 
         #- cache should have two items now
