@@ -706,7 +706,10 @@ def datadir(surveyops=False):
         If ``True`` then find the relevant path for the $DESI_SURVEYOPS
         directory rather than the $DESIMODEL directory.
 
-    If set, :envvar:`DESIMODEL` overrides data installed with the package.
+    Notes
+    -----
+    If `surveyops`==``False`` and :envvar:`DESIMODEL` is set, then
+    $DESIMODEL overrides data installed with the package.
     """
     if surveyops:
         if "DESI_SURVEYOPS" in os.environ:
