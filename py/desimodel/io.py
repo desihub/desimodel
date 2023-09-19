@@ -374,7 +374,7 @@ def load_platescale():
     ]
     try:
         _platescale = np.loadtxt(infile, usecols=[0, 1, 6, 7, 8], dtype=columns)
-    except IndexError:
+    except (IndexError,ValueError):
         # - no "arclength" column in this version of desimodel/data
         # - Get info from separate rzs file instead
 
