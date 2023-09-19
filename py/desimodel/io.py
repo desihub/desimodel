@@ -389,7 +389,6 @@ def load_platescale():
 
     return _platescale
 
-
 _focalplane = None
 
 def ensure_focalplane_loaded():
@@ -553,13 +552,24 @@ def load_focalplane(time=None, get_time_range=False):
     # Now "replay" the state up to our requested time.
     st_data = focalplane_props["st_data"]
     locstate = dict()
+
+    # Believe it or not, parsing strings into dates takes a significant fraction of the compute
+    # time here, so cache them!
+    parsed_dates = {}
+
     for row in range(len(st_data)):
-        try:
-            tm = datetime.strptime(st_data[row]["TIME"], "%Y-%m-%dT%H:%M:%S%z")
-        except ValueError:
-            # Old format with implicit UTC timezone
-            tm = datetime.strptime(st_data[row]["TIME"], "%Y-%m-%dT%H:%M:%S")
-            tm = tm.replace(tzinfo=timezone.utc)
+        datestr = st_data[row]["TIME"]
+        tm = parsed_dates.get(datestr)
+        if tm is None:
+            # not cached, parse it!
+            try:
+                tm = datetime.strptime(datestr, "%Y-%m-%dT%H:%M:%S%z")
+            except ValueError:
+                # Old format with implicit UTC timezone
+                tm = datetime.strptime(datestr, "%Y-%m-%dT%H:%M:%S")
+                tm = tm.replace(tzinfo=timezone.utc)
+            parsed_dates[datestr] = tm
+
         if tm <= time:
             loc = st_data[row]["LOCATION"]
             locstate[loc] = st_data[row]
