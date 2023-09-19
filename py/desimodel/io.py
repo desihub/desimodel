@@ -392,6 +392,73 @@ def load_platescale():
 
 _focalplane = None
 
+def ensure_focalplane_loaded():
+    global _focalplane
+    if _focalplane is not None:
+        return
+    # First call, parse all data files.
+    fpdir = os.path.join(datadir(), "focalplane")
+    fppat = re.compile(r"^desi-focalplane_(.*)\.ecsv$")
+    stpat = re.compile(r"^desi-state_(.*)\.ecsv$")
+    expat = re.compile(r"^desi-exclusion_(.*)\.(?:yaml|json).*$")
+    fpraw = dict()
+    msg = "Loading focalplanes from {}".format(fpdir)
+    log.debug(msg)
+    for root, dirs, files in os.walk(fpdir):
+        for f in files:
+            fpmat = fppat.match(f)
+            if fpmat is not None:
+                dt = fpmat.group(1)
+                if dt not in fpraw:
+                    fpraw[dt] = dict()
+                fpraw[dt]["fp"] = os.path.join(root, f)
+                continue
+            stmat = stpat.match(f)
+            if stmat is not None:
+                dt = stmat.group(1)
+                if dt not in fpraw:
+                    fpraw[dt] = dict()
+                fpraw[dt]["st"] = os.path.join(root, f)
+                continue
+            exmat = expat.match(f)
+            if exmat is not None:
+                dt = exmat.group(1)
+                if dt not in fpraw:
+                    fpraw[dt] = dict()
+                fpraw[dt]["ex"] = os.path.join(root, f)
+        break
+    # Check that we have all 3 files needed for each timestamp
+    for ts, files in fpraw.items():
+        for key in ["fp", "st", "ex"]:
+            if key not in files:
+                msg = "Focalplane state for time {} is missing one of \
+                      the 3 required files (focalplane, state, exclusion)".format(
+                    ts
+                )
+                raise RuntimeError(msg)
+    # Now load the files for each time into our cached global variable.
+    _focalplane = list()
+    for ts in sorted(fpraw.keys()):
+        dt = None
+        file_dt = None
+        try:
+            file_dt = datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S%z")
+            dt = file_dt
+        except ValueError:
+            # This is an old file with implicit UTC times (no offset)
+            # Load it as-is and then set the time zone.
+            file_dt = datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S")
+            dt = file_dt.replace(tzinfo=timezone.utc)
+        _focalplane.append((
+            dt, file_dt, {
+                "fp_file": fpraw[ts]["fp"],
+                "st_file": fpraw[ts]["st"],
+                "ex_file": fpraw[ts]["ex"],
+                "fp_data": None,
+                "st_data": None,
+                "ex_data": None,
+            }
+        ))
 
 def load_focalplane(time=None, get_time_range=False):
     """Load the focalplane state that is valid for the given time.
@@ -424,71 +491,8 @@ def load_focalplane(time=None, get_time_range=False):
     # Convert requested time to UTC
     time = time.astimezone(tz=timezone.utc)
 
-    global _focalplane
-    if _focalplane is None:
-        # First call, parse all data files.
-        fpdir = os.path.join(datadir(), "focalplane")
-        fppat = re.compile(r"^desi-focalplane_(.*)\.ecsv$")
-        stpat = re.compile(r"^desi-state_(.*)\.ecsv$")
-        expat = re.compile(r"^desi-exclusion_(.*)\.(?:yaml|json).*$")
-        fpraw = dict()
-        msg = "Loading focalplanes from {}".format(fpdir)
-        log.debug(msg)
-        for root, dirs, files in os.walk(fpdir):
-            for f in files:
-                fpmat = fppat.match(f)
-                if fpmat is not None:
-                    dt = fpmat.group(1)
-                    if dt not in fpraw:
-                        fpraw[dt] = dict()
-                    fpraw[dt]["fp"] = os.path.join(root, f)
-                    continue
-                stmat = stpat.match(f)
-                if stmat is not None:
-                    dt = stmat.group(1)
-                    if dt not in fpraw:
-                        fpraw[dt] = dict()
-                    fpraw[dt]["st"] = os.path.join(root, f)
-                    continue
-                exmat = expat.match(f)
-                if exmat is not None:
-                    dt = exmat.group(1)
-                    if dt not in fpraw:
-                        fpraw[dt] = dict()
-                    fpraw[dt]["ex"] = os.path.join(root, f)
-            break
-        # Check that we have all 3 files needed for each timestamp
-        for ts, files in fpraw.items():
-            for key in ["fp", "st", "ex"]:
-                if key not in files:
-                    msg = "Focalplane state for time {} is missing one of \
-                          the 3 required files (focalplane, state, exclusion)".format(
-                        ts
-                    )
-                    raise RuntimeError(msg)
-        # Now load the files for each time into our cached global variable.
-        _focalplane = list()
-        for ts in sorted(fpraw.keys()):
-            dt = None
-            file_dt = None
-            try:
-                file_dt = datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S%z")
-                dt = file_dt
-            except ValueError:
-                # This is an old file with implicit UTC times (no offset)
-                # Load it as-is and then set the time zone.
-                file_dt = datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S")
-                dt = file_dt.replace(tzinfo=timezone.utc)
-            _focalplane.append((
-                dt, file_dt, {
-                    "fp_file": fpraw[ts]["fp"],
-                    "st_file": fpraw[ts]["st"],
-                    "ex_file": fpraw[ts]["ex"],
-                    "fp_data": None,
-                    "st_data": None,
-                    "ex_data": None,
-                }
-            ))
+    # Load the global _focalplane cache if required
+    ensure_focalplane_loaded()
 
     # Search the list of states for the most recent time that is before our
     # requested time.  There should not be too many different states, or else
