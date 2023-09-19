@@ -240,7 +240,7 @@ class TestIO(unittest.TestCase):
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_load_tiles_alt_old(self):
-        """Test alternative tile-load for old default DATAMODEL case
+        """Test alternative tile-load for old default DESIMODEL case
         """
         # starting clean
         self.assertEqual(io._tiles, {})
