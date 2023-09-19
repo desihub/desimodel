@@ -460,6 +460,11 @@ def ensure_focalplane_loaded():
             }
         ))
 
+def get_focalplane_dates():
+    ensure_focalplane_loaded()
+    global _focalplane
+    return [dt for dt,fdt,v in _focalplane]
+
 def load_focalplane(time=None, get_time_range=False):
     """Load the focalplane state that is valid for the given time.
 
