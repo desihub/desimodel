@@ -374,7 +374,7 @@ def load_platescale():
     ]
     try:
         _platescale = np.loadtxt(infile, usecols=[0, 1, 6, 7, 8], dtype=columns)
-    except IndexError:
+    except (IndexError,ValueError):
         # - no "arclength" column in this version of desimodel/data
         # - Get info from separate rzs file instead
 
@@ -389,11 +389,98 @@ def load_platescale():
 
     return _platescale
 
-
 _focalplane = None
 
+def ensure_focalplane_loaded():
+    global _focalplane
+    if _focalplane is not None:
+        return
+    # First call, parse all data files.
+    fpdir = os.path.join(datadir(), "focalplane")
+    fppat = re.compile(r"^desi-focalplane_(.*)\.ecsv$")
+    stpat = re.compile(r"^desi-state_(.*)\.ecsv$")
+    expat = re.compile(r"^desi-exclusion_(.*)\.(?:yaml|json).*$")
+    fpraw = dict()
+    msg = "Loading focalplanes from {}".format(fpdir)
+    log.debug(msg)
+    for root, dirs, files in os.walk(fpdir):
+        for f in files:
+            fpmat = fppat.match(f)
+            if fpmat is not None:
+                dt = fpmat.group(1)
+                if dt not in fpraw:
+                    fpraw[dt] = dict()
+                fpraw[dt]["fp"] = os.path.join(root, f)
+                continue
+            stmat = stpat.match(f)
+            if stmat is not None:
+                dt = stmat.group(1)
+                if dt not in fpraw:
+                    fpraw[dt] = dict()
+                fpraw[dt]["st"] = os.path.join(root, f)
+                continue
+            exmat = expat.match(f)
+            if exmat is not None:
+                dt = exmat.group(1)
+                if dt not in fpraw:
+                    fpraw[dt] = dict()
+                fpraw[dt]["ex"] = os.path.join(root, f)
+        break
+    # Check that we have all 3 files needed for each timestamp
+    for ts, files in fpraw.items():
+        for key in ["fp", "st", "ex"]:
+            if key not in files:
+                msg = "Focalplane state for time {} is missing one of \
+                      the 3 required files (focalplane, state, exclusion)".format(
+                    ts
+                )
+                raise RuntimeError(msg)
+    # Now load the files for each time into our cached global variable.
+    _focalplane = list()
+    for ts in sorted(fpraw.keys()):
+        dt = None
+        file_dt = None
+        try:
+            file_dt = datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S%z")
+            dt = file_dt
+        except ValueError:
+            # This is an old file with implicit UTC times (no offset)
+            # Load it as-is and then set the time zone.
+            file_dt = datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S")
+            dt = file_dt.replace(tzinfo=timezone.utc)
+        _focalplane.append((
+            dt, file_dt, {
+                "fp_file": fpraw[ts]["fp"],
+                "st_file": fpraw[ts]["st"],
+                "ex_file": fpraw[ts]["ex"],
+                "fp_data": None,
+                "st_data": None,
+                "ex_data": None,
+            }
+        ))
 
-def load_focalplane(time=None):
+def get_focalplane_dates():
+    """Returns the dates of new focalplane definitions.
+
+    There are two levels of time-dependent changes within the focalplane.  First are the
+    focalplane definitions, defined by a set of files
+    ``$DESIMODEL/data/focalplane/{desi-exclusion,desi-focalplane,desi-state}_DATE.``.
+    Those are the dates returned by this function, as a list of datetime objects.
+
+    The second level is that, within the "state" table, there are changes to the states of
+    individual positioners.  (These are the dates returned when ``get_time_range=True`` is set
+    in ``load_focalplane()``.)
+
+    Returns
+    -------
+    dates : :class:`list` of :class:`datetime`
+        The dates when the focalplane changed.
+    """
+    ensure_focalplane_loaded()
+    global _focalplane
+    return [dt for dt,fdt,v in _focalplane]
+
+def load_focalplane(time=None, get_time_range=False):
     """Load the focalplane state that is valid for the given time.
 
     Parameters
@@ -410,7 +497,16 @@ def load_focalplane(time=None):
         indexed by names that are referenced in the state.  The state
         is a Table.  The time string is the resulting UTC ISO format
         time string for the creation date of the FP model.
+
+        If get_time_range=True, returns two additional values: time_low and time_high,
+        both datetime objects giving the range of dates over which this description of the
+        focal plane is valid.  `time_high` may be None, indicating that there is no later known
+        hardware state.  In particular, these dates refer to the `state` of the positioners,
+        which are more fine-grained than the `fp` and `exclusion` objects.
     """
+    # Time range over which this FP model is valid.
+    time_lo = time_hi = None
+
     if time is None:
         time = datetime.now(tz=timezone.utc)
     elif time.tzinfo is None:
@@ -421,71 +517,8 @@ def load_focalplane(time=None):
     # Convert requested time to UTC
     time = time.astimezone(tz=timezone.utc)
 
-    global _focalplane
-    if _focalplane is None:
-        # First call, parse all data files.
-        fpdir = os.path.join(datadir(), "focalplane")
-        fppat = re.compile(r"^desi-focalplane_(.*)\.ecsv$")
-        stpat = re.compile(r"^desi-state_(.*)\.ecsv$")
-        expat = re.compile(r"^desi-exclusion_(.*)\.(?:yaml|json).*$")
-        fpraw = dict()
-        msg = "Loading focalplanes from {}".format(fpdir)
-        log.debug(msg)
-        for root, dirs, files in os.walk(fpdir):
-            for f in files:
-                fpmat = fppat.match(f)
-                if fpmat is not None:
-                    dt = fpmat.group(1)
-                    if dt not in fpraw:
-                        fpraw[dt] = dict()
-                    fpraw[dt]["fp"] = os.path.join(root, f)
-                    continue
-                stmat = stpat.match(f)
-                if stmat is not None:
-                    dt = stmat.group(1)
-                    if dt not in fpraw:
-                        fpraw[dt] = dict()
-                    fpraw[dt]["st"] = os.path.join(root, f)
-                    continue
-                exmat = expat.match(f)
-                if exmat is not None:
-                    dt = exmat.group(1)
-                    if dt not in fpraw:
-                        fpraw[dt] = dict()
-                    fpraw[dt]["ex"] = os.path.join(root, f)
-            break
-        # Check that we have all 3 files needed for each timestamp
-        for ts, files in fpraw.items():
-            for key in ["fp", "st", "ex"]:
-                if key not in files:
-                    msg = "Focalplane state for time {} is missing one of \
-                          the 3 required files (focalplane, state, exclusion)".format(
-                        ts
-                    )
-                    raise RuntimeError(msg)
-        # Now load the files for each time into our cached global variable.
-        _focalplane = list()
-        for ts in sorted(fpraw.keys()):
-            dt = None
-            file_dt = None
-            try:
-                file_dt = datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S%z")
-                dt = file_dt
-            except ValueError:
-                # This is an old file with implicit UTC times (no offset)
-                # Load it as-is and then set the time zone.
-                file_dt = datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S")
-                dt = file_dt.replace(tzinfo=timezone.utc)
-            _focalplane.append((
-                dt, file_dt, {
-                    "fp_file": fpraw[ts]["fp"],
-                    "st_file": fpraw[ts]["st"],
-                    "ex_file": fpraw[ts]["ex"],
-                    "fp_data": None,
-                    "st_data": None,
-                    "ex_data": None,
-                }
-            ))
+    # Load the global _focalplane cache if required
+    ensure_focalplane_loaded()
 
     # Search the list of states for the most recent time that is before our
     # requested time.  There should not be too many different states, or else
@@ -504,7 +537,9 @@ def load_focalplane(time=None):
                 # microseconds, the microseconds should be zero and so the
                 # default return string will be correct.
                 file_tmstr = file_dt.isoformat()
+            time_lo = dt
         else:
+            time_hi = dt
             break
 
     if focalplane_props is None:
@@ -539,16 +574,31 @@ def load_focalplane(time=None):
     # Now "replay" the state up to our requested time.
     st_data = focalplane_props["st_data"]
     locstate = dict()
+
+    # Believe it or not, parsing strings into dates takes a significant fraction of the compute
+    # time here, so cache them!
+    parsed_dates = {}
+
     for row in range(len(st_data)):
-        try:
-            tm = datetime.strptime(st_data[row]["TIME"], "%Y-%m-%dT%H:%M:%S%z")
-        except ValueError:
-            # Old format with implicit UTC timezone
-            tm = datetime.strptime(st_data[row]["TIME"], "%Y-%m-%dT%H:%M:%S")
-            tm = tm.replace(tzinfo=timezone.utc)
+        datestr = st_data[row]["TIME"]
+        tm = parsed_dates.get(datestr)
+        if tm is None:
+            # not cached, parse it!
+            try:
+                tm = datetime.strptime(datestr, "%Y-%m-%dT%H:%M:%S%z")
+            except ValueError:
+                # Old format with implicit UTC timezone
+                tm = datetime.strptime(datestr, "%Y-%m-%dT%H:%M:%S")
+                tm = tm.replace(tzinfo=timezone.utc)
+            parsed_dates[datestr] = tm
+
         if tm <= time:
             loc = st_data[row]["LOCATION"]
             locstate[loc] = st_data[row]
+            time_lo = tm
+        else:
+            time_hi = tm
+            break
 
     rows = list()
     for loc in sorted(locstate.keys()):
@@ -556,13 +606,15 @@ def load_focalplane(time=None):
     state_data = Table(rows=rows, names=st_data.colnames)
     state_data.remove_column("TIME")
 
-    return (
+    rtn = (
         focalplane_props["fp_data"],
         focalplane_props["ex_data"],
         state_data,
         file_tmstr
     )
-
+    if get_time_range:
+        return rtn + (time_lo, time_hi)
+    return rtn
 
 def reset_cache():
     """Reset I/O cache."""

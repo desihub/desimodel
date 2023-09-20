@@ -6,6 +6,7 @@ import os
 import sys
 import uuid
 import tempfile
+import datetime
 import numpy as np
 from astropy.table import Table
 import unittest
@@ -143,6 +144,44 @@ class TestIO(unittest.TestCase):
         p1 = io.load_platescale()
         p2 = io.load_platescale()
         self.assertTrue(p1 is p2)  #- caching worked
+
+    @unittest.skipUnless(desimodel_available, desimodel_message)
+    def test_get_focalplane_dates(self):
+        dates = io.get_focalplane_dates()
+        self.assertEqual(dates[:5], [
+            datetime.datetime(2010,  1,  1, 0, 0, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2019,  9, 16, 0, 0, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2020,  3,  6, 0, 0, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2021,  1, 17, 0, 0, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2021,  1, 19, 0, 0, tzinfo=datetime.timezone.utc)])
+
+    @unittest.skipUnless(desimodel_available, desimodel_message)
+    def test_load_focalplane(self):
+        utc = datetime.timezone.utc
+        fp,exclude,state,time = io.load_focalplane(
+            time=datetime.datetime(2010, 1, 15, tzinfo=utc))
+        self.assertEqual(type(fp), Table)
+        self.assertEqual(len(fp), 5020)
+        self.assertEqual(fp.colnames, ['PETAL', 'DEVICE', 'LOCATION', 'PETAL_ID', 'DEVICE_ID', 'DEVICE_TYPE', 'SLITBLOCK', 'BLOCKFIBER', 'CABLE', 'CONDUIT', 'FIBER', 'FWHM', 'FRD', 'ABS', 'OFFSET_X', 'OFFSET_Y', 'OFFSET_T', 'OFFSET_P', 'LENGTH_R1', 'LENGTH_R2', 'MAX_T', 'MIN_T', 'MAX_P', 'MIN_P'])
+        self.assertEqual(type(exclude), dict)
+        self.assertEqual(set(exclude.keys()), set(['legacy']))
+        self.assertEqual(type(state), Table)
+        self.assertEqual(len(state), 5020)
+        self.assertEqual(set(state.colnames), set(['PETAL','DEVICE', 'LOCATION',
+                                                   'STATE','EXCLUSION']))
+        self.assertEqual(time, "2010-01-01T00:00:00")
+        fp,exclude,state,time,time_low,time_high = io.load_focalplane(
+            time=datetime.datetime(2010, 1, 15, tzinfo=utc),
+            get_time_range=True)
+        self.assertEqual(time_low,  datetime.datetime(2010, 1,  1, tzinfo=utc))
+        self.assertEqual(time_high, datetime.datetime(2019, 9, 16, tzinfo=utc))
+
+        # This one has state changes within the focalplane updates
+        fp,exclude,state,time,time_low,time_high = io.load_focalplane(
+            time=datetime.datetime(2021, 4, 8, tzinfo=utc),
+            get_time_range=True)
+        self.assertEqual(time_low,  datetime.datetime(2021,  4,  3, 23, 53, 23, tzinfo=utc))
+        self.assertEqual(time_high, datetime.datetime(2021,  4, 10, 20,  0, 39, tzinfo=utc))
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_load_targets(self):
