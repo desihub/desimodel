@@ -460,18 +460,22 @@ def ensure_focalplane_loaded():
         ))
 
 def get_focalplane_dates():
-    ''' Returns the dates of new focalplane definitions.
+    """Returns the dates of new focalplane definitions.
 
     There are two levels of time-dependent changes within the focalplane.  First are the
     focalplane definitions, defined by a set of files
-       desimodel-data/data/focalplane/{desi-exclusion,desi-focalplane,desi-state}_DATE.*
+    ``$DESIMODEL/data/focalplane/{desi-exclusion,desi-focalplane,desi-state}_DATE.``.
     Those are the dates returned by this function, as a list of datetime objects.
 
     The second level is that, within the "state" table, there are changes to the states of
-    individual positioners.  (These are the dates returned when `get_time_range=True` is set
-    in load_focalplane.)
+    individual positioners.  (These are the dates returned when ``get_time_range=True`` is set
+    in ``load_focalplane()``.)
 
-    '''
+    Returns
+    -------
+    dates : :class:`list` of :class:`datetime`
+        The dates when the focalplane changed.
+    """
     ensure_focalplane_loaded()
     global _focalplane
     return [dt for dt,fdt,v in _focalplane]
