@@ -460,6 +460,18 @@ def ensure_focalplane_loaded():
         ))
 
 def get_focalplane_dates():
+    ''' Returns the dates of new focalplane definitions.
+
+    There are two levels of time-dependent changes within the focalplane.  First are the
+    focalplane definitions, defined by a set of files
+       desimodel-data/data/focalplane/{desi-exclusion,desi-focalplane,desi-state}_DATE.*
+    Those are the dates returned by this function, as a list of datetime objects.
+
+    The second level is that, within the "state" table, there are changes to the states of
+    individual positioners.  (These are the dates returned when `get_time_range=True` is set
+    in load_focalplane.)
+
+    '''
     ensure_focalplane_loaded()
     global _focalplane
     return [dt for dt,fdt,v in _focalplane]
@@ -481,6 +493,12 @@ def load_focalplane(time=None, get_time_range=False):
         indexed by names that are referenced in the state.  The state
         is a Table.  The time string is the resulting UTC ISO format
         time string for the creation date of the FP model.
+
+        If get_time_range=True, returns two additional values: time_low and time_high,
+        both datetime objects giving the range of dates over which this description of the
+        focal plane is valid.  `time_high` may be None, indicating that there is no later known
+        hardware state.  In particular, these dates refer to the `state` of the positioners,
+        which are more fine-grained than the `fp` and `exclusion` objects.
     """
     # Time range over which this FP model is valid.
     time_lo = time_hi = None
