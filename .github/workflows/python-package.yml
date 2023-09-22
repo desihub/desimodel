@@ -85,8 +85,10 @@ jobs:
                 python -m pip install --no-deps --force-reinstall --ignore-installed 'fitsio${{ matrix.fitsio-version }}'
                 python -m pip install pyyaml requests scipy healpy matplotlib
                 svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_DATA}/data
+                # ADM grab the surveyops directory.
+                wget -e robots=off -r -np -nH --cut-dirs 7 https://data.desi.lbl.gov/public/edr/survey/ops/surveyops/tags/0.1/ops/
             - name: Run the test with coverage
-              run: DESIMODEL=$(pwd) pytest --cov
+              run: DESIMODEL=$(pwd) DESI_SURVEYOPS=$(pwd) pytest --cov
             - name: Coveralls
               env:
                 COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
