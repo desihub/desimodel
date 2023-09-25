@@ -25,6 +25,11 @@ log = get_logger()
 _thru = dict()
 
 
+# ADM raise a custom exception when an environment variable is missing.
+class MissingEnvVar(Exception):
+    pass
+
+
 def load_throughput(channel):
     """Returns specter Throughput object for the given channel 'b', 'r', or 'z'.
 
@@ -214,8 +219,9 @@ def load_fiberpos():
 _tiles = dict()
 
 
-def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
-    """Return DESI tiles structure from ``$DESIMODEL/data/footprint/desi-tiles.fits``.
+def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True,
+               programs=None, surveyops=True):
+    """Return DESI tiles structure from ``$DESI_SURVEYOPS/trunk/ops/tiles-main.ecsv``.
 
     Parameters
     ----------
@@ -229,6 +235,12 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
     cache : :class:`bool`, optional
         If ``False``, force reload of data from tiles file, instead of
         using cached values.
+    programs : :class:`list` or `str`, optional
+        Pass a list of program names to restrict to only those programs,
+        e.g. ["DARK", "BACKUP"].
+    surveyops : :class:`bool`
+        If ``True`` then find the relevant path for the $DESI_SURVEYOPS
+        directory rather than the $DESIMODEL directory.
 
     Returns
     -------
@@ -252,29 +264,35 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
     If the parameter `tilesfile` is set, this function uses the following
     search method:
 
+    0. Paths corresponding to both $DESI_SURVEYOPS/trunk/ops and
+       $DESI_SURVEYOPS/ops are always both checked, to cover different
+       svn checkout approaches.
     1. If the value includes an explicit path, even ``./``, use that file.
-    2. If the value does *not* include an explicit path, *and* the file name
-       is identical to a file in ``$DESIMODEL/data/footprint/``, use the
-       file in ``$DESIMODEL/data/footprint/`` and issue a warning.
+    2. If the value does *not* include an explicit path, *and* the file
+       name is identical to a file in ``$DESI_SURVEYOPS/trunk/ops/``, use
+       the file in ``$DESI_SURVEYOPS/trunk/ops/`` and issue a warning.
     3. If no matching file can be found at all, raise an exception.
     """
     global _tiles
 
     if tilesfile is None:
         # Use the default
-        tilesfile = findfile("footprint/desi-tiles.fits")
+        if surveyops:
+            tilesfile = findfile("tiles-main.ecsv", surveyops=surveyops)
+        else:
+            tilesfile = findfile("footprint/desi-tiles.fits", surveyops=surveyops)
     else:
-        # If full path isn't included, check local vs $DESIMODEL/data/footprint
+        # If full path isn't included, check local vs $DESI_SURVEYOPS/ops
         tilepath, filename = os.path.split(tilesfile)
         if tilepath == "":
             have_local = os.path.isfile(tilesfile)
-            checkfile = findfile(os.path.join("footprint", tilesfile))
+            checkfile = findfile(tilesfile, surveyops=surveyops)
             have_dmdata = os.path.isfile(checkfile)
             if have_dmdata:
                 if have_local:
                     msg = (
-                        "$DESIMODEL/data/footprint/{0} is shadowed by a local"
-                        + " file. Choosing $DESIMODEL file."
+                        "$DESI_SURVEYOPS/(trunk)/ops/{0} is shadowed by a local"
+                        + " file. Choosing $DESI_SURVEYOPS file."
                         + ' Use tilesfile="./{0}" if you want the local copy'
                         + " instead."
                     ).format(tilesfile)
@@ -284,7 +302,7 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
             if not (have_local or have_dmdata):
                 msg = (
                     'File "{}" does not exist locally or in '
-                    + "$DESIMODEL/data/footprint/!"
+                    + "$DESI_SURVEYOPS/(trunk)/ops/!"
                 ).format(tilesfile)
                 raise FileNotFoundError(msg)
 
@@ -292,25 +310,31 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
     tilesfile = os.path.abspath(tilesfile.format(**os.environ))
     log.debug("Loading tiles from %s", tilesfile)
 
+    # ADM allow reading from either .fits or .ecsv files.
+    # ADM guard against the possibility that the file is zipped.
+    isfits = ".fits" in os.path.basename(tilesfile)
+
     if cache and tilesfile in _tiles:
         tiledata = _tiles[tilesfile]
     else:
-        with fits.open(tilesfile, memmap=False) as hdulist:
-            tiledata = hdulist[1].data
-        #
-        # Temporary workaround for problem identified in
-        # https://github.com/desihub/desimodel/issues/30
-        #
-        if any([c.bzero is not None for c in tiledata.columns]):
-            foo = [_tiles[k].dtype for k in tiledata.dtype.names]
+        if isfits:
+            with fits.open(tilesfile, memmap=False) as hdulist:
+                tiledata = hdulist[1].data
+            #
+            # Temporary workaround for problem identified in
+            # https://github.com/desihub/desimodel/issues/30
+            #
+            if any([c.bzero is not None for c in tiledata.columns]):
+                foo = [_tiles[k].dtype for k in tiledata.dtype.names]
 
-        # - Check for out-of-date tiles file
-        if np.issubdtype(tiledata["OBSCONDITIONS"].dtype, np.unsignedinteger):
-            warnings.warn(
-                "Old desi-tiles.fits with uint16 OBSCONDITIONS; please update your $DESIMODEL checkout.",
-                DeprecationWarning,
-            )
-
+            # - Check for out-of-date tiles file
+            if np.issubdtype(tiledata["OBSCONDITIONS"].dtype, np.unsignedinteger):
+                warnings.warn(
+                    "Old desi-tiles.fits with uint16 OBSCONDITIONS; please update your $DESIMODEL checkout.",
+                    DeprecationWarning,
+                )
+        else:
+            tiledata = Table.read(tilesfile)
         # - load cache for next time
         if cache:
             _tiles[tilesfile] = tiledata
@@ -323,6 +347,15 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True):
     # - Filter out PROGRAM=EXTRA tiles if requested
     if not extra:
         subset &= ~np.char.startswith(tiledata["PROGRAM"], "EXTRA")
+
+    # ADM filter to program names if requested.
+    if programs is not None:
+        # ADM guard against a single string being passed.
+        programs = np.atleast_1d(programs)
+        isprog = np.zeros(len(tiledata), dtype=bool)
+        for program in programs:
+            isprog |= tiledata["PROGRAM"] == program
+        subset &= isprog
 
     if np.all(subset):
         return tiledata
@@ -690,13 +723,17 @@ def load_pixweight(nside, pixmap=None):
     return hp.pixelfunc.ud_grade(pixmap, nside, order_in="NESTED", order_out="NESTED")
 
 
-def findfile(filename):
+def findfile(filename, surveyops=False):
     """Return full path to data file ``$DESIMODEL/data/filename``.
 
     Parameters
     ----------
     filename : :class:`str`
         Name of the file, relative to the desimodel data directory.
+
+    surveyops : :class:`bool`
+        If ``True`` then find the relevant path for the $DESI_SURVEYOPS
+        directory rather than the $DESIMODEL directory.
 
     Returns
     -------
@@ -709,17 +746,37 @@ def findfile(filename):
     desimodel data would be installed with the package and :envvar:`DESIMODEL`
     would become an optional override.
     """
-    return os.path.join(datadir(), filename)
+    return os.path.join(datadir(surveyops), filename)
 
 
-def datadir():
+def datadir(surveyops=False):
     """Returns location to desimodel data.
 
-    If set, :envvar:`DESIMODEL` overrides data installed with the package.
-    """
-    if "DESIMODEL" in os.environ:
-        return os.path.abspath(os.path.join(os.environ["DESIMODEL"], "data"))
-    else:
-        import pkg_resources
+    Parameters
+    ----------
+    surveyops : :class:`bool`
+        If ``True`` then find the relevant path for the $DESI_SURVEYOPS
+        directory rather than the $DESIMODEL directory.
 
-        return pkg_resources.resource_filename("desimodel", "data")
+    Notes
+    -----
+    If `surveyops`==``False`` and :envvar:`DESIMODEL` is set, then
+    $DESIMODEL overrides data installed with the package.
+    """
+    if surveyops:
+        if "DESI_SURVEYOPS" in os.environ:
+            surveyops = os.environ["DESI_SURVEYOPS"]
+            # ADM test whether surveyops directory was checked out to trunk.
+            if os.path.isdir(os.path.join(surveyops, "trunk", "ops")):
+                surveyops = os.path.join(surveyops, "trunk")
+            return os.path.abspath(os.path.join(surveyops, "ops"))
+        # ADM raise a custom exception if $DESI_SURVEYOPS is not set.
+        else:
+            raise MissingEnvVar(f"$DESI_SURVEYOPS is not set")
+    else:
+        if "DESIMODEL" in os.environ:
+            return os.path.abspath(os.path.join(os.environ["DESIMODEL"], "data"))
+        else:
+            import pkg_resources
+
+            return pkg_resources.resource_filename("desimodel", "data")

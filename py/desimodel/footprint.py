@@ -22,18 +22,26 @@ log = get_logger()
 _pass2program = None
 
 
-def pass2program(tilepass):
+def pass2program(tilepass, surveyops=False):
     '''Converts integer tile pass number to string program name.
 
     Args:
         tilepass (int or int array): tiling pass number.
+    surveyops (bool): ``True`` to look for tiles in $DESI_SURVEYPOPS.
 
     Returns:
         Program name for each pass (str or list of str).
     '''
     global _pass2program
+    # ADM this function isn't useful if looking in the DESI_SURVEYOPS
+    # ADM directory as the real data is not ordered by pass.
+    if surveyops == True:
+        msg = "Function is not meaningful when looking in the DESI_SURVEYOPS "
+        msg += "directory as the real, Main Survey, data is not ordered by pass"
+        log.critical(msg)
+        raise ValueError(msg)
     if _pass2program is None:
-        tiles = load_tiles()
+        tiles = load_tiles(surveyops=False)
         _pass2program = dict(set(zip(tiles['PASS'], tiles['PROGRAM'])))
     if np.isscalar(tilepass):
         return _pass2program[tilepass]

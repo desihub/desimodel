@@ -31,6 +31,15 @@ except KeyError:
     desimodel_available = False
     specter_available = False
     specter_message = desimodel_message
+#
+# Try to load the DESI_SURVEYOPS environment variable.
+#
+surveyops_available = True
+surveyops_message = "The DESI_SURVEYOPS directory was not detected"
+try:
+    _ = os.environ['DESI_SURVEYOPS']
+except KeyError:
+    surveyops_available = False
 
 
 class TestIO(unittest.TestCase):
@@ -44,10 +53,12 @@ class TestIO(unittest.TestCase):
         cls.tempdir = tempfile.mkdtemp(prefix='testio-')
         cls.trimdir = os.path.join(cls.tempdir, 'trim')
         cls.testfile = os.path.join(cls.tempdir, 'test-abc123.fits')
+        cls.testecsvfile = os.path.join(cls.tempdir, 'test-abc123.ecsv')
 
     @classmethod
     def tearDownClass(cls):
         if os.path.exists(cls.tempdir):
+            _ = os.system(f"chmod -R +w {cls.tempdir}")
             import shutil
             shutil.rmtree(cls.tempdir)
 
@@ -204,8 +215,47 @@ class TestIO(unittest.TestCase):
         self.assertEqual(npix,12*nside*nside)
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
+    def test_load_tiles_old(self):
+        """Test loading of tile files for old default DESIMODEL case.
+        """
+        # starting clean
+        self.assertEqual(io._tiles, {})
+        t0 = io.load_tiles(cache=False, surveyops=False)
+        self.assertEqual(len(io._tiles), 0)
+        # loading tiles fills the cache with one items
+        t1 = io.load_tiles(onlydesi=False, surveyops=False)
+        self.assertEqual(len(io._tiles), 1)
+        tile_cache_id1 = id(list(io._tiles.values())[0])
+        # reloading, even with a filter, shouldn't change cache
+        t2 = io.load_tiles(onlydesi=True, surveyops=False)
+        self.assertEqual(len(io._tiles), 1)
+        tile_cache_id2 = id(list(io._tiles.values())[0])
+        self.assertEqual(tile_cache_id1, tile_cache_id2)
+        #- Temporarily support OBSCONDITIONS as u2 (old) or i4 (new)
+        self.assertTrue(np.issubdtype(t1['OBSCONDITIONS'].dtype, np.signedinteger) or
+                        np.issubdtype(t1['OBSCONDITIONS'].dtype, np.unsignedinteger) )
+        self.assertTrue(np.issubdtype(t2['OBSCONDITIONS'].dtype, np.signedinteger) or
+                        np.issubdtype(t2['OBSCONDITIONS'].dtype, np.unsignedinteger) )
+        self.assertLess(len(t2), len(t1))
+        # All tiles in DESI are also in full set.
+        self.assertTrue(np.all(np.in1d(t2['TILEID'], t1['TILEID'])))
+        # I think this is the exact same test as above, except using set theory.
+        self.assertEqual(len(set(t2.TILEID) - set(t1.TILEID)), 0)
+        t3 = io.load_tiles(onlydesi=False, surveyops=False)
+        tile_cache_id3 = id(list(io._tiles.values())[0])
+        self.assertEqual(tile_cache_id1, tile_cache_id3)
+        self.assertTrue(np.issubdtype(t3['OBSCONDITIONS'].dtype, np.signedinteger) or
+                        np.issubdtype(t3['OBSCONDITIONS'].dtype, np.unsignedinteger) )
+        # Check for extra tiles.
+        a = io.load_tiles(extra=False, surveyops=False)
+        self.assertEqual(np.sum(np.char.startswith(a['PROGRAM'], 'EXTRA')), 0)
+        b = io.load_tiles(extra=True, surveyops=False)
+        self.assertGreater(np.sum(np.char.startswith(b['PROGRAM'], 'EXTRA')), 0)
+        self.assertLess(len(a), len(b))
+
+    @unittest.skipUnless(surveyops_available, surveyops_message)
     def test_load_tiles(self):
-        """Test loading of tile files.
+        """Test loading of tile files for default DESI_SURVEYOPS case.
         """
         # starting clean
         self.assertEqual(io._tiles, {})
@@ -220,51 +270,59 @@ class TestIO(unittest.TestCase):
         self.assertEqual(len(io._tiles), 1)
         tile_cache_id2 = id(list(io._tiles.values())[0])
         self.assertEqual(tile_cache_id1, tile_cache_id2)
-        #- Temporarily support OBSCONDITIONS as u2 (old) or i4 (new)
-        self.assertTrue(np.issubdtype(t1['OBSCONDITIONS'].dtype, np.signedinteger) or
-                        np.issubdtype(t1['OBSCONDITIONS'].dtype, np.unsignedinteger) )
-        self.assertTrue(np.issubdtype(t2['OBSCONDITIONS'].dtype, np.signedinteger) or
-                        np.issubdtype(t2['OBSCONDITIONS'].dtype, np.unsignedinteger) )
         self.assertLess(len(t2), len(t1))
         # All tiles in DESI are also in full set.
         self.assertTrue(np.all(np.in1d(t2['TILEID'], t1['TILEID'])))
-        # I think this is the exact same test as above, except using set theory.
-        self.assertEqual(len(set(t2.TILEID) - set(t1.TILEID)), 0)
         t3 = io.load_tiles(onlydesi=False)
         tile_cache_id3 = id(list(io._tiles.values())[0])
         self.assertEqual(tile_cache_id1, tile_cache_id3)
-        self.assertTrue(np.issubdtype(t3['OBSCONDITIONS'].dtype, np.signedinteger) or
-                        np.issubdtype(t3['OBSCONDITIONS'].dtype, np.unsignedinteger) )
-        # Check for extra tiles.
-        a = io.load_tiles(extra=False)
-        self.assertEqual(np.sum(np.char.startswith(a['PROGRAM'], 'EXTRA')), 0)
-        b = io.load_tiles(extra=True)
-        self.assertGreater(np.sum(np.char.startswith(b['PROGRAM'], 'EXTRA')), 0)
-        self.assertLess(len(a), len(b))
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
-    def test_load_tiles_alt(self):
+    def test_load_tiles_alt_old(self):
+        """Test alternative tile-load for old default DESIMODEL case
+        """
         # starting clean
         self.assertEqual(io._tiles, {})
-        t1 = Table(io.load_tiles())
+        t1 = Table(io.load_tiles(surveyops=False))
         t1.write(self.testfile)
         #- no path; should fail since that file isn't in $DESIMODEL/data/footprint/
         if sys.version_info.major == 2:
             with self.assertRaises(IOError):
-                t2 = io.load_tiles(tilesfile=os.path.basename(self.testfile))
+                t2 = io.load_tiles(tilesfile=os.path.basename(self.testfile),
+                                   surveyops=False)
         else:
             with self.assertRaises(FileNotFoundError):
-                t2 = io.load_tiles(tilesfile=os.path.basename(self.testfile))
+                t2 = io.load_tiles(tilesfile=os.path.basename(self.testfile),
+                                   surveyops=False)
 
         #- with path, should work:
-        t2 = Table(io.load_tiles(tilesfile=self.testfile))
+        t2 = Table(io.load_tiles(tilesfile=self.testfile, surveyops=False))
+        self.assertTrue(np.all(t1 == t2))
+
+        #- cache should have two items now
+        self.assertEqual(len(io._tiles), 2)
+
+    @unittest.skipUnless(surveyops_available, surveyops_message)
+    def test_load_tiles_alt(self):
+        """Test alternative tile-load for default DESI_SURVEYOPS case.
+        """
+        # starting clean
+        self.assertEqual(io._tiles, {})
+        t1 = Table(io.load_tiles())
+        t1.write(self.testecsvfile)
+        #- no path; should fail since that file isn't in $DESIMODEL/data/footprint/
+        with self.assertRaises(FileNotFoundError):
+            t2 = io.load_tiles(tilesfile=os.path.basename(self.testecsvfile))
+
+        #- with path, should work:
+        t2 = Table(io.load_tiles(tilesfile=self.testecsvfile))
         self.assertTrue(np.all(t1 == t2))
 
         #- cache should have two items now
         self.assertEqual(len(io._tiles), 2)
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
-    def test_tiles_consistency(self):
+    def test_tiles_consistency_old(self):
         """Test consistency of tile files.
 
         - Validate different tile loading schemes.
@@ -274,7 +332,7 @@ class TestIO(unittest.TestCase):
         fitstiles = io.findfile('footprint/desi-tiles.fits')
         ecsvtiles = io.findfile('footprint/desi-tiles.ecsv')
         # tf=TilesFits  tt=TilesTable  te=TilesEcsv
-        tf = io.load_tiles(onlydesi=False, extra=True)
+        tf = io.load_tiles(onlydesi=False, extra=True, surveyops=False)
         tt = Table.read(fitstiles)
         te = Table.read(ecsvtiles, format='ascii.ecsv')
 
@@ -298,6 +356,25 @@ class TestIO(unittest.TestCase):
             self.assertTrue((program[-1] != ' ') and (program[-1] != b' '))
         for program in set(te['PROGRAM']):
             self.assertTrue((program[-1] != ' ') and (program[-1] != b' '))
+
+
+    @unittest.skipUnless(surveyops_available, surveyops_message)
+    def validate_tile_load(self):
+        """Validate different tile loading schemes.
+
+        Also assure that PROGRAM column has no trailing whitespace.
+        """
+        ecsvtiles = io.findfile("tiles-main.ecsv", surveyops=True)
+        tt = io.load_tiles(onlydesi=False, extra=True)
+        te = Table.read(ecsvtiles, format='ascii.ecsv')
+
+        self.assertEqual(sorted(tt.dtype.names), sorted(te.colnames))
+
+        for program in set(tf['PROGRAM']):
+            self.assertTrue((program[-1] != ' ') and (program[-1] != b' '))
+        for program in set(tt['PROGRAM']):
+            self.assertTrue((program[-1] != ' ') and (program[-1] != b' '))
+
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_trim_data(self):
