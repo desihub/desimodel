@@ -2,8 +2,15 @@
 desimodel Release Notes
 =======================
 
-0.18.1 (unreleased)
+0.19.1 (unreleased)
 -------------------
+
+* No changes yet.
+
+0.19.0 (2023-09-25)
+-------------------
+
+NOTE: non-backwards compatible change to :func:`~desimodel.io.loadtiles`!
 
 * Change default file for :func:`~desimodel.io.loadtiles` (PR `#168`_):
 
@@ -14,8 +21,13 @@ desimodel Release Notes
   * Tests cover both :envvar:`DESI_SURVEYOPS` and :envvar:`DESIMODEL` cases.
   * Addresses `issue #167`_.
 
+* Optionally fetch the valid date range from load_focalplane (PR `#170`_).
+* Update KPNO sync scripts to use the default software stack (PR `#165`_).
+
 .. _`issue #167`: https://github.com/desihub/desimodel/issues/167
+.. _`#165`: https://github.com/desihub/desimodel/pull/165
 .. _`#168`: https://github.com/desihub/desimodel/pull/168
+.. _`#170`: https://github.com/desihub/desimodel/pull/170
 
 0.18.0 (2023-01-05)
 -------------------
