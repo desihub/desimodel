@@ -5,7 +5,8 @@ desimodel Release Notes
 0.19.1 (unreleased)
 -------------------
 
-* No changes yet.
+* Update test_footprint.py for latest tiles file with 5 (not 4) bright passes
+  (update to main, not PR)
 
 0.19.0 (2023-09-25)
 -------------------

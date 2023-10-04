@@ -60,13 +60,13 @@ class TestFootprint(unittest.TestCase):
 #        self.assertEqual(len(footprint.program2pass('GRAY')), 1)
         # ADM ...but there is a BACKUP program.
         self.assertEqual(len(footprint.program2pass('BACKUP')), 1)
-        self.assertEqual(len(footprint.program2pass('BRIGHT')), 4)
+        self.assertEqual(len(footprint.program2pass('BRIGHT')), 5)
 
         passes = footprint.program2pass(['DARK', 'BACKUP', 'BRIGHT'])
         self.assertEqual(len(passes), 3)
         self.assertEqual(len(passes[0]), 7)
         self.assertEqual(len(passes[1]), 1)
-        self.assertEqual(len(passes[2]), 4)
+        self.assertEqual(len(passes[2]), 5)
 
         with self.assertRaises(ValueError):
             footprint.program2pass('BLAT')
