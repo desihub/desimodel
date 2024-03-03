@@ -1,7 +1,10 @@
 #!/bin/bash
 
 # IMPORTANT:  If you update this script, remember to copy it to
-# ~datasystems/desimodel_sync/ at KPNO.
+# ~datasystems/desimodel_sync/ at KPNO.  This copy is needed so that
+# cron can find it in a fixed location independent of particular
+# versions of the software stack (this script loads the software
+# stack).
 
 # Ensure that we are running this as the datasystems user
 if [ $(whoami) != "datasystems" ]; then
@@ -41,7 +44,7 @@ export DESIMODEL_CENTRAL_REPO=${DESI_ROOT}/survey/ops/desimodel/trunk
 module use ${DESI_PRODUCT_ROOT}/modulefiles
 module load desiconda
 module load desimodules/${desimodules}
-module swap desimodel/0.17.0
+module swap -f desimodel/0.17.0
 
 echo "Using desimodel data svn trunk at ${svntrunk}" >> "${logfile}"
 export DESIMODEL="${svntrunk}"
@@ -61,16 +64,38 @@ echo "Ensuring clean svn tree at ${DESIMODEL}" >> "${logfile}"
 svn revert -R "${svntrunk}/data" >> "${logfile}"
 svn up "${svntrunk}/data" >> "${logfile}"
 
-# Run it.
+# Run it, without committing result.
 echo "Forcing creation of new focalplane model!" >> "${logfile}"
 
 eval ${fpsync} --calib_file ${calpath} --commit --reset >> "${logfile}" 2>&1
 if [ $? -ne 0 ]; then
-    echo "Focalplane creation failed" >> "${logfile}"
+    echo "Focalplane sync failed" >> "${logfile}"
 else
     echo "Focalplane sync completed" >> "${logfile}"
-    echo "Updating $DESIMODEL_CENTRAL_REPO." >> "${logfile}"
-    svn up $DESIMODEL_CENTRAL_REPO >> "${logfile}"
+    # Make sure we can load the resulting hardware model
+    echo "Try loading focalplane model at ${DESIMODEL}... " >> "${logfile}"
+    PYTHON_CODE=$(cat <<END
+from fiberassign.hardware import load_hardware
+try:
+    hw = load_hardware()
+    print("yes")
+except:
+    print("no")
+END
+)
+    result="$(python3 -c "$PYTHON_CODE")"
+    if [ "x$result" = "xyes" ]; then
+        echo "SUCCESS" >> "${logfile}"
+        # Now commit result
+        mesg="Appending DB sync ${calfile} to current focalplane model"
+        svn commit -m "${mesg}" "${svntrunk}/data" >> "${logfile}"
+        svn up "${svntrunk}/data" >> "${logfile}"
+        echo "Updating $DESIMODEL_CENTRAL_REPO." >> "${logfile}"
+        svn up "${DESIMODEL_CENTRAL_REPO}" >> "${logfile}"
+    else
+        echo "FAIL" >> "${logfile}"
+        echo "Refusing to commit broken update.  Restore the *.previous files." >> "${logfile}"
+    fi
 fi
 
 # Send notifications.
