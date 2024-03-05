@@ -74,15 +74,11 @@ else
     echo "Try loading focalplane model at ${DESIMODEL}... " >> "${logfile}"
     PYTHON_CODE=$(cat <<END
 from fiberassign.hardware import load_hardware
-try:
-    hw = load_hardware()
-    print("yes")
-except:
-    print("no")
+hw = load_hardware()
 END
 )
-    result="$(python3 -c "$PYTHON_CODE")"
-    if [ "x$result" = "xyes" ]; then
+    result=$(python3 -c "$PYTHON_CODE")
+    if [ $? -eq 0 ]; then
         echo "SUCCESS" >> "${logfile}"
         # Now commit result
         mesg="Appending DB sync ${calfile} to current focalplane model"
