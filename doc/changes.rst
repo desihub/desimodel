@@ -2,11 +2,21 @@
 desimodel Release Notes
 =======================
 
-0.19.1 (unreleased)
+0.19.2 (unreleased)
+-------------------
+
+* No changes yet.
+
+0.19.1 (2024-05-01)
 -------------------
 
 * Update test_footprint.py for latest tiles file with 5 (not 4) bright passes
   (update to main, not PR)
+* Update high level desimodel sync scripts used by cron jobs (PR `#171`_).
+* Small fix to focal plane sync scripts (PR `#172`_).
+
+.. _`#171`: https://github.com/desihub/desimodel/pull/171
+.. _`#172`: https://github.com/desihub/desimodel/pull/172
 
 0.19.0 (2023-09-25)
 -------------------
