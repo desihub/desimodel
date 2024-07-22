@@ -23,6 +23,7 @@ jobs:
                 fitsio-version: ['==1.2.1']
                 numpy-version: ['==1.22.4']
                 scipy-version: ['==1.8.1']
+                matplotlib-version: ['==3.8.4']
         env:
             DESIUTIL_VERSION: 3.2.5
             DESIMODEL_DATA: branches/test-0.19
@@ -64,7 +65,7 @@ jobs:
                 echo "Step 7a" && python -c "import numpy as x; print(x.__version__)" || echo "no numpy yet"
                 python -m pip install -U 'scipy${{ matrix.scipy-version }}'
                 echo "Step 7b" && python -c "import numpy as x; print(x.__version__)" || echo "no numpy yet"
-                python -m pip install matplotlib
+                python -m pip install -U 'matplotlib${{ matrix.matplotlib-version }}'
                 echo "Step 7c" && python -c "import numpy as x; print(x.__version__)" || echo "no numpy yet"
                 python -m pip install healpy
                 echo "Step 7d" && python -c "import numpy as x; print(x.__version__)" || echo "no numpy yet"
