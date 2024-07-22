@@ -42,37 +42,20 @@ jobs:
                 python -m pip install --upgrade pip setuptools wheel
                 python -m pip install pytest
                 python -m pip install git+https://github.com/desihub/desiutil.git@${DESIUTIL_VERSION}#egg=desiutil
-                echo "Step 2" # -> no numpy
-                python -c "import numpy as x; print(x.__version__)" || echo "no numpy yet"
                 python -m pip install -U 'numpy${{ matrix.numpy-version }}'
-                echo "Step 3" # -> 1.22.4
-                python -c "import numpy as x; print(x.__version__)" || echo "no numpy yet"
                 python -m pip install -U 'astropy${{ matrix.astropy-version }}'
-                echo "Step 4" # -> 1.22.4
-                python -c "import numpy as x; print(x.__version__)" || echo "no numpy yet"
                 python -m pip cache remove fitsio
-                echo "Step 5" # -> 1.22.4
-                python -c "import numpy as x; print(x.__version__)" || echo "no numpy yet"
                 python -m pip install --no-deps --force-reinstall --ignore-installed 'fitsio${{ matrix.fitsio-version }}'
-                echo "Step 6" # -> 1.22.4
-                python -c "import numpy as x; print(x.__version__)" || echo "no numpy yet"
-                #
-                #python -m pip install pyyaml requests scipy healpy matplotlib
-                #echo "Step 7" # -> 2.0.1
-                #python -c "import numpy as x; print(x.__version__)" || echo "no numpy yet"
-                #
                 python -m pip install pyyaml requests
-                echo "Step 7a" && python -c "import numpy as x; print(x.__version__)" || echo "no numpy yet"
                 python -m pip install -U 'scipy${{ matrix.scipy-version }}'
-                echo "Step 7b" && python -c "import numpy as x; print(x.__version__)" || echo "no numpy yet"
                 python -m pip install -U 'matplotlib${{ matrix.matplotlib-version }}'
-                echo "Step 7c" && python -c "import numpy as x; print(x.__version__)" || echo "no numpy yet"
                 python -m pip install healpy
-                echo "Step 7d" && python -c "import numpy as x; print(x.__version__)" || echo "no numpy yet"
-                #
+                #echo "Step 7d" && python -c "import numpy as x; print(x.__version__)" || echo "no numpy yet"
                 svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_DATA}/data
                 # ADM grab the surveyops directory.
-                wget -e robots=off -r -np -nH --cut-dirs 7 https://data.desi.lbl.gov/public/edr/survey/ops/surveyops/tags/0.1/ops/
+                wget https://data.desi.lbl.gov/public/epo/example_files/surveyops_2.0_ops.tar.gz
+                tar xvzf surveyops_2.0_ops.tar.gz
+                #wget -e robots=off -r -np -nH --cut-dirs 7 https://data.desi.lbl.gov/public/edr/survey/ops/surveyops/tags/0.1/ops/
             - name: Run the test
               run: DESIMODEL=$(pwd) DESI_SURVEYOPS=$(pwd) pytest
 
