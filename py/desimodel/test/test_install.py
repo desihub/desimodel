@@ -102,10 +102,3 @@ class TestInstall(unittest.TestCase):
                             install(desimodel='/opt/desimodel')
                         self.assertEqual(str(e.exception), "Mock stderr")
                     Popen.assert_called_with(['svn', 'export', 'https://desi.lbl.gov/svn/code/desimodel/trunk/data'], stderr=-1, stdout=-1)
-
-
-def test_suite():
-    """Allows testing of only this module with the command::
-        python setup.py test -m <modulename>
-    """
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

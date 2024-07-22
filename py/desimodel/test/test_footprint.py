@@ -352,11 +352,3 @@ class TestFootprint(unittest.TestCase):
 
         # Just interesting to see how many tiles overlap a random point?
         ### print(np.bincount([len(i) for i in ret]))
-
-
-def test_suite():
-    """Allows testing of only this module with the command::
-
-        python setup.py test -m desimodel.test.test_footprint
-    """
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

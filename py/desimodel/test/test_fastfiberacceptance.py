@@ -28,11 +28,5 @@ class TestFiberAcceptance(unittest.TestCase):
         val = fa.value("POINT",sigmas=np.linspace(1.0,1.5,3)*fwhm_arcsec_to_sigma_um,offsets=np.zeros(3))
         assert(val.size==3)
 
-def test_suite():
-    """Allows testing of only this module with the command::
-        python setup.py test -m <modulename>
-    """
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)
-
 if __name__ == '__main__':
     unittest.main()
