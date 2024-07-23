@@ -25,7 +25,7 @@ jobs:
                 scipy-version: ['==1.8.1']
                 matplotlib-version: ['==3.8.4']
         env:
-            DESIUTIL_VERSION: 3.2.5
+            DESIUTIL_VERSION: 3.4.2
             DESIMODEL_DATA: branches/test-0.19
 
         steps:
@@ -50,13 +50,10 @@ jobs:
                 python -m pip install -U 'scipy${{ matrix.scipy-version }}'
                 python -m pip install -U 'matplotlib${{ matrix.matplotlib-version }}'
                 python -m pip install healpy
-                #echo "Step 7d" && python -c "import numpy as x; print(x.__version__)" || echo "no numpy yet"
                 svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_DATA}/data
-                # grab surveyops directory
+                # grab surveyops snapshot
                 wget https://data.desi.lbl.gov/public/epo/example_files/surveyops_2.0_ops.tar.gz
                 tar xvzf surveyops_2.0_ops.tar.gz
-                # ADM grab the surveyops directory.
-                #wget -e robots=off -r -np -nH --cut-dirs 7 https://data.desi.lbl.gov/public/edr/survey/ops/surveyops/tags/0.1/ops/
             - name: Run the test
               run: DESIMODEL=$(pwd) DESI_SURVEYOPS=$(pwd) pytest
 
@@ -75,7 +72,7 @@ jobs:
                 scipy-version: ['==1.8.1']
                 matplotlib-version: ['==3.8.4']
         env:
-            DESIUTIL_VERSION: 3.2.5
+            DESIUTIL_VERSION: 3.4.2
             DESIMODEL_DATA: branches/test-0.17
 
         steps:
@@ -101,7 +98,7 @@ jobs:
                 python -m pip install -U 'matplotlib${{ matrix.matplotlib-version }}'
                 python -m pip install healpy
                 svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_DATA}/data
-                # grab surveyops directory
+                # grab surveyops snapshot
                 wget https://data.desi.lbl.gov/public/epo/example_files/surveyops_2.0_ops.tar.gz
                 tar xvzf surveyops_2.0_ops.tar.gz
             - name: Run the test with coverage
@@ -119,7 +116,7 @@ jobs:
             fail-fast: false
             matrix:
                 os: [ubuntu-latest]
-                python-version: ['3.9']
+                python-version: ['3.10']
 
         steps:
             - name: Checkout code
@@ -160,4 +157,3 @@ jobs:
               # This is equivalent to an allowed falure.
               continue-on-error: true
               run: pycodestyle --count py/desimodel
-
