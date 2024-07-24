@@ -19,8 +19,6 @@ jobs:
                 os: [ubuntu-latest]
                 # DESI 24.4 release
                 python-version: ['3.10']
-                package-versions: ['"numpy<2" scipy matplotlib astropy',
-                                   'numpy==1.22.4 scipy==1.8.1 matplotlib==3.8.4 astropy==6.0.1']
                 fitsio-version: ['==1.2.1']
         env:
             DESIUTIL_VERSION: 3.4.2
@@ -40,11 +38,10 @@ jobs:
                 python -m pip install --upgrade pip setuptools wheel
                 python -m pip install pytest
                 python -m pip install git+https://github.com/desihub/desiutil.git@${DESIUTIL_VERSION}#egg=desiutil
-                python -m pip install -U ${{ matrix.package-versions }}
+                python -m pip install -U --no-deps scipy
                 python -m pip cache remove fitsio
                 python -m pip install --no-deps --force-reinstall --ignore-installed 'fitsio${{ matrix.fitsio-version }}'
                 python -m pip install pyyaml requests
-                python -m pip install healpy
                 svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_DATA}/data
                 # grab surveyops snapshot
                 wget https://data.desi.lbl.gov/public/epo/example_files/surveyops_2.0_ops.tar.gz
