@@ -275,10 +275,3 @@ class TestFocalplane(unittest.TestCase):
         del targets['TARGET_DEC']
         with self.assertRaises(ValueError):
             ok = f.targets_on_gfa(telra, teldec, targets)  #- no ra/dec
-
-def test_suite():
-    """Allows testing of only this module with the command::
-
-        python setup.py test -m <modulename>
-    """
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

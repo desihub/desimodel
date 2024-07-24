@@ -232,11 +232,3 @@ class TestTrim(unittest.TestCase):
             trim_quickpsf('/in/specpsf', '/out/specpsf', 'psf-quicksim.fits')
         fits['open'].assert_called_with('/in/specpsf/psf-quicksim.fits')
         fits['HDUList']().writeto.assert_called_with('/out/specpsf/psf-quicksim.fits', overwrite=True)
-
-
-def test_suite():
-    """Allows testing of only this module with the command::
-
-        python setup.py test -m <modulename>
-    """
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

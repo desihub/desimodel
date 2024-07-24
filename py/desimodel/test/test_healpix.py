@@ -77,9 +77,3 @@ class TestHealpix(unittest.TestCase):
             for pix in tileids2pix(nside, tileid):
                 tiles = pix2tiles(nside, pix)
                 self.assertIn(tileid, tiles['TILEID'], '{} not in pix2tiles({},{})'.format(tileid, nside, pix))
-
-def test_suite():
-    """Allows testing of only this module with the command::
-        python setup.py test -m <modulename>
-    """
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

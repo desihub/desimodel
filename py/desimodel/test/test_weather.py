@@ -174,11 +174,3 @@ class TestWeather(unittest.TestCase):
             replay='Y2017,Y2007')
         self.assertTrue(np.all(probs[:365] == t['Y2017']))
         self.assertTrue(np.all(probs[365:] == t['Y2007']))
-
-
-def test_suite():
-    """Allows testing of only this module with the command::
-
-        python setup.py test -m <modulename>
-    """
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

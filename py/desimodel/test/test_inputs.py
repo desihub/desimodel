@@ -54,11 +54,3 @@ class TestInputs(unittest.TestCase):
         gfa.build_gfa_table(testdir='.')
         self.assertTrue(os.path.exists('gfa.ecsv'), "Test Failed to create a valid file!")
         os.remove('gfa.ecsv')
-
-
-def test_suite():
-    """Allows testing of only this module with the command::
-
-        python setup.py test -m <modulename>
-    """
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

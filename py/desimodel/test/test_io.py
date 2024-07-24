@@ -386,10 +386,3 @@ class TestIO(unittest.TestCase):
             trim.trim_data(indir, self.trimdir)
             self.assertTrue(os.path.isdir(self.trimdir))
             self.assertGreater(len(list(os.walk(self.trimdir))), 1)
-
-
-def test_suite():
-    """Allows testing of only this module with the command::
-        python setup.py test -m <modulename>
-    """
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

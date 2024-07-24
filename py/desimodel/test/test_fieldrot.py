@@ -36,13 +36,3 @@ class TestFieldRot(unittest.TestCase):
                 maxdiff=max(maxdiff,np.abs(angle2-angle1)*3600.)
         print("Max. difference = {:3.2f} arcsec".format(maxdiff))
         assert(maxdiff<10.)
-
-def test_suite():
-    """Allows testing of only this module with the command::
-       
-       python setup.py test -m <modulename>
-    """
-
-    # usage, in base directory of desimodel :
-    # python setup.py test -m desimodel.test.test_fieldrot
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)
