@@ -44,8 +44,8 @@ jobs:
                 python -m pip install pyyaml requests
                 svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_DATA}/data
                 # grab surveyops snapshot
-                wget https://data.desi.lbl.gov/public/epo/example_files/surveyops_2.0_ops.tar.gz
-                tar xvzf surveyops_2.0_ops.tar.gz
+                wget -nv https://data.desi.lbl.gov/public/epo/example_files/surveyops_2.0_ops.tar.gz
+                tar xzf surveyops_2.0_ops.tar.gz
             - name: Run the test
               run: DESIMODEL=$(pwd) DESI_SURVEYOPS=$(pwd) pytest
 
@@ -83,8 +83,8 @@ jobs:
                 python -m pip install pyyaml requests
                 svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_DATA}/data
                 # grab surveyops snapshot
-                wget https://data.desi.lbl.gov/public/epo/example_files/surveyops_2.0_ops.tar.gz
-                tar xvzf surveyops_2.0_ops.tar.gz
+                wget -nv https://data.desi.lbl.gov/public/epo/example_files/surveyops_2.0_ops.tar.gz
+                tar xzf surveyops_2.0_ops.tar.gz
             - name: Run the test with coverage
               run: DESIMODEL=$(pwd) DESI_SURVEYOPS=$(pwd) pytest --cov
             - name: Coveralls
