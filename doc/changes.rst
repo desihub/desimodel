@@ -5,7 +5,10 @@ desimodel Release Notes
 0.19.2 (unreleased)
 -------------------
 
-* No changes yet.
+* Fix GitHub CI tests by using newer surveyops tag and updated dependency
+  installations (PR `#173`_).
+
+.. _`#173`: https://github.com/desihub/desimodel/pull/173
 
 0.19.1 (2024-05-01)
 -------------------
