@@ -431,20 +431,22 @@ def device_compare(fpold, fpnew, check):
     """
     out = dict()
     olddiff = np.setdiff1d(fpold["LOCATION"], fpnew["LOCATION"])
-    rows = np.arange(len(fpold), dtype=np.int)[fpold["LOCATION"] in olddiff]
-    for r in rows:
-        loc = fpold[r]["LOCATION"]
-        out[loc] = dict()
-        out[loc]["old"] = fpold[r]
-        out[loc]["new"] = None
+    if len(olddiff) > 0:
+        rows = np.arange(len(fpold), dtype=np.int32)[fpold["LOCATION"] in olddiff]
+        for r in rows:
+            loc = fpold[r]["LOCATION"]
+            out[loc] = dict()
+            out[loc]["old"] = fpold[r]
+            out[loc]["new"] = None
     totdiff = set(olddiff)
     newdiff = np.setdiff1d(fpnew["LOCATION"], fpold["LOCATION"])
-    rows = np.arange(len(fpnew), dtype=np.int)[fpnew["LOCATION"] in newdiff]
-    for r in rows:
-        loc = fnew[r]["LOCATION"]
-        out[loc] = dict()
-        out[loc]["new"] = fpnew[r]
-        out[loc]["old"] = None
+    if len(newdiff) > 0:
+        rows = np.arange(len(fpnew), dtype=np.int32)[fpnew["LOCATION"] in newdiff]
+        for r in rows:
+            loc = fnew[r]["LOCATION"]
+            out[loc] = dict()
+            out[loc]["new"] = fpnew[r]
+            out[loc]["old"] = None
     totdiff.update(newdiff)
 
     # Go through locations found in both tables and look for differences in
@@ -597,7 +599,7 @@ def create_tables(n_fp_rows, n_state_rows=None):
 
     """
     if n_fp_rows is None or n_fp_rows < 1:
-        raise ValueError("number of focaplane table rows must be an integer > 0")
+        raise ValueError("number of focalplane table rows must be an integer > 0")
     if n_state_rows is None:
         n_state_rows = n_fp_rows
 
