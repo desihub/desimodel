@@ -633,14 +633,14 @@ def create_tables(n_fp_rows, n_state_rows=None):
         Column(
             name="DEVICE_ID",
             length=n_fp_rows,
-            dtype=np.dtype("a9"),
+            dtype=np.dtype("U9"),
             data=["UNKNOWN" for x in range(n_fp_rows)],
             description="The physical device ID string",
         ),
         Column(
             name="DEVICE_TYPE",
             length=n_fp_rows,
-            dtype=np.dtype("a3"),
+            dtype=np.dtype("U3"),
             data=["NA" for x in range(n_fp_rows)],
             description="The device type (POS, ETC, FIF)",
         ),
@@ -668,7 +668,7 @@ def create_tables(n_fp_rows, n_state_rows=None):
         Column(
             name="CONDUIT",
             length=n_fp_rows,
-            dtype=np.dtype("a3"),
+            dtype=np.dtype("U3"),
             data=["NA" for x in range(n_fp_rows)],
             description="The conduit",
         ),
@@ -757,7 +757,7 @@ def create_tables(n_fp_rows, n_state_rows=None):
         Column(
             name="TIME",
             length=n_state_rows,
-            dtype=np.dtype("a30"),
+            dtype=np.dtype("U30"),
             data=["UNKNOWN" for x in range(n_state_rows)],
             description="The timestamp of the event (UTC, ISO format)",
         ),
@@ -820,7 +820,7 @@ def create_tables(n_fp_rows, n_state_rows=None):
         Column(
             name="EXCLUSION",
             length=n_state_rows,
-            dtype=np.dtype("a16"),
+            dtype=np.dtype("U16"),
             data=["UNKNOWN" for x in range(n_state_rows)],
             description="The exclusion polygon for this device",
         ),
