@@ -2,13 +2,20 @@
 desimodel Release Notes
 =======================
 
-0.19.2 (unreleased)
+0.19.3 (unreleased)
+-------------------
+
+* No changes yet.
+
+0.19.2 (2024-09-17)
 -------------------
 
 * Fix GitHub CI tests by using newer surveyops tag and updated dependency
   installations (PR `#173`_).
+* Fix desimodel_sync script failure to update fp model (PR `#174`_).
 
 .. _`#173`: https://github.com/desihub/desimodel/pull/173
+.. _`#174`: https://github.com/desihub/desimodel/pull/174
 
 0.19.1 (2024-05-01)
 -------------------
