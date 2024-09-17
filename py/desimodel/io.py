@@ -432,7 +432,7 @@ def ensure_focalplane_loaded():
     fpdir = os.path.join(datadir(), "focalplane")
     fppat = re.compile(r"^desi-focalplane_(.*)\.ecsv$")
     stpat = re.compile(r"^desi-state_(.*)\.ecsv$")
-    expat = re.compile(r"^desi-exclusion_(.*)\.(?:yaml|json).*$")
+    expat = re.compile(r"^desi-exclusion_(.*)\.(?:yaml|json)(\.gz)?$")
     fpraw = dict()
     msg = "Loading focalplanes from {}".format(fpdir)
     log.debug(msg)

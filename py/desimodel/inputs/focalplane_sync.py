@@ -478,7 +478,7 @@ def create_from_calibs(
             newt = Column(
                 name="TIME",
                 length=len(st["TIME"]),
-                dtype=np.dtype("a30"),
+                dtype=np.dtype("U30"),
                 description="The timestamp of the event (UTC, ISO format)",
             )
             for row, oldt in enumerate(st["TIME"]):
@@ -524,9 +524,8 @@ def create_from_calibs(
             st.add_row(row)
             n_new_states += 1
 
-            new_excl = str(
-                df["new"]["EXCLUSION"].tobytes().rstrip(b"\x00"), encoding="utf-8"
-            )
+            new_excl = df["new"]["EXCLUSION"]
+            new_excl = str(new_excl)
             if new_excl not in oldexcl:
                 oldexcl[new_excl] = excl[new_excl]
                 n_new_excl += 1
