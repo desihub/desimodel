@@ -5,7 +5,9 @@ desimodel Release Notes
 0.19.3 (unreleased)
 -------------------
 
-* No changes yet.
+* Updated KPNO focalplane sync scripts to use desimodel 0.19.2 (PR `#176`_).
+
+.. _`#176`: https://github.com/desihub/desimodel/pull/176
 
 0.19.2 (2024-09-17)
 -------------------
