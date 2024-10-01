@@ -92,21 +92,14 @@ END
     fi
 fi
 
-# Send notifications.
+# Send notifications. Mail out result.
+slack_email=${DESI_SLACK_MAIL_DESIMODEL_SYNC}
 
-# Get our webhook address from the environment
-slack_web_hook=${DESI_SLACKBOT_DESIMODEL_SYNC}
-
-if [ "x${slack_web_hook}" = "x" ]; then
-    echo "Environment variable DESI_SLACKBOT_DESIMODEL_SYNC not set- skipping notifications" >> "${logfile}"
+if [ "x${slack_email}" = "x" ]; then
+    echo "Environment variable DESI_SLACK_MAIL_DESIMODEL_SYNC not set- skipping notifications" >> "${logfile}"
 else
-    # Create the JSON payload.
-    slackjson="${logfile}_slack.json"
-    headtail=15
-    echo -e "{\"text\":\"Focalplane DB sync (log at \`${logfile}\`):\n\`\`\`$(head -n ${headtail} ${logfile} | sed -e "s|'|\\\'|g")\`\`\`\n(Snip)\n\`\`\`$(tail -n ${headtail} ${logfile} | sed -e "s|'|\\\'|g")\`\`\`\"}" > "${slackjson}"
-    # Post it.
-    slackerror=$(curl -X POST -H 'Content-type: application/json' --data "$(cat ${slackjson})" ${slack_web_hook})
-    echo "Slack API post  ${slackerror}" >> "${logfile}"
+    cat ${logfile} | mailx -s "Focalplane sync: ${logdate}" ${slack_email}
+    echo "Sent log to slack" >> ${logfile}
 fi
 
 echo "Sync script finished at $(date -u --iso-8601=seconds)" >> "${logfile}"
