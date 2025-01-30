@@ -16,6 +16,82 @@ from setuptools import setup, find_packages
 #
 import desiutil.setup as ds
 #
+# First provide helpful messages if contributors try and run legacy commands
+# for tests or docs.
+#
+API_HELP = """
+Note: Generating api.rst files is no longer done using 'python setup.py api'. Instead
+you will need to run:
+
+    desi_api_file
+
+which is part of the desiutil package. If you don't already have desiutil installed, you can install it with:
+
+    pip install desiutil
+"""
+
+MODULE_HELP = """
+Note: Generating Module files is no longer done using 'python setup.py api'. Instead
+you will need to run:
+
+    desiInstall
+
+or
+
+    desi_module_file
+
+depending on your exact situation.  desiInstall is preferred.  Both commands are
+part of the desiutil package. If you don't already have desiutil installed, you can install it with:
+
+    pip install desiutil
+"""
+
+VERSION_HELP = """
+Note: Generating version strings is no longer done using 'python setup.py version'. Instead
+you will need to run:
+
+    desi_update_version [-t TAG] desiutil
+
+which is part of the desiutil package. If you don't already have desiutil installed, you can install it with:
+
+    pip install desiutil
+"""
+
+TEST_HELP = """
+Note: running tests is no longer done using 'python setup.py test'. Instead
+you will need to run:
+
+    pytest
+
+If you don't already have pytest installed, you can install it with:
+
+    pip install pytest
+"""
+
+DOCS_HELP = """
+Note: building the documentation is no longer done using
+'python setup.py {0}'. Instead you will need to run:
+
+    sphinx-build -W --keep-going -b html doc doc/_build/html
+
+If you don't already have Sphinx installed, you can install it with:
+
+    pip install Sphinx
+"""
+
+message = {'api': API_HELP,
+           'module_file': MODULE_HELP,
+           'test': TEST_HELP,
+           'version': VERSION_HELP,
+           'build_docs': DOCS_HELP.format('build_docs'),
+           'build_sphinx': DOCS_HELP.format('build_sphinx'), }
+
+for m in message:
+    if m in sys.argv:
+        print(message[m])
+        sys.exit(1)
+
+#
 # Begin setup
 #
 setup_keywords = dict()
@@ -54,11 +130,7 @@ setup_keywords['zip_safe'] = False
 # setup_keywords['use_2to3'] = False
 setup_keywords['packages'] = find_packages('py')
 setup_keywords['package_dir'] = {'': 'py'}
-setup_keywords['cmdclass'] = {'module_file': ds.DesiModule,
-                              'version': ds.DesiVersion,
-                              'test': ds.DesiTest,
-                              'api': ds.DesiAPI,
-                              'sdist': DistutilsSdist}
+setup_keywords['cmdclass'] = {'sdist': DistutilsSdist}
 setup_keywords['test_suite']='{name}.test.{name}_test_suite'.format(**setup_keywords)
 #
 # Autogenerate command-line scripts.

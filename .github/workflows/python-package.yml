@@ -17,31 +17,32 @@ jobs:
             fail-fast: true
             matrix:
                 os: [ubuntu-latest]
-                # DESI 24.4 release
                 python-version: ['3.10']
-                fitsio-version: ['==1.2.1']
+                fitsio-version: ['==1.2.1', '<2']
+
         env:
-            DESIUTIL_VERSION: 3.4.2
+            DESIUTIL_VERSION: 3.5.0
             DESIMODEL_DATA: branches/test-0.19
 
         steps:
+            - name: Install System Packages
+              run: sudo apt install libbz2-dev subversion
             - name: Checkout code
-              uses: actions/checkout@v2
+              uses: actions/checkout@v4
               with:
                 fetch-depth: 0
             - name: Set up Python ${{ matrix.python-version }}
-              uses: actions/setup-python@v2
+              uses: actions/setup-python@v5
               with:
                 python-version: ${{ matrix.python-version }}
             - name: Install Python dependencies
               run: |
                 python -m pip install --upgrade pip setuptools wheel
+                python -m pip install requests pyyaml numpy\<2 scipy\<1.9 matplotlib\<3.7 astropy\<6.1 healpy\<1.17
                 python -m pip install pytest
                 python -m pip install git+https://github.com/desihub/desiutil.git@${DESIUTIL_VERSION}#egg=desiutil
-                python -m pip install -U --no-deps scipy
                 python -m pip cache remove fitsio
                 python -m pip install --no-deps --force-reinstall --ignore-installed 'fitsio${{ matrix.fitsio-version }}'
-                python -m pip install pyyaml requests
                 svn export https://desi.lbl.gov/svn/code/desimodel/${DESIMODEL_DATA}/data
                 # grab surveyops snapshot
                 wget -nv https://data.desi.lbl.gov/public/epo/example_files/surveyops_2.0_ops.tar.gz
@@ -60,24 +61,26 @@ jobs:
                 python-version: ['3.10']
                 fitsio-version: ['==1.2.1']
         env:
-            DESIUTIL_VERSION: 3.4.2
-            DESIMODEL_DATA: branches/test-0.17
+            DESIUTIL_VERSION: 3.5.0
+            DESIMODEL_DATA: branches/test-0.19
 
         steps:
+            - name: Install System Packages
+              run: sudo apt install libbz2-dev subversion
             - name: Checkout code
-              uses: actions/checkout@v2
+              uses: actions/checkout@v4
               with:
                 fetch-depth: 0
             - name: Set up Python ${{ matrix.python-version }}
-              uses: actions/setup-python@v2
+              uses: actions/setup-python@v5
               with:
                 python-version: ${{ matrix.python-version }}
             - name: Install Python dependencies
               run: |
                 python -m pip install --upgrade pip setuptools wheel
+                python -m pip install requests pyyaml numpy\<2 scipy\<1.9 matplotlib\<3.7 astropy\<6.1 healpy\<1.17
                 python -m pip install pytest pytest-cov coveralls
                 python -m pip install git+https://github.com/desihub/desiutil.git@${DESIUTIL_VERSION}#egg=desiutil
-                python -m pip install -U --no-deps scipy
                 python -m pip cache remove fitsio
                 python -m pip install --no-deps --force-reinstall --ignore-installed 'fitsio${{ matrix.fitsio-version }}'
                 python -m pip install pyyaml requests
@@ -103,11 +106,11 @@ jobs:
                 python-version: ['3.10']
         steps:
             - name: Checkout code
-              uses: actions/checkout@v2
+              uses: actions/checkout@v4
               with:
                 fetch-depth: 0
             - name: Set up Python ${{ matrix.python-version }}
-              uses: actions/setup-python@v2
+              uses: actions/setup-python@v5
               with:
                 python-version: ${{ matrix.python-version }}
             - name: Install Python dependencies
@@ -127,15 +130,15 @@ jobs:
 
         steps:
             - name: Checkout code
-              uses: actions/checkout@v2
+              uses: actions/checkout@v4
               with:
                 fetch-depth: 0
             - name: Set up Python ${{ matrix.python-version }}
-              uses: actions/setup-python@v2
+              uses: actions/setup-python@v5
               with:
                 python-version: ${{ matrix.python-version }}
             - name: Install Python dependencies
-              run: python -m pip install --upgrade pip wheel pycodestyle
+              run: python -m pip install --upgrade pip setuptools wheel pycodestyle
             - name: Test the style; failures are allowed
               # This is equivalent to an allowed falure.
               continue-on-error: true
