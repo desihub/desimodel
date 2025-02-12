@@ -119,11 +119,11 @@ if os.path.exists('README.rst'):
 # Set other keywords for the setup function.  These are automated, & should
 # be left alone unless you are an expert.
 #
-# Treat everything in bin/ except *.rst as a script to be installed.
+# Treat everything executable in bin/ as a script to be installed.
 #
 if os.path.isdir('bin'):
     setup_keywords['scripts'] = [fname for fname in glob.glob(os.path.join('bin', '*'))
-        if not os.path.basename(fname).endswith('.rst')]
+                                 if os.access(fname, os.X_OK)]
 setup_keywords['provides'] = [setup_keywords['name']]
 setup_keywords['python_requires'] = '>=3.5'
 setup_keywords['zip_safe'] = False
