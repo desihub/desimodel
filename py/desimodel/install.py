@@ -187,6 +187,6 @@ If the data directory already exists, this script will not do anything.
         install(options.desimodel, options.desimodel_version,
                 svn_checkout=options.checkout, dry_run=options.dry_run)
     except (ValueError, RuntimeError) as e:
-        print(e.message)
+        print(e)
         return 1
     return 0

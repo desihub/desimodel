@@ -65,8 +65,26 @@ class TestIO(unittest.TestCase):
         if os.path.exists(self.testfile):
             os.remove(self.testfile)
 
+        self.orig_desimodel = os.getenv('DESIMODEL') # None if not set
+
     def tearDown(self):
-        pass
+        if self.orig_desimodel is not None:
+            os.environ['DESIMODEL'] = self.orig_desimodel
+        elif 'DESIMODEL' in os.environ:
+            del os.environ['DESIMODEL']
+
+    def test_findfile(self):
+        datadir = io.datadir()
+        self.assertEqual(io.findfile('blat/foo'), f'{datadir}/blat/foo')
+
+        os.environ['DESIMODEL'] = '/path/to/somewhere'
+        datadir = io.datadir()
+        self.assertEqual(datadir, '/path/to/somewhere/data')
+        self.assertEqual(io.findfile('blat/foo'), f'{datadir}/blat/foo')
+
+        del os.environ['DESIMODEL']
+        datadir = io.datadir()
+        self.assertEqual(io.findfile('blat/foo'), f'{datadir}/blat/foo')
 
     def test_reset_cache(self):
         """Test cache reset (two examples at least)
