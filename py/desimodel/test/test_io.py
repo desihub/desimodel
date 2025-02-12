@@ -21,16 +21,11 @@ try:
 except ImportError:
     specter_available = False
 #
-# Try to load the DESIMODEL environment variable
+# Check if desimodel data is available.
 #
-desimodel_available = True
+desimodel_available = os.path.isdir(io.datadir())
 desimodel_message = "The desimodel data set was not detected."
-try:
-    spam = os.environ['DESIMODEL']
-except KeyError:
-    desimodel_available = False
-    specter_available = False
-    specter_message = desimodel_message
+
 #
 # Try to load the DESI_SURVEYOPS environment variable.
 #
@@ -89,7 +84,9 @@ class TestIO(unittest.TestCase):
         self.assertTrue(isinstance(io._tiles, dict))
         self.assertEqual(len(io._tiles), 0)
 
+    #- test requires both specter and desimodel data
     @unittest.skipUnless(specter_available, specter_message)
+    @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_load_throughput(self):
         """Test loading of throughput files.
         """
@@ -106,7 +103,9 @@ class TestIO(unittest.TestCase):
             self.assertTrue(np.all(t2>=0.0))
             self.assertTrue(np.all(t1>=t2))
 
+    #- test requires both specter and desimodel data
     @unittest.skipUnless(specter_available, specter_message)
+    @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_load_psf(self):
         """Test loading of PSF files.
         """
@@ -382,7 +381,7 @@ class TestIO(unittest.TestCase):
         psffile = io.findfile('specpsf/psf-b.fits')
         if os.path.getsize(psffile) > 20e6:
             from .. import trim
-            indir = os.path.join(os.getenv('DESIMODEL'), 'data')
+            indir = io.datadir()
             trim.trim_data(indir, self.trimdir)
             self.assertTrue(os.path.isdir(self.trimdir))
             self.assertGreater(len(list(os.walk(self.trimdir))), 1)

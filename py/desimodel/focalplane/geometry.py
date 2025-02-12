@@ -15,7 +15,7 @@ from astropy.table import Table
 
 from ..footprint import find_points_in_tiles, find_points_radec, get_tile_radec
 from ..io import (load_desiparams, load_fiberpos, load_platescale,
-    load_tiles, load_deviceloc)
+    load_tiles, load_deviceloc, findfile)
 
 _tile_radius_deg = None
 _tile_radius_mm = None
@@ -341,9 +341,7 @@ class FocalPlane(object):
         self._check_radec(ra, dec)
         self.ra = ra
         self.dec = dec
-        self._fiberpos_file = os.path.join(os.environ['DESIMODEL'],
-                                           'data', 'focalplane',
-                                           'fiberpos.fits')
+        self._fiberpos_file = findfile('focalplane/fiberpos.fits')
         with fits.open(self._fiberpos_file) as hdulist:
             self.fiberpos = hdulist[1].data
 

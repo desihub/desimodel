@@ -7,18 +7,18 @@ desimodel.install
 Install data files not handled by pip install.
 """
 
+import re
 
 def default_install_dir():
-    """Return the default install directory.  Assumes this file lives in
-    a 'site-packages' directory.
+    """Return the default install directory.
 
     Returns
     -------
     :class:`str`
         The path to the install directory.
     """
-    from os.path import dirname
-    return dirname(dirname(dirname(dirname(dirname(__file__)))))
+    import importlib.resources
+    return str(importlib.resources.files('desimodel'))
 
 
 def assert_svn_exists():
@@ -32,8 +32,40 @@ def assert_svn_exists():
     except CalledProcessError as e:
         raise AssertionError("The svn command ({0}) on this system does not work. Output is: '{1}'.".format(e.cmd, e.output))
 
+def get_svn_version(desimodel_version=None):
+    """
+    Return which svn version should be checked out for given desimodel_version
 
-def svn_export(desimodel_version=None):
+    Parameters
+    ----------
+    desimodel_version : :class:`str`, optional
+        The version X.Y.Z to download, trunk, or something of the
+        form branches/... Defaults to package version if x.y.z tagged,
+        otherwise trunk.
+
+    Returns
+    -------
+    :class:`str`
+        svn version string
+    """
+
+    if desimodel_version is None:
+        from . import __version__ as this_version
+        # check for tag-like versions x.y.z or x.y
+        if (re.match(r'^\d+\.\d+\.\d+$', this_version) is not None or
+            re.match(r'\d+\.\d+$', this_version) is not None):
+            svn_version = 'tags/' + this_version
+        # otherwise use trunk if version wasn't specified
+        else:
+            svn_version = 'trunk'
+    elif (desimodel_version == 'trunk') or ('branches/' in desimodel_version):
+        svn_version = desimodel_version
+    else:
+        svn_version = 'tags/' + desimodel_version
+
+    return svn_version
+
+def svn_export(desimodel_version=None, svn_checkout=False):
     """Create a :command:`svn export` command suitable for downloading a
     particular desimodel version.
 
@@ -41,7 +73,10 @@ def svn_export(desimodel_version=None):
     ----------
     desimodel_version : :class:`str`, optional
         The version X.Y.Z to download, trunk, or something of the
-        form branches/... Defaults to trunk.
+        form branches/... Defaults to package version if x.y.z tagged,
+        otherwise trunk.
+    svn_checkout : bool, default False
+        If True, svn checkout instead of svn export
 
     Returns
     -------
@@ -49,19 +84,17 @@ def svn_export(desimodel_version=None):
         A :command:`svn` command in list form, suitable for passing to
         :class:`subprocess.Popen`.
     """
-    from . import __version__ as this_version
-    if desimodel_version is None:
-        export_version = 'trunk'
-    elif (desimodel_version == 'trunk') or ('branches/' in desimodel_version):
-        export_version = desimodel_version
+    svn_version = get_svn_version(desimodel_version)
+    if svn_checkout:
+        svn_subcommand = 'checkout'
     else:
-        export_version = 'tags/' + desimodel_version
-    return ["svn", "export",
-            ("https://desi.lbl.gov/svn/code/desimodel/" +
-             "{0}/data").format(export_version)]
+        svn_subcommand = 'export'
+
+    return ["svn", svn_subcommand,
+            f"https://desi.lbl.gov/svn/code/desimodel/{svn_version}/data"]
 
 
-def install(desimodel=None, version=None):
+def install(desimodel=None, version=None, svn_checkout=False, dry_run=False):
     """Primary workhorse function.
 
     Parameters
@@ -70,6 +103,10 @@ def install(desimodel=None, version=None):
         Allows the install directory to be explicitly set.
     version : :class:`str`, optional
         Allows the desimodel version to be explicitly set.
+    svn_checkout : bool, default False
+        If True, svn checkout instead of svn export
+    dry_run : bool, default False
+        If True, print commands but don't actually get the data
 
     Raises
     ------
@@ -92,13 +129,20 @@ def install(desimodel=None, version=None):
     assert_svn_exists()
 
     chdir(install_dir)
-    command = svn_export(version)
-    # print(' '.join(command))
-    proc = Popen(command, stdout=PIPE, stderr=PIPE)
-    out, err = proc.communicate()
-    status = proc.returncode
-    if status != 0:
-        raise RuntimeError(err.rstrip())
+
+    svn_version = get_svn_version(version)
+    print(f'Installing desimodel data {svn_version} to {install_dir}')
+
+    command = svn_export(version, svn_checkout)
+    if dry_run:
+        cmdstr = ' '.join(command)
+        print(f'Dry run, would have run "{cmdstr}"')
+    else:
+        proc = Popen(command, stdout=PIPE, stderr=PIPE)
+        out, err = proc.communicate()
+        status = proc.returncode
+        if status != 0:
+            raise RuntimeError(err.rstrip())
 
 
 def main():
@@ -134,9 +178,14 @@ If the data directory already exists, this script will not do anything.
     parser.add_argument('-D', '--desimodel-version', action='store',
                         dest='desimodel_version', metavar='VERSION',
                         help='Explicitly set the version to download.')
+    parser.add_argument('--checkout', action='store_true',
+                        help='svn checkout instead of svn export data')
+    parser.add_argument('--dry-run', action='store_true',
+                        help="Print actions but don't actually install the data")
     options = parser.parse_args()
     try:
-        install(options.desimodel, options.desimodel_version)
+        install(options.desimodel, options.desimodel_version,
+                svn_checkout=options.checkout, dry_run=options.dry_run)
     except (ValueError, RuntimeError) as e:
         print(e.message)
         return 1

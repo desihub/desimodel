@@ -135,7 +135,7 @@ setup_keywords['test_suite']='{name}.test.{name}_test_suite'.format(**setup_keyw
 #
 # Autogenerate command-line scripts.
 #
-setup_keywords['entry_points'] = {'console_scripts':['install_desimodel_data = desimodel.install:main']}
+### setup_keywords['entry_points'] = {'console_scripts':['install_desimodel_data = desimodel.install:main']}
 #
 # Add internal data directories.
 #

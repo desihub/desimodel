@@ -8,6 +8,7 @@ import os
 import numpy as np
 import astropy.table
 from .. import weather as w
+from .. import io
 
 
 class TestWeather(unittest.TestCase):
@@ -166,8 +167,7 @@ class TestWeather(unittest.TestCase):
     def test_dome_frac_values(self):
         """Check correct replay of two weather years.
         """
-        DESIMODEL = os.getenv('DESIMODEL')
-        path = os.path.join(DESIMODEL, 'data', 'weather', 'daily-2007-2017.csv')
+        path = io.findfile('weather/daily-2007-2017.csv')
         t = astropy.table.Table.read(path)
         probs = w.dome_closed_fractions(
             datetime.date(2021, 1, 1), datetime.date(2023, 1, 1),
