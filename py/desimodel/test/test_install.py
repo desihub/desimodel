@@ -55,6 +55,11 @@ class TestInstall(unittest.TestCase):
         cmd = svn_export()
         self.assertEqual(cmd[2], base_url.format('trunk'))
 
+        # code version is tag-like, but we purposefully want to install a different version
+        desimodel.__version__ = '0.19.3'
+        cmd = svn_export('branches/test-0.19')
+        self.assertEqual(cmd[2], base_url.format('branches/test-0.19'))
+
         desimodel.__version__ = self.orig_version
         cmd = svn_export('trunk')
         self.assertEqual(cmd[2], base_url.format('trunk'))

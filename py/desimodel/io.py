@@ -779,4 +779,4 @@ def datadir(surveyops=False):
         else:
             import importlib
 
-            return importlib.resources.files("desimodel").joinpath("data")
+            return str(importlib.resources.files("desimodel").joinpath("data"))
