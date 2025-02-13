@@ -65,7 +65,8 @@ def get_svn_version(desimodel_version=None):
 
     return svn_version
 
-def svn_export(desimodel_version=None, svn_checkout=False):
+def svn_export(desimodel_version=None, svn_checkout=False,
+               svn_url='https://desi.lbl.gov/svn/code/desimodel'):
     """Create a :command:`svn export` command suitable for downloading a
     particular desimodel version.
 
@@ -77,6 +78,8 @@ def svn_export(desimodel_version=None, svn_checkout=False):
         otherwise trunk.
     svn_checkout : bool, default False
         If True, svn checkout instead of svn export
+    svn_url : :class:`str`, optional
+        Base URL for svn
 
     Returns
     -------
@@ -90,8 +93,7 @@ def svn_export(desimodel_version=None, svn_checkout=False):
     else:
         svn_subcommand = 'export'
 
-    return ["svn", svn_subcommand,
-            f"https://desi.lbl.gov/svn/code/desimodel/{svn_version}/data"]
+    return ["svn", svn_subcommand, f"{svn_url}/{svn_version}/data"]
 
 
 def install(desimodel=None, version=None, svn_checkout=False, dry_run=False):
