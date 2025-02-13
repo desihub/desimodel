@@ -43,9 +43,8 @@ jobs:
                 python -m pip install git+https://github.com/desihub/desiutil.git@${DESIUTIL_VERSION}#egg=desiutil
                 python -m pip cache remove fitsio
                 python -m pip install --no-deps --force-reinstall --ignore-installed 'fitsio${{ matrix.fitsio-version }}'
-                # pip install desimodel so that we can use install_desimodel_data to get data
-                python -m pip install .
-                install_desimodel_data --desimodel-version ${DESIMODEL_DATA}
+                # install data to checkout copy
+                PYTHONPATH=$(pwd)/py:$PYTHONPATH PATH=$(pwd)/bin:$PATH install_desimodel_data --desimodel-version ${DESIMODEL_DATA}
                 # grab surveyops snapshot
                 wget -nv https://data.desi.lbl.gov/public/epo/example_files/surveyops_2.0_ops.tar.gz
                 tar xzf surveyops_2.0_ops.tar.gz
@@ -86,9 +85,8 @@ jobs:
                 python -m pip cache remove fitsio
                 python -m pip install --no-deps --force-reinstall --ignore-installed 'fitsio${{ matrix.fitsio-version }}'
                 python -m pip install pyyaml requests
-                # pip install desimodel so that we can use install_desimodel_data to get data
-                python -m pip install .
-                install_desimodel_data --desimodel-version ${DESIMODEL_DATA}
+                # install data to checkout copy
+                PYTHONPATH=$(pwd)/py:$PYTHONPATH PATH=$(pwd)/bin:$PATH install_desimodel_data --desimodel-version ${DESIMODEL_DATA}
                 # grab surveyops snapshot
                 wget -nv https://data.desi.lbl.gov/public/epo/example_files/surveyops_2.0_ops.tar.gz
                 tar xzf surveyops_2.0_ops.tar.gz
