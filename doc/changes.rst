@@ -5,7 +5,7 @@ desimodel Release Notes
 0.19.3 (unreleased)
 -------------------
 
-
+* Revive ``install_desimodel_data`` and enable desimodel usage without $DESIMODEL set (PR `#179`_).
 * Remove ``DesiTest`` from setup.py and warn about other deprecated features (PR `#178`_).
 * Replace focalplane slackbot alerts with an email to slack (PR `#177`_).
 * Updated KPNO focalplane sync scripts to use desimodel 0.19.2 (PR `#176`_).
@@ -13,6 +13,7 @@ desimodel Release Notes
 .. _`#176`: https://github.com/desihub/desimodel/pull/176
 .. _`#177`: https://github.com/desihub/desimodel/pull/177
 .. _`#178`: https://github.com/desihub/desimodel/pull/178
+.. _`#179`: https://github.com/desihub/desimodel/pull/179
 
 0.19.2 (2024-09-17)
 -------------------
