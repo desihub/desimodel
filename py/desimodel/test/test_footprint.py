@@ -11,14 +11,8 @@ from astropy.table import Table
 from .. import io
 from .. import footprint
 
-desimodel_available = True
+desimodel_available = os.path.isdir(io.datadir())
 desimodel_message = "The desimodel data set was not detected."
-try:
-    spam = os.environ['DESIMODEL']
-except KeyError:
-    desimodel_available = False
-
-
 
 class TestFootprint(unittest.TestCase):
     """Test desimodel.footprint.
@@ -84,8 +78,9 @@ class TestFootprint(unittest.TestCase):
 
     def test_ecsv(self):
         """Test consistency of ecsv vs. fits tiles files"""
-        t1 = Table.read(os.path.expandvars('$DESIMODEL/data/footprint/desi-tiles.fits'))
-        t2 = Table.read(os.path.expandvars('$DESIMODEL/data/footprint/desi-tiles.ecsv'),
+        datadir = io.datadir()
+        t1 = Table.read(f'{datadir}/footprint/desi-tiles.fits')
+        t2 = Table.read(f'{datadir}/footprint/desi-tiles.ecsv',
             format='ascii.ecsv')
         for colname in t2.colnames:
             self.assertIn(colname, t1.colnames)

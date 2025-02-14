@@ -777,6 +777,6 @@ def datadir(surveyops=False):
         if "DESIMODEL" in os.environ:
             return os.path.abspath(os.path.join(os.environ["DESIMODEL"], "data"))
         else:
-            import pkg_resources
+            import importlib
 
-            return pkg_resources.resource_filename("desimodel", "data")
+            return str(importlib.resources.files("desimodel").joinpath("data"))

@@ -6,6 +6,7 @@ import os
 from subprocess import CalledProcessError
 import unittest
 from ..install import default_install_dir, assert_svn_exists, svn_export, install
+import desimodel
 
 skipMock = False
 try:
@@ -19,26 +20,58 @@ class TestInstall(unittest.TestCase):
     """Test desimodel.install.
     """
 
+    def setUp(self):
+        self.orig_version = desimodel.__version__
+
+    def tearDown(self):
+        desimodel.__version__ = self.orig_version
+
     def test_default_install_dir(self):
         """Test setting default install directory.
         """
         d = os.path.dirname
         d1 = default_install_dir()
-        d2 = d(d(d(d(d(d(__file__))))))
+        d2 = d(d(__file__))
         self.assertEqual(os.path.abspath(d1), os.path.abspath(d2))
 
     def test_svn_export(self):
         """Test svn export command.
         """
         base_url = "https://desi.lbl.gov/svn/code/desimodel/{0}/data"
+
+        desimodel.__version__ = '1.2.3.dev456'
         cmd = svn_export()
         self.assertEqual(cmd[2], base_url.format('trunk'))
+
+        desimodel.__version__ = '7.8.9'
+        cmd = svn_export()
+        self.assertEqual(cmd[2], base_url.format('tags/7.8.9'))
+
+        desimodel.__version__ = '7.10'
+        cmd = svn_export()
+        self.assertEqual(cmd[2], base_url.format('tags/7.10'))
+
+        desimodel.__version__ = 'blatfoo'
+        cmd = svn_export()
+        self.assertEqual(cmd[2], base_url.format('trunk'))
+
+        # code version is tag-like, but we purposefully want to install a different version
+        desimodel.__version__ = '0.19.3'
+        cmd = svn_export('branches/test-0.19')
+        self.assertEqual(cmd[2], base_url.format('branches/test-0.19'))
+
+        desimodel.__version__ = self.orig_version
         cmd = svn_export('trunk')
         self.assertEqual(cmd[2], base_url.format('trunk'))
+
         cmd = svn_export('branches/v3')
         self.assertEqual(cmd[2], base_url.format('branches/v3'))
+
         cmd = svn_export('1.2.3')
         self.assertEqual(cmd[2], base_url.format('tags/1.2.3'))
+
+        cmd = svn_export('1.2')
+        self.assertEqual(cmd[2], base_url.format('tags/1.2'))
 
     @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
     def test_assert_svn_exists(self):

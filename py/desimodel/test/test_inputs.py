@@ -6,13 +6,10 @@ import unittest
 import os
 from requests.auth import HTTPDigestAuth
 from ..inputs import docdb, fiberpos, gfa, throughput
+from .. import io
 
-desimodel_available = True
+desimodel_available = os.path.isdir(io.datadir())
 desimodel_message = "The desimodel data set was not detected."
-try:
-    spam = os.environ['DESIMODEL']
-except KeyError:
-    desimodel_available = False
 
 skipMock = False
 try:

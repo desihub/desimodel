@@ -38,6 +38,7 @@ import scipy.special
 
 import astropy.table
 
+import desimodel.io
 
 def whiten_transforms_from_cdf(x, cdf):
     """
@@ -395,8 +396,7 @@ def dome_closed_fractions(start_date, stop_date,
         raise ValueError('Expected start_date < stop_date.')
     replay = replay.split(',')
     # Load tabulated daily weather history.
-    DESIMODEL = os.getenv('DESIMODEL')
-    path = os.path.join(DESIMODEL, 'data', 'weather', 'daily-2007-2017.csv')
+    path = desimodel.io.findfile('weather/daily-2007-2017.csv')
     t = astropy.table.Table.read(path)
     if not len(t) == 365:
         raise ValueError('Invalid weather history length (expected 365).')

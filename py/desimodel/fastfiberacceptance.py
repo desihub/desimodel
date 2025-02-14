@@ -3,6 +3,7 @@ import astropy.io.fits as pyfits
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator, interp1d
 
+import desimodel.io
 
 def gaussian_fwhm(sigma):
     return 2. * np.sqrt(2. * np.log(2.)) * sigma
@@ -18,10 +19,8 @@ class FastFiberAcceptance(object):
     """
     def __init__(self,filename=None):
         if filename is None :
-            if not "DESIMODEL" in os.environ :
-                print("need environment variable DESIMODEL or specify filename in constructor")
-                raise RuntimeError("need environment variable DESIMODEL or specify filename in constructor")
-            filename=os.path.join(os.environ["DESIMODEL"],"data/throughput/galsim-fiber-acceptance.fits")
+            filename = desimodel.io.findfile('throughput/galsim-fiber-acceptance.fits')
+
         hdulist=pyfits.open(filename)
 
         sigma=hdulist["SIGMA"].data.astype('=f8')
