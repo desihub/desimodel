@@ -22,7 +22,6 @@ jobs:
 
         env:
             DESIUTIL_VERSION: 3.5.0
-            DESIMODEL_DATA: branches/test-0.19
 
         steps:
             - name: Install System Packages
@@ -43,11 +42,16 @@ jobs:
                 python -m pip install git+https://github.com/desihub/desiutil.git@${DESIUTIL_VERSION}#egg=desiutil
                 python -m pip cache remove fitsio
                 python -m pip install --no-deps --force-reinstall --ignore-installed 'fitsio${{ matrix.fitsio-version }}'
-                # install data to checkout copy
-                PYTHONPATH=$(pwd)/py:$PYTHONPATH PATH=$(pwd)/bin:$PATH install_desimodel_data --desimodel-version ${DESIMODEL_DATA}
-                # grab surveyops snapshot
-                wget -nv https://data.desi.lbl.gov/public/epo/example_files/surveyops_2.0_ops.tar.gz
-                tar xzf surveyops_2.0_ops.tar.gz
+            - name: Install desimodel data
+              env:
+                DESIMODEL_DATA: branches/test-0.19
+              run: PYTHONPATH=$(pwd)/py:$PYTHONPATH PATH=$(pwd)/bin:$PATH install_desimodel_data --desimodel-version ${DESIMODEL_DATA}
+            - name: Install surveyops snapshot
+              env:
+                SURVEYOPS_VERSION: '2.0'
+              run: |
+                wget -nv https://data.desi.lbl.gov/public/epo/example_files/surveyops_${SURVEYOPS_VERSION}_ops.tar.gz
+                tar xzf surveyops_${SURVEYOPS_VERSION}_ops.tar.gz
             - name: Run the test
               run: DESI_SURVEYOPS=$(pwd) pytest
 
@@ -88,7 +92,7 @@ jobs:
               run: PYTHONPATH=$(pwd)/py:$PYTHONPATH PATH=$(pwd)/bin:$PATH install_desimodel_data --desimodel-version ${DESIMODEL_DATA}
             - name: Install surveyops snapshot
               env:
-                SURVEYOPS_VERSION: 2.0
+                SURVEYOPS_VERSION: '2.0'
               run: |
                 wget -nv https://data.desi.lbl.gov/public/epo/example_files/surveyops_${SURVEYOPS_VERSION}_ops.tar.gz
                 tar xzf surveyops_${SURVEYOPS_VERSION}_ops.tar.gz
