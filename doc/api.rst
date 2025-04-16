@@ -1,6 +1,6 @@
-=========================
-The desimodel package/API
-=========================
+=============
+desimodel API
+=============
 
 .. automodule:: desimodel
     :members:
