@@ -176,7 +176,7 @@ def tileids2pix(nside, tileids, radius=None, per_tile=False):
     tileid or list of tileids instead of table of tiles.
     '''
     tiles = load_tiles()
-    ii = np.in1d(tiles['TILEID'], tileids)
+    ii = np.isin(tiles['TILEID'], tileids)
     if np.count_nonzero(ii) == np.asarray(tileids).size:
         return tiles2pix(nside, tiles[ii], radius=radius, per_tile=per_tile)
     else:
@@ -467,7 +467,7 @@ def pix2tiles(nside, pixels, tiles=None, radius=None):
     ii = list()
     for i in range(len(tiles)):
         tilepix = hp.query_disc(nside, vec[i], radius=np.radians(radius), inclusive=True, nest=True)
-        if np.any(np.in1d(pixels, tilepix)):
+        if np.any(np.isin(pixels, tilepix)):
             ii.append(i)
     return tiles[ii]
 

@@ -255,7 +255,7 @@ class TestIO(unittest.TestCase):
                         np.issubdtype(t2['OBSCONDITIONS'].dtype, np.unsignedinteger) )
         self.assertLess(len(t2), len(t1))
         # All tiles in DESI are also in full set.
-        self.assertTrue(np.all(np.in1d(t2['TILEID'], t1['TILEID'])))
+        self.assertTrue(np.all(np.isin(t2['TILEID'], t1['TILEID'])))
         # I think this is the exact same test as above, except using set theory.
         self.assertEqual(len(set(t2.TILEID) - set(t1.TILEID)), 0)
         t3 = io.load_tiles(onlydesi=False, surveyops=False)
@@ -289,7 +289,7 @@ class TestIO(unittest.TestCase):
         self.assertEqual(tile_cache_id1, tile_cache_id2)
         self.assertLess(len(t2), len(t1))
         # All tiles in DESI are also in full set.
-        self.assertTrue(np.all(np.in1d(t2['TILEID'], t1['TILEID'])))
+        self.assertTrue(np.all(np.isin(t2['TILEID'], t1['TILEID'])))
         t3 = io.load_tiles(onlydesi=False)
         tile_cache_id3 = id(list(io._tiles.values())[0])
         self.assertEqual(tile_cache_id1, tile_cache_id3)

@@ -145,7 +145,7 @@ class GFALocations(object):
         results['GFA_LOC'] = gfa_loc[keep].astype(np.int16)
 
         assert np.all(results['GFA_LOC'] >= 0)
-        assert np.all(np.in1d(results['GFA_LOC'], self.gfa_locations))
+        assert np.all(np.isin(results['GFA_LOC'], self.gfa_locations))
 
         return results
 
