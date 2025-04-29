@@ -169,6 +169,7 @@ class TestIO(unittest.TestCase):
     def test_load_platescale(self):
         """Test loading platescale.txt file.
         """
+        self.assertTrue(os.path.exists(io.findfile('focalplane/platescale.txt')))
         p1 = io.load_platescale()
         p2 = io.load_platescale()
         self.assertTrue(p1 is p2)  #- caching worked
@@ -387,9 +388,9 @@ class TestIO(unittest.TestCase):
 
         self.assertEqual(sorted(tt.dtype.names), sorted(te.colnames))
 
-        for program in set(tf['PROGRAM']):
-            self.assertTrue((program[-1] != ' ') and (program[-1] != b' '))
         for program in set(tt['PROGRAM']):
+            self.assertTrue((program[-1] != ' ') and (program[-1] != b' '))
+        for program in set(te['PROGRAM']):
             self.assertTrue((program[-1] != ' ') and (program[-1] != b' '))
 
 

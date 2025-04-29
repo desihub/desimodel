@@ -116,7 +116,7 @@ jobs:
             - name: Install desimodel data
               env:
                 DESIMODEL_DATA: branches/test-0.19
-              run: PYTHONPATH=$(pwd)/py:$PYTHONPATH PATH=$(pwd)/bin:$PATH install_desimodel_data --desimodel-version ${DESIMODEL_DATA}
+              run: PYTHONPATH=$(pwd)/py:$PYTHONPATH $(pwd)/bin/install_desimodel_data --desimodel-version ${DESIMODEL_DATA}
             - name: Install surveyops snapshot
               env:
                 SURVEYOPS_VERSION: '2.0'
