@@ -407,6 +407,7 @@ def load_platescale():
     ]
     try:
         warnings.warn(infile, UserWarning)
+        warnings.warn(os.getcwd(), UserWarning)
         _platescale = np.loadtxt(infile, usecols=[0, 1, 6, 7, 8], dtype=columns)
     except (IndexError,ValueError):
         # - no "arclength" column in this version of desimodel/data
