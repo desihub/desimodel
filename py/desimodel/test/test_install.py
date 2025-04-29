@@ -94,7 +94,10 @@ class TestInstall(unittest.TestCase):
         """Test updating the RECORD metadata file.
         """
         version = '1.2.3'
+        mock_dir.return_value = os.path.join(self.tmp_dir, 'desimodel')
         os.makedirs(os.path.join(self.tmp_dir, 'desimodel', 'data', 'weather'))
+        added = add_files_to_record('desimodel', version)
+        self.assertEqual(len(added), 0)
         desimodel_meta = os.path.join(self.tmp_dir, f'desimodel-{version}.dist-info')
         os.makedirs(desimodel_meta)
         record_file = os.path.join(desimodel_meta, 'RECORD')
@@ -105,7 +108,6 @@ class TestInstall(unittest.TestCase):
         with open(os.path.join(self.tmp_dir, 'desimodel', 'data', 'weather', 'weather.csv'), 'w') as CSV:
             CSV.write("day,temp\r\n20201212,15.0\r\n")
         self.assertTrue(os.path.exists(record_file))
-        mock_dir.return_value = os.path.join(self.tmp_dir, 'desimodel')
         added = add_files_to_record('desimodel', version)
         self.assertEqual(len(added), 2)
         self.assertEqual(added[0], 'desimodel/data/desi.yaml,sha256=HavE48u9aggYvUYPOmyYVb_pXVBsdHJrwPLtsK7LH04,9')

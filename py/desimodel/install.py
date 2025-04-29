@@ -123,7 +123,10 @@ def add_files_to_record(package, version, data='data', dry_run=False):
     """
     root = default_install_dir()
     site_packages = os.path.dirname(root)
-    meta_record = os.path.join(site_packages, f"{package}-{version}.dist-info", 'RECORD')
+    meta_dir = os.path.join(site_packages, f"{package}-{version}.dist-info")
+    if not os.path.isdir(meta_dir):
+        return []
+    meta_record = os.path.join(meta_dir, 'RECORD')
     lines = list()
     for dirpath, dirnames, filenames in os.walk(os.path.join(root, data)):
         for file in filenames:
@@ -162,14 +165,14 @@ def install(desimodel=None, version=None, svn_checkout=False, dry_run=False):
     Returns
     -------
     :class:`list`
-        The list of files added, in :command:`pip`' RECORD_ metadata format.
+        The list of files added, in :command:`pip` `RECORD`_ metadata format.
 
     Raises
     ------
     :class:`RuntimeError`
         Standard error output from svn export command when status is non-zero.
 
-    .. _RECORD: https://packaging.python.org/en/latest/specifications/recording-installed-packages/#the-record-file
+    .. _`RECORD`: https://packaging.python.org/en/latest/specifications/recording-installed-packages/#the-record-file
     """
     try:
         install_dir = os.environ['DESIMODEL']
