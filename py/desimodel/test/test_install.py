@@ -162,12 +162,12 @@ class TestInstall(unittest.TestCase):
                             install(desimodel='/opt/desimodel')
                         self.assertEqual(str(e.exception), "Mock stderr")
                     Popen.assert_called_once_with(['svn', 'export', 'https://desi.lbl.gov/svn/code/desimodel/trunk/data'], stderr=-1, stdout=-1)
-                with patch('builtins.print') as mock_print:
-                    with patch('desimodel.install.default_install_dir') as mock_dir:
-                        mock_dir.return_value = 'foo'
-                        version='1.2.3'
-                        desimodel_code = os.path.join(self.tmp_dir, 'desimodel')
-                        os.makedirs(desimodel_code)
-                        added = install(desimodel=desimodel_code, version=version, svn_checkout=False, dry_run=True)
-                        mock_print.assert_has_calls([call(f'Installing desimodel data tags/{version} to {desimodel_code}'),
-                                                     call(f'Dry run, would have run "svn export https://desi.lbl.gov/svn/code/desimodel/tags/{version}/data"')])
+                    with patch('builtins.print') as mock_print:
+                        with patch('desimodel.install.default_install_dir') as mock_dir:
+                            mock_dir.return_value = 'foo'
+                            version='1.2.3'
+                            desimodel_code = os.path.join(self.tmp_dir, 'desimodel')
+                            os.makedirs(desimodel_code)
+                            added = install(desimodel=desimodel_code, version=version, svn_checkout=False, dry_run=True)
+                            mock_print.assert_has_calls([call(f'Installing desimodel data tags/{version} to {desimodel_code}'),
+                                                        call(f'Dry run, would have run "svn export https://desi.lbl.gov/svn/code/desimodel/tags/{version}/data"')])
