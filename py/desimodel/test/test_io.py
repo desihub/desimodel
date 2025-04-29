@@ -4,7 +4,6 @@
 """
 import os
 import sys
-import uuid
 import tempfile
 import datetime
 import numpy as np
@@ -30,7 +29,7 @@ desimodel_message = "The desimodel data set was not detected."
 # Try to load the DESI_SURVEYOPS environment variable.
 #
 surveyops_available = True
-surveyops_message = "The DESI_SURVEYOPS directory was not detected"
+surveyops_message = "The DESI_SURVEYOPS directory was not detected."
 try:
     _ = os.environ['DESI_SURVEYOPS']
 except KeyError:
@@ -42,9 +41,9 @@ class TestIO(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        global specter_available, desimodel_available
         cls.specter_available = specter_available
         cls.desimodel_available = desimodel_available
+        cls.surveyops_available = surveyops_available
         cls.tempdir = tempfile.mkdtemp(prefix='testio-')
         cls.trimdir = os.path.join(cls.tempdir, 'trim')
         cls.testfile = os.path.join(cls.tempdir, 'test-abc123.fits')
@@ -172,7 +171,7 @@ class TestIO(unittest.TestCase):
         self.assertTrue(os.path.exists(io.findfile('focalplane/platescale.txt')))
         p1 = io.load_platescale()
         p2 = io.load_platescale()
-        self.assertTrue(p1 is p2)  #- caching worked
+        self.assertIs(p1, p2)  #- caching worked
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_get_focalplane_dates(self):
