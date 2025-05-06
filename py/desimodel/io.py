@@ -415,7 +415,6 @@ def load_platescale():
         rzs = Table.read(findfile("focalplane/rzsn.txt"), format="ascii")
 
         from scipy.interpolate import interp1d
-        from numpy.lib.recfunctions import append_fields
 
         arclength = interp1d(rzs["R"], rzs["S"], kind="quadratic")
         _platescale["arclength"] = arclength(_platescale["radius"])

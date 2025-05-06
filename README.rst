@@ -46,53 +46,29 @@ Due to its size, it is kept in the DESI svn repository.  The public, read-only
 URL for svn access is https://desi.lbl.gov/svn/code/desimodel, with the usual
 trunk/, tags/ and branches/ directories.
 
-Once you have installed this package, using either pip or desiInstall, there
-are two ways to install the accompanying data.  **For most every case, you
+Once you have installed this package, using either ``pip`` or ``desiInstall``,
+the associated data must also be installed.  **For most every case, you
 should install the tag in svn that corresponds to the same tag in git.**
 
-There are two methods to install the data, "by hand" and "scripted."
+Installing this package will create the command-line script
+``install_desimodel_data``.  It should appear in your ``PATH`` assuming
+a successful install.  ``install_desimodel_data --help`` will show you
+how to use this script.
 
-For "by hand" installs:
+You can also call the function ``desimodel.install.install()`` from
+inside other Python code.
 
-1. Find the tag you are interested in::
+When desimodel is used with other downstream code, it might become
+necessary to set the environment variable ``DESIMODEL``.
+You should set the ``DESIMODEL`` environment variable to point to the directory
+containing the data/ directory.
 
-       svn ls https://desi.lbl.gov/svn/code/desimodel/tags
+``install_desimodel_data`` with default options, may install the data in
+a relatively obscure location. To find the value to set for ``DESIMODEL``,
+you can do the following::
 
-    We'll use ``0.10.3`` in the examples below.
+    python -c "from importlib.resources import files; print(str(files('desimodel')))"
 
-2. Define the environment variable ``DESIMODEL``::
-
-       export DESIMODEL=/Users/desicollaborator/Data/desimodel/0.10.3
-
-   Note how the tag name is included.
-
-3. Create the directory and switch to it::
-
-       mkdir -p $DESIMODEL
-       cd $DESIMODEL
-
-4. Export::
-
-       svn export https://desi.lbl.gov/svn/code/desimodel/tags/0.10.3/data
-
-   Note how the tag name is the *same* as in the ``DESIMODEL`` variable.
-
-5. You may now want to add ``DESIMODEL`` to your shell startup scripts.
-
-For "scripted" installs:
-
-* Installing this package will create the command-line script
-  ``install_desimodel_data``.  It should appear in your ``PATH`` assuming
-  a successful install.  ``install_desimodel_data --help`` will show you
-  how to use this script.  Basically it is just a wrapper on the "by hand"
-  method described above.
-* You can also call the function ``desimodel.install.install()`` from
-  inside other Python code.
-
-Regardless of which method you choose, you should set the ``DESIMODEL``
-environment variable to point to the directory containing the data/
-directory.  The only real difference among all these methods is exactly
-*when* you define the ``DESIMODEL`` variable.
 
 Data Files
 ~~~~~~~~~~
