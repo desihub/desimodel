@@ -5,7 +5,9 @@ desimodel Release Notes
 0.19.4 (unreleased)
 -------------------
 
-* No changes yet.
+* Allow desimodel data to be removed by pip (PR `#183`_).
+
+.. _`#183`: https://github.com/desihub/desimodel/pull/183
 
 0.19.3 (2025-03-18)
 -------------------
