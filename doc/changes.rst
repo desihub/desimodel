@@ -5,9 +5,11 @@ desimodel Release Notes
 0.19.4 (unreleased)
 -------------------
 
+* Numpy 2 compatibility (PR `#182`_).
 * Allow desimodel data to be removed by pip (PR `#183`_).
 
 .. _`#183`: https://github.com/desihub/desimodel/pull/183
+.. _`#182`: https://github.com/desihub/desimodel/pull/182
 
 0.19.3 (2025-03-18)
 -------------------
