@@ -7,7 +7,7 @@ import shutil
 from tempfile import mkdtemp
 from subprocess import CalledProcessError
 import unittest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, call
 from ..install import default_install_dir, assert_svn_exists, svn_export, install, add_files_to_record
 import desimodel
 
@@ -154,14 +154,36 @@ class TestInstall(unittest.TestCase):
                 pass
             with patch('desimodel.install.assert_svn_exists'):
                 with patch('os.chdir'):
-                    with patch('desimodel.install.Popen') as Popen:
-                        proc = Popen.return_value
-                        proc.communicate.return_value = ('Mock stdout', 'Mock stderr')
-                        proc.returncode = 1
-                        with self.assertRaises(RuntimeError) as e:
-                            install(desimodel='/opt/desimodel')
-                        self.assertEqual(str(e.exception), "Mock stderr")
-                    Popen.assert_called_once_with(['svn', 'export', 'https://desi.lbl.gov/svn/code/desimodel/trunk/data'], stderr=-1, stdout=-1)
+                    #
+                    # Test with version explicitly set.
+                    #
+                    for v in ('0.19.3', '0.20.1.dev1234', 'branches/test-0.19', 'trunk'):
+                        svn_command = svn_export(v)
+                        with patch('desimodel.install.Popen') as Popen:
+                            proc = Popen.return_value
+                            proc.communicate.return_value = ('Mock stdout', 'Mock stderr')
+                            proc.returncode = 1
+                            with self.assertRaises(RuntimeError) as e:
+                                install(desimodel='/opt/desimodel', version=v)
+                            self.assertEqual(str(e.exception), "Mock stderr")
+                        Popen.assert_called_once_with(svn_command, stderr=-1, stdout=-1)
+                    #
+                    # Test with version obtained from desimodel.__version__.
+                    #
+                    for v in ('0.19.3', '0.20.1.dev1234'):
+                        desimodel.__version__ = v
+                        svn_command = svn_export()
+                        with patch('desimodel.install.Popen') as Popen:
+                            proc = Popen.return_value
+                            proc.communicate.return_value = ('Mock stdout', 'Mock stderr')
+                            proc.returncode = 1
+                            with self.assertRaises(RuntimeError) as e:
+                                install(desimodel='/opt/desimodel')
+                            self.assertEqual(str(e.exception), "Mock stderr")
+                        Popen.assert_called_once_with(svn_command, stderr=-1, stdout=-1)
+                    #
+                    # Test dry_run mode.
+                    #
                     with patch('builtins.print') as mock_print:
                         with patch('desimodel.install.default_install_dir') as mock_dir:
                             mock_dir.return_value = 'foo'
@@ -170,4 +192,4 @@ class TestInstall(unittest.TestCase):
                             os.makedirs(desimodel_code)
                             added = install(desimodel=desimodel_code, version=version, svn_checkout=False, dry_run=True)
                             mock_print.assert_has_calls([call(f'Installing desimodel data tags/{version} to {desimodel_code}'),
-                                                        call(f'Dry run, would have run "svn export https://desi.lbl.gov/svn/code/desimodel/tags/{version}/data"')])
+                                                         call(f'Dry run, would have run "svn export https://desi.lbl.gov/svn/code/desimodel/tags/{version}/data"')])
