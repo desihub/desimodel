@@ -443,7 +443,7 @@ def device_compare(fpold, fpnew, check):
     if len(newdiff) > 0:
         rows = np.arange(len(fpnew), dtype=np.int32)[fpnew["LOCATION"] in newdiff]
         for r in rows:
-            loc = fnew[r]["LOCATION"]
+            loc = fpnew[r]["LOCATION"]
             out[loc] = dict()
             out[loc]["new"] = fpnew[r]
             out[loc]["old"] = None
