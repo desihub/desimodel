@@ -15,6 +15,7 @@ from astropy.table import Table, vstack
 from . import docdb
 from ..io import datadir
 
+
 def update(testdir=None, seed=2):
     '''
     Update positioner to fiber number mapping from DocDB
@@ -113,7 +114,7 @@ def update(testdir=None, seed=2):
         fiberpos['SLIT'] = p
         fiberpos['SPECTRO'] = p
         iipos = (fiberpos['DEVICE_TYPE'] == 'POS')
-        ### fiberpos['device'] += p*len(fiberpos)
+        # fiberpos['device'] += p*len(fiberpos)
         for c in range(1,11):
             ii = (cassettes['sp'+str(p)] == c)
             assert np.count_nonzero(ii) == 1
@@ -132,7 +133,7 @@ def update(testdir=None, seed=2):
         fiberpos['LOCATION'] = p*1000 + fiberpos['DEVICE']
 
         #- Petal 0 is at the "bottom"; See DESI-0530
-        phi = np.radians((7*36 + 36*p)%360)
+        phi = np.radians((7*36 + 36*p) % 360)
         x = np.cos(phi)*fiberpos['X'] - np.sin(phi)*fiberpos['Y']
         y = np.sin(phi)*fiberpos['X'] + np.cos(phi)*fiberpos['Y']
         fiberpos['X'] = x
@@ -235,10 +236,10 @@ def update(testdir=None, seed=2):
     POS = (fiberpos['DEVICE_TYPE'] == 'POS')
     FIF = (fiberpos['DEVICE_TYPE'] == 'FIF')
     ETC = (fiberpos['DEVICE_TYPE'] == 'ETC')
-    import pylab as P
+    import matplotlib.pylab as P
     P.jet()     #- With apologies to viridis
     P.figure(figsize=(7,7))
-    P.scatter(fiberpos['X'][POS], fiberpos['Y'][POS], c=fiberpos['FIBER'][POS]%500, edgecolor='none', s=20)
+    P.scatter(fiberpos['X'][POS], fiberpos['Y'][POS], c=fiberpos['FIBER'][POS] % 500, edgecolor='none', s=20)
     # P.scatter(fiberpos['x'][FIF], fiberpos['y'][FIF], s=5, color='k')
     # P.plot(fiberpos['x'][ETC], fiberpos['y'][ETC], 'kx', ms=3)
     P.grid(alpha=0.2, color='k')

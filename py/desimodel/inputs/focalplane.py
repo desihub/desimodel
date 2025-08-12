@@ -349,11 +349,9 @@ def create(
                 # This must not be a POS device
                 out_fp[row]["FIBER"] = -1
             else:
-                out_fp[row]["FIBER"] = (
-                    fp[petal][dev]["PETAL"] * 500
-                    + fp[petal][dev]["SLITBLOCK"] * 25
-                    + fp[petal][dev]["BLOCKFIBER"]
-                )
+                out_fp[row]["FIBER"] = (fp[petal][dev]["PETAL"] * 500 +
+                                        fp[petal][dev]["SLITBLOCK"] * 25 +
+                                        fp[petal][dev]["BLOCKFIBER"])
             if (fp[petal][dev]["DEVICE_ID"] != "NONE") or fillfake:
                 for col in dev_cols:
                     if col in fp[petal][dev]:

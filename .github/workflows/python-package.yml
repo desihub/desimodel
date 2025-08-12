@@ -204,7 +204,7 @@ jobs:
                 python-version: ${{ matrix.python-version }}
             - name: Install Python dependencies
               run: python -m pip install --upgrade pip setuptools wheel pycodestyle
-            - name: Test the style; failures are allowed
-              # This is equivalent to an allowed falure.
-              continue-on-error: true
-              run: pycodestyle --statistics --count py/desimodel
+            - name: Test the style
+              # Uncomment this to allow failures
+              # continue-on-error: true
+              run: pycodestyle --statistics py/desimodel

@@ -89,8 +89,7 @@ def get_radius_deg(x, y):
 
     radius = np.sqrt(x**2 + y**2)
     platescale = load_platescale()
-    fn = interp1d(platescale['radius'], platescale['theta'],
-                                    kind='quadratic')
+    fn = interp1d(platescale['radius'], platescale['theta'], kind='quadratic')
     degree = fn(radius).astype(float)
     return degree
 
@@ -448,4 +447,3 @@ def fiber_area_arcsec2(x, y):
     raz = 0.5 * fiber_dia / az_scale
     fiber_area = (np.pi * rr * raz)
     return fiber_area
-

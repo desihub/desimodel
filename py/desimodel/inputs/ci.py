@@ -43,10 +43,8 @@ def update():
             corners[camera]['z'].append(z)
 
     #- Convert that into the GFA-corners table format
-    citable = Table(
-        names = ('GFA_LOC', 'CORNER', 'X', 'Y', 'Z', 'Q', 'S', 'RADIUS_DEG'),
-        dtype = ('int','int','float','float','float','float','float','float')
-        )
+    citable = Table(names=('GFA_LOC', 'CORNER', 'X', 'Y', 'Z', 'Q', 'S', 'RADIUS_DEG'),
+                    dtype=('int', 'int', 'float', 'float', 'float', 'float', 'float', 'float'))
 
     for icam in range(5):
         cam = 'C'+str(icam+1)

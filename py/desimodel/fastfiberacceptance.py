@@ -13,7 +13,10 @@ class FastFiberAcceptance(object):
     This class reads an input fits file generated with specsim.fitgalsim
     ($DESIMODEL/data/throughput/galsim-fiber-acceptance.fits)
     and instanciates RegularGridInterpolator objects for 2D and 3D interpolation
-    of the pre-computed galsim fiber acceptance as a function of sigma (atmosphere+telescope blur, in um on focal surface), fiber offset from source (in um on focal surface), and half light radius (in arcsec) from extended source.
+    of the pre-computed galsim fiber acceptance as a function of sigma
+    (atmosphere+telescope blur, in um on focal surface),
+    fiber offset from source (in um on focal surface),
+    and half light radius (in arcsec) from extended source.
     The average and rms interpolation function for POINT,DISK and BULGE profiles
     are loaded.
     """
@@ -49,19 +52,39 @@ class FastFiberAcceptance(object):
                 assert source == 'POINT'
 
                 # POINT: zero offset.
-                self.psf_seeing_func[source] = interp1d(data[::-1,0], sigma[::-1], kind='linear', copy=True, bounds_error=False, assume_sorted=False, fill_value=(sigma[-1],sigma[0]))
-
-                self.fiber_acceptance_func[source] = RegularGridInterpolator(points=(sigma,offset),values=data,method="linear",bounds_error=False,fill_value=None)
-                self.fiber_acceptance_rms_func[source] = RegularGridInterpolator(points=(sigma,offset),values=rms,method="linear",bounds_error=False,fill_value=None)
+                self.psf_seeing_func[source] = interp1d(data[::-1, 0], sigma[::-1],
+                                                        kind='linear',
+                                                        copy=True,
+                                                        bounds_error=False,
+                                                        assume_sorted=False,
+                                                        fill_value=(sigma[-1], sigma[0]))
+                self.fiber_acceptance_func[source] = RegularGridInterpolator(points=(sigma, offset),
+                                                                             values=data,
+                                                                             method="linear",
+                                                                             bounds_error=False,
+                                                                             fill_value=None)
+                self.fiber_acceptance_rms_func[source] = RegularGridInterpolator(points=(sigma, offset),
+                                                                                 values=rms,
+                                                                                 method="linear",
+                                                                                 bounds_error=False,
+                                                                                 fill_value=None)
             elif dim == 3 :
                 # Not POINT
-                self.fiber_acceptance_func[source] = RegularGridInterpolator(points=(hlradius,sigma,offset),values=data,method="linear",bounds_error=False,fill_value=None)
-                self.fiber_acceptance_rms_func[source] = RegularGridInterpolator(points=(hlradius,sigma,offset),values=rms,method="linear",bounds_error=False,fill_value=None)
+                self.fiber_acceptance_func[source] = RegularGridInterpolator(points=(hlradius, sigma, offset),
+                                                                             values=data,
+                                                                             method="linear",
+                                                                             bounds_error=False,
+                                                                             fill_value=None)
+                self.fiber_acceptance_rms_func[source] = RegularGridInterpolator(points=(hlradius, sigma, offset),
+                                                                                 values=rms,
+                                                                                 method="linear",
+                                                                                 bounds_error=False,
+                                                                                 fill_value=None)
 
         hdulist.close()
 
     def psf_seeing_sigma(self, psf_fiberfrac):
-        return  self.psf_seeing_func["POINT"](psf_fiberfrac)
+        return self.psf_seeing_func["POINT"](psf_fiberfrac)
 
     def psf_seeing_fwhm(self, psf_fiberfrac):
         sigma = self.psf_seeing_func["POINT"](psf_fiberfrac)
@@ -96,15 +119,11 @@ class FastFiberAcceptance(object):
             hlradii=np.atleast_1d(hlradii)
             assert(hlradii.shape==sigmas.shape)
 
-
-
         res = None
         if source == "POINT" :
-
             res = self.fiber_acceptance_rms_func[source](np.array([sigmas.ravel(),offsets.ravel()]).T)
 
         else :
-
             if hlradii is None :
                 if source == "DISK" :
                     hlradii = 0.45 * np.ones(sigmas.shape)
@@ -173,10 +192,9 @@ class FastFiberAcceptance(object):
 
 if __name__ == '__main__':
     import numpy as np
-    import pylab as pl
+    import matplotlib.pylab as pl
 
     from fastfiberacceptance import FastFiberAcceptance
-
 
     x = FastFiberAcceptance()
 

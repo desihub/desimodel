@@ -93,9 +93,10 @@ class TestWeather(unittest.TestCase):
     def test_sample_timeseries(self):
         """Test sampling white noise with uniform 1D PDF.
         """
+        def psd(freq):
+            return np.ones_like(freq)
         x = np.linspace(-1, 1, 500)
         pdf = np.ones_like(x)
-        psd = lambda freq: np.ones_like(freq)
         n, nb = 1000000, 10
         gen = np.random.RandomState(1)
         xs = w.sample_timeseries(x, pdf, psd, n, gen=gen)
@@ -113,9 +114,10 @@ class TestWeather(unittest.TestCase):
     def test_same_seed(self):
         """Same seed should give same samplesself.
         """
+        def psd(freq):
+            return np.ones_like(freq)
         x_grid = np.linspace(-1, 1, 500)
         pdf_grid = np.ones_like(x_grid)
-        psd = lambda freq: np.ones_like(freq)
         n_sample = 1000
         gen1 = np.random.RandomState(seed=123)
         x1 = w.sample_timeseries(x_grid, pdf_grid, psd, n_sample, gen=gen1)
@@ -126,9 +128,10 @@ class TestWeather(unittest.TestCase):
     def test_different_seed(self):
         """Different seeds should give different samples.
         """
+        def psd(freq):
+            return np.ones_like(freq)
         x_grid = np.linspace(-1, 1, 500)
         pdf_grid = np.ones_like(x_grid)
-        psd = lambda freq: np.ones_like(freq)
         n_sample = 1000
         gen1 = np.random.RandomState(seed=1)
         x1 = w.sample_timeseries(x_grid, pdf_grid, psd, n_sample, gen=gen1)

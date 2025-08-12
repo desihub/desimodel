@@ -192,4 +192,5 @@ class TestInstall(unittest.TestCase):
                             os.makedirs(desimodel_code)
                             added = install(desimodel=desimodel_code, version=version, svn_checkout=False, dry_run=True)
                             mock_print.assert_has_calls([call(f'Installing desimodel data tags/{version} to {desimodel_code}'),
-                                                         call(f'Dry run, would have run "svn export https://desi.lbl.gov/svn/code/desimodel/tags/{version}/data"')])
+                                                         call('Dry run, would have run "svn export ' +
+                                                              f'https://desi.lbl.gov/svn/code/desimodel/tags/{version}/data"')])

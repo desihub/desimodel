@@ -100,4 +100,3 @@ def generate_random_centroid_offsets(rms_offset=default_offset, seed=123):
     """
     return generate_random_vector_field(
         rms_offset, exponent=-1.0, n=256, seed=seed, smoothing=0.02)
-

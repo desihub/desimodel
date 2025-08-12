@@ -57,8 +57,7 @@ def get_svn_version(desimodel_version=None):
     if desimodel_version is None:
         from . import __version__ as this_version
         # check for tag-like versions x.y.z or x.y
-        if (re.match(r'^\d+\.\d+\.\d+$', this_version) is not None or
-            re.match(r'\d+\.\d+$', this_version) is not None):
+        if (re.match(r'^\d+\.\d+\.\d+$', this_version) is not None or re.match(r'\d+\.\d+$', this_version) is not None):
             svn_version = 'tags/' + this_version
         # otherwise use trunk if version wasn't specified
         else:

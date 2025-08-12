@@ -290,20 +290,16 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True,
             have_dmdata = os.path.isfile(checkfile)
             if have_dmdata:
                 if have_local:
-                    msg = (
-                        "$DESI_SURVEYOPS/(trunk)/ops/{0} is shadowed by a local"
-                        + " file. Choosing $DESI_SURVEYOPS file."
-                        + ' Use tilesfile="./{0}" if you want the local copy'
-                        + " instead."
-                    ).format(tilesfile)
+                    msg = ("$DESI_SURVEYOPS/(trunk)/ops/{0} is shadowed by a local" +
+                           " file. Choosing $DESI_SURVEYOPS file." +
+                           ' Use tilesfile="./{0}" if you want the local copy' +
+                           " instead.").format(tilesfile)
                     warnings.warn(msg)
                 tilesfile = checkfile
 
             if not (have_local or have_dmdata):
-                msg = (
-                    'File "{}" does not exist locally or in '
-                    + "$DESI_SURVEYOPS/(trunk)/ops/!"
-                ).format(tilesfile)
+                msg = ('File "{}" does not exist locally or in ' +
+                       "$DESI_SURVEYOPS/(trunk)/ops/!").format(tilesfile)
                 raise FileNotFoundError(msg)
 
     # - standarize path location
@@ -421,7 +417,9 @@ def load_platescale():
 
     return _platescale
 
+
 _focalplane = None
+
 
 def ensure_focalplane_loaded():
     global _focalplane
@@ -588,8 +586,7 @@ def load_focalplane(time=None, get_time_range=False):
             focalplane_props["st_file"],
             format="ascii.ecsv"
         )
-        if (focalplane_props['ex_file'].endswith('.json') or
-            focalplane_props['ex_file'].endswith('.json.gz')):
+        if (focalplane_props['ex_file'].endswith('.json') or focalplane_props['ex_file'].endswith('.json.gz')):
             import json
             loadroutine = json.load
         else:
@@ -598,7 +595,7 @@ def load_focalplane(time=None, get_time_range=False):
             # First try to load uncompressed
             with open(focalplane_props["ex_file"], "r") as f:
                 focalplane_props["ex_data"] = loadroutine(f)
-        except:
+        except UnicodeDecodeError:
             # Must be gzipped
             with gzip.open(focalplane_props["ex_file"], "rb") as f:
                 focalplane_props["ex_data"] = loadroutine(f)

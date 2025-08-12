@@ -5,7 +5,8 @@
 
 import unittest
 import numpy as np
-from desimodel.fastfiberacceptance import FastFiberAcceptance
+from ..fastfiberacceptance import FastFiberAcceptance
+
 
 class TestFiberAcceptance(unittest.TestCase):
     """Test FastFiberAcceptance
@@ -15,18 +16,15 @@ class TestFiberAcceptance(unittest.TestCase):
         """Test interface options for tiles2pix"""
 
         fa = FastFiberAcceptance()
-        platescale=70. #um/arsec
-        fwhm_arcsec_to_sigma_um = platescale/2.35
+        platescale = 70.  #um/arsec
+        fwhm_arcsec_to_sigma_um = platescale / 2.35
 
         # only a test of type conversion
-        val = fa.value("POINT",sigmas=1.1*fwhm_arcsec_to_sigma_um)
-        assert(np.isscalar(val))
-        val = fa.value("POINT",sigmas=[1.1*fwhm_arcsec_to_sigma_um,1.4*fwhm_arcsec_to_sigma_um])
-        assert(val.size==2)
-        val = fa.value("POINT",sigmas=np.linspace(1.0,1.5,3)*fwhm_arcsec_to_sigma_um)
-        assert(val.size==3)
-        val = fa.value("POINT",sigmas=np.linspace(1.0,1.5,3)*fwhm_arcsec_to_sigma_um,offsets=np.zeros(3))
-        assert(val.size==3)
-
-if __name__ == '__main__':
-    unittest.main()
+        val = fa.value("POINT", sigmas=1.1*fwhm_arcsec_to_sigma_um)
+        self.assertTrue(np.isscalar(val))
+        val = fa.value("POINT", sigmas=[1.1*fwhm_arcsec_to_sigma_um, 1.4*fwhm_arcsec_to_sigma_um])
+        self.assertEqual(val.size, 2)
+        val = fa.value("POINT", sigmas=np.linspace(1.0, 1.5, 3)*fwhm_arcsec_to_sigma_um)
+        self.assertEqual(val.size, 3)
+        val = fa.value("POINT", sigmas=np.linspace(1.0, 1.5, 3)*fwhm_arcsec_to_sigma_um, offsets=np.zeros(3))
+        self.assertEqual(val.size, 3)

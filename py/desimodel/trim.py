@@ -116,23 +116,21 @@ def trim_spectra(indir, outdir):
     assert os.path.basename(indir) == 'spectra'
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-    for filename in (
-        'spec-ABmag22.0.dat',
-        'spec-elg-o2flux-8e-17-average-line-ratios.dat',
-        'spec-lrg-z0.8-zmag20.38.dat',
-        'spec-qso-z1.5-rmag22.81.dat',
-        'spec-sky.dat',
-        'spec-sky-grey.dat',
-        'spec-sky-bright.dat',
-        'ZenithExtinction-KPNO.dat',
-        ):
+    for filename in ('spec-ABmag22.0.dat',
+                     'spec-elg-o2flux-8e-17-average-line-ratios.dat',
+                     'spec-lrg-z0.8-zmag20.38.dat',
+                     'spec-qso-z1.5-rmag22.81.dat',
+                     'spec-sky.dat',
+                     'spec-sky-grey.dat',
+                     'spec-sky-bright.dat',
+                     'ZenithExtinction-KPNO.dat'):
         i = 0
         with open(os.path.join(indir, filename)) as infx:
             with open(os.path.join(outdir, filename), 'w') as outfx:
                 for line in infx:
                     if line.startswith('#'):
                         outfx.write(line)
-                    elif i%20 == 0:
+                    elif i % 20 == 0:
                         outfx.write(line)
                     i += 1
 

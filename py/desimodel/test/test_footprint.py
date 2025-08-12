@@ -45,7 +45,6 @@ class TestFootprint(unittest.TestCase):
         with self.assertRaises(KeyError):
             footprint.pass2program(999)
 
-
     def test_program2pass(self):
         '''Test footprint.program2pass().
         '''
@@ -94,12 +93,11 @@ class TestFootprint(unittest.TestCase):
         """
         tx = io.load_tiles()
         tilefile = list(io._tiles.keys())[0]
-        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
-                                      ('RA', 'f8'),
-                                      ('DEC', 'f8'),
-                                      ('IN_DESI', 'i2'),
-                                      ('PROGRAM', (str, 6)),
-                                  ])
+        tiles = np.zeros((4, ), dtype=[('TILEID', 'i2'),
+                                       ('RA', 'f8'),
+                                       ('DEC', 'f8'),
+                                       ('IN_DESI', 'i2'),
+                                       ('PROGRAM', (str, 6)),])
 
         tiles['TILEID'] = np.arange(4) + 1
         tiles['RA'] = [0.0, 1.0, 2.0, 3.0]
@@ -117,12 +115,11 @@ class TestFootprint(unittest.TestCase):
         self.assertEqual((ra, dec), (1.0, -1.0))
 
     def test_is_point_in_desi_mock(self):
-        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
-                                      ('RA', 'f8'),
-                                      ('DEC', 'f8'),
-                                      ('IN_DESI', 'i2'),
-                                      ('PROGRAM', (str, 6)),
-                                  ])
+        tiles = np.zeros((4, ), dtype=[('TILEID', 'i2'),
+                                       ('RA', 'f8'),
+                                       ('DEC', 'f8'),
+                                       ('IN_DESI', 'i2'),
+                                       ('PROGRAM', (str, 6)),])
 
         tiles['TILEID'] = np.arange(4) + 1
         tiles['RA'] = [0.0, 1.0, 2.0, 3.0]
@@ -158,12 +155,11 @@ class TestFootprint(unittest.TestCase):
     def test_find_points_in_tiles(self):
         rng = np.random.RandomState(1234)
 
-        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
-                                      ('RA', 'f8'),
-                                      ('DEC', 'f8'),
-                                      ('IN_DESI', 'i2'),
-                                      ('PROGRAM', (str, 6)),
-                                  ])
+        tiles = np.zeros((4, ), dtype=[('TILEID', 'i2'),
+                                       ('RA', 'f8'),
+                                       ('DEC', 'f8'),
+                                       ('IN_DESI', 'i2'),
+                                       ('PROGRAM', (str, 6)),])
 
         tiles['TILEID'] = np.arange(4) + 1
         tiles['RA'] = [0.0, 1.0, 2.0, 3.0]
@@ -195,12 +191,11 @@ class TestFootprint(unittest.TestCase):
         self.assertEqual(sorted(list1), sorted(lists[0]))
 
     def test_find_tiles_over_point(self):
-        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
-                                      ('RA', 'f8'),
-                                      ('DEC', 'f8'),
-                                      ('IN_DESI', 'i2'),
-                                      ('PROGRAM', (str, 6)),
-                                  ])
+        tiles = np.zeros((4, ), dtype=[('TILEID', 'i2'),
+                                       ('RA', 'f8'),
+                                       ('DEC', 'f8'),
+                                       ('IN_DESI', 'i2'),
+                                       ('PROGRAM', (str, 6)),])
 
         tiles['TILEID'] = np.arange(4) + 1
         tiles['RA'] = [0.0, 1.0, 2.0, 3.0]
@@ -265,12 +260,11 @@ class TestFootprint(unittest.TestCase):
     def test_partial_pixels(self):
         """Check weights assigned to HEALPixels that partially overlap tiles.
         """
-        tiles = np.zeros((4,), dtype=[('TILEID', 'i2'),
-                                      ('RA', 'f8'),
-                                      ('DEC', 'f8'),
-                                      ('IN_DESI', 'i2'),
-                                      ('PROGRAM', (str, 6)),
-                                  ])
+        tiles = np.zeros((4, ), dtype=[('TILEID', 'i2'),
+                                       ('RA', 'f8'),
+                                       ('DEC', 'f8'),
+                                       ('IN_DESI', 'i2'),
+                                       ('PROGRAM', (str, 6)),])
 
         #ADM I found a full (170) partial (406) and empty (1000) HEALPixel at nside=256
         #ADM that are also full, partial, empty at nside=64.
@@ -346,4 +340,4 @@ class TestFootprint(unittest.TestCase):
         self.assertEqual(list(indesi), indesi2)
 
         # Just interesting to see how many tiles overlap a random point?
-        ### print(np.bincount([len(i) for i in ret]))
+        # print(np.bincount([len(i) for i in ret]))

@@ -35,7 +35,7 @@ def pass2program(tilepass, surveyops=False):
     global _pass2program
     # ADM this function isn't useful if looking in the DESI_SURVEYOPS
     # ADM directory as the real data is not ordered by pass.
-    if surveyops == True:
+    if surveyops:
         msg = "Function is not meaningful when looking in the DESI_SURVEYOPS "
         msg += "directory as the real, Main Survey, data is not ordered by pass"
         log.critical(msg)
@@ -105,8 +105,8 @@ def radec2pix(nside, ra, dec):
     if np.isnan(np.sum(theta)) :
         raise ValueError("some NaN theta values")
 
-    if np.sum((theta < 0)|(theta > np.pi))>0 :
-        raise ValueError("some theta values are outside [0,pi]: {}".format(theta[(theta < 0)|(theta > np.pi)]))
+    if np.sum((theta < 0) | (theta > np.pi)) > 0:
+        raise ValueError("some theta values are outside [0,pi]: {}".format(theta[(theta < 0) | (theta > np.pi)]))
 
     return hp.ang2pix(nside, theta, phi, nest=True)
 
@@ -159,7 +159,6 @@ def tiles2pix(nside, tiles=None, radius=None, per_tile=False, fact=2**7):
             break
     else:
         raise ValueError('tiles table needs DEC or TILEDEC')
-
 
     theta, phi = np.radians(90-dec), np.radians(ra)
     vec = hp.ang2vec(theta, phi)

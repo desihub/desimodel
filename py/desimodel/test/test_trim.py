@@ -197,7 +197,7 @@ class TestTrim(unittest.TestCase):
         fits['open'].assert_has_calls([call('/in/throughput/thru-b.fits'),
                                        call('/in/throughput/thru-r.fits'),
                                        call('/in/throughput/thru-z.fits')],
-                                       any_order=True)
+                                      any_order=True)
         fits['HDUList']().writeto.assert_has_calls([call('/out/throughput/thru-b.fits'),
                                                     call('/out/throughput/thru-r.fits'),
                                                     call('/out/throughput/thru-z.fits')])

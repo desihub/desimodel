@@ -190,7 +190,12 @@ class TestIO(unittest.TestCase):
             time=datetime.datetime(2010, 1, 15, tzinfo=utc))
         self.assertEqual(type(fp), Table)
         self.assertEqual(len(fp), 5020)
-        self.assertEqual(fp.colnames, ['PETAL', 'DEVICE', 'LOCATION', 'PETAL_ID', 'DEVICE_ID', 'DEVICE_TYPE', 'SLITBLOCK', 'BLOCKFIBER', 'CABLE', 'CONDUIT', 'FIBER', 'FWHM', 'FRD', 'ABS', 'OFFSET_X', 'OFFSET_Y', 'OFFSET_T', 'OFFSET_P', 'LENGTH_R1', 'LENGTH_R2', 'MAX_T', 'MIN_T', 'MAX_P', 'MIN_P'])
+        self.assertEqual(fp.colnames, ['PETAL', 'DEVICE', 'LOCATION', 'PETAL_ID',
+                                       'DEVICE_ID', 'DEVICE_TYPE', 'SLITBLOCK',
+                                       'BLOCKFIBER', 'CABLE', 'CONDUIT', 'FIBER',
+                                       'FWHM', 'FRD', 'ABS', 'OFFSET_X', 'OFFSET_Y',
+                                       'OFFSET_T', 'OFFSET_P', 'LENGTH_R1',
+                                       'LENGTH_R2', 'MAX_T', 'MIN_T', 'MAX_P', 'MIN_P'])
         self.assertEqual(type(exclude), dict)
         self.assertEqual(set(exclude.keys()), set(['legacy']))
         self.assertEqual(type(state), Table)
@@ -374,7 +379,6 @@ class TestIO(unittest.TestCase):
         for program in set(te['PROGRAM']):
             self.assertTrue((program[-1] != ' ') and (program[-1] != b' '))
 
-
     @unittest.skipUnless(surveyops_available, surveyops_message)
     def validate_tile_load(self):
         """Validate different tile loading schemes.
@@ -391,7 +395,6 @@ class TestIO(unittest.TestCase):
             self.assertTrue((program[-1] != ' ') and (program[-1] != b' '))
         for program in set(te['PROGRAM']):
             self.assertTrue((program[-1] != ' ') and (program[-1] != b' '))
-
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_trim_data(self):

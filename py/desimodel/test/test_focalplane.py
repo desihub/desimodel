@@ -76,14 +76,21 @@ class TestFocalplane(unittest.TestCase):
         self.assertLess(np.max(np.abs(yy-y)), 1e-4)
 
     def test_xy2qs(self):
-        x, y = qs2xy(0.0, 100);   self.assertAlmostEqual(y, 0.0)
-        x, y = qs2xy(90.0, 100);  self.assertAlmostEqual(x, 0.0)
-        x, y = qs2xy(180.0, 100); self.assertAlmostEqual(y, 0.0)
-        x, y = qs2xy(270.0, 100); self.assertAlmostEqual(x, 0.0)
+        x, y = qs2xy(0.0, 100)
+        self.assertAlmostEqual(y, 0.0)
+        x, y = qs2xy(90.0, 100)
+        self.assertAlmostEqual(x, 0.0)
+        x, y = qs2xy(180.0, 100)
+        self.assertAlmostEqual(y, 0.0)
+        x, y = qs2xy(270.0, 100)
+        self.assertAlmostEqual(x, 0.0)
 
-        q, s = xy2qs(0.0, 100.0); self.assertAlmostEqual(q, 90.0)
-        q, s = xy2qs(100.0, 0.0); self.assertAlmostEqual(q, 0.0)
-        q, s = xy2qs(-100.0, 100.0); self.assertAlmostEqual(q, 135.0)
+        q, s = xy2qs(0.0, 100.0)
+        self.assertAlmostEqual(q, 90.0)
+        q, s = xy2qs(100.0, 0.0)
+        self.assertAlmostEqual(q, 0.0)
+        q, s = xy2qs(-100.0, 100.0)
+        self.assertAlmostEqual(q, 135.0)
 
         n = 100
         s = 410*np.sqrt(np.random.uniform(0, 1, size=n))
@@ -98,7 +105,6 @@ class TestFocalplane(unittest.TestCase):
         dq = (qq-q) % 360
         dq[dq>180] -= 360
         self.assertLess(np.max(np.abs(dq)), 1e-4)
-
 
     def test_xy2radec_roundtrip(self):
         """Tests the consistency between the conversion functions
@@ -244,7 +250,7 @@ class TestFocalplane(unittest.TestCase):
         x, y = np.random.uniform(-100, 100, (2,10))
         ok = f.xy_on_gfa(0, x, y)
         self.assertEqual(len(ok), len(x))
-        self.assertTrue(np.all(ok == False))
+        self.assertFalse(np.any(ok))
         ok = f.xy_on_gfa(1, x[0], y[0])
         self.assertFalse(ok)
 
