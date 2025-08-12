@@ -13,12 +13,12 @@ from .. import io
 #
 # Try to import specter.
 #
-specter_available = True
-specter_message = "The specter package was not detected."
-try:
-    import specter
-except ImportError:
-    specter_available = False
+# specter_available = True
+# specter_message = "The specter package was not detected."
+# try:
+#     import specter
+# except ImportError:
+#     specter_available = False
 #
 # Check if desimodel data is available.
 #
@@ -41,7 +41,7 @@ class TestIO(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls.specter_available = specter_available
+        # cls.specter_available = specter_available
         cls.desimodel_available = desimodel_available
         cls.surveyops_available = surveyops_available
         cls.tempdir = tempfile.mkdtemp(prefix='testio-')
@@ -102,32 +102,32 @@ class TestIO(unittest.TestCase):
         self.assertEqual(len(io._tiles), 0)
 
     #- test requires both specter and desimodel data
-    @unittest.skipUnless(specter_available, specter_message)
-    @unittest.skipUnless(desimodel_available, desimodel_message)
-    def test_load_throughput(self):
-        """Test loading of throughput files.
-        """
-        for channel in ('b', 'r', 'z'):
-            t = io.load_throughput(channel)
-            ww = np.arange(t.wavemin, t.wavemax, 0.1)
-            msg = f'{channel} has negative throughput'
-            self.assertTrue(np.all(t.fiberinput_throughput(ww)>=0.0), msg)
-            self.assertTrue(np.all(t.hardware_throughput(ww)>=0.0), msg)
-            self.assertTrue(np.all(t.thru(ww)>=0.0), msg)
-            t1 = t.atmospheric_throughput(ww, airmass=1.0)
-            t2 = t.atmospheric_throughput(ww, airmass=2.0)
-            self.assertTrue(np.all(t1>=0.0))
-            self.assertTrue(np.all(t2>=0.0))
-            self.assertTrue(np.all(t1>=t2))
+    # @unittest.skipUnless(specter_available, specter_message)
+    # @unittest.skipUnless(desimodel_available, desimodel_message)
+    # def test_load_throughput(self):
+    #     """Test loading of throughput files.
+    #     """
+    #     for channel in ('b', 'r', 'z'):
+    #         t = io.load_throughput(channel)
+    #         ww = np.arange(t.wavemin, t.wavemax, 0.1)
+    #         msg = f'{channel} has negative throughput'
+    #         self.assertTrue(np.all(t.fiberinput_throughput(ww)>=0.0), msg)
+    #         self.assertTrue(np.all(t.hardware_throughput(ww)>=0.0), msg)
+    #         self.assertTrue(np.all(t.thru(ww)>=0.0), msg)
+    #         t1 = t.atmospheric_throughput(ww, airmass=1.0)
+    #         t2 = t.atmospheric_throughput(ww, airmass=2.0)
+    #         self.assertTrue(np.all(t1>=0.0))
+    #         self.assertTrue(np.all(t2>=0.0))
+    #         self.assertTrue(np.all(t1>=t2))
 
     #- test requires both specter and desimodel data
-    @unittest.skipUnless(specter_available, specter_message)
-    @unittest.skipUnless(desimodel_available, desimodel_message)
-    def test_load_psf(self):
-        """Test loading of PSF files.
-        """
-        for channel in ('b', 'r', 'z'):
-            t = io.load_psf(channel)
+    # @unittest.skipUnless(specter_available, specter_message)
+    # @unittest.skipUnless(desimodel_available, desimodel_message)
+    # def test_load_psf(self):
+    #     """Test loading of PSF files.
+    #     """
+    #     for channel in ('b', 'r', 'z'):
+    #         t = io.load_psf(channel)
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_load_desiparams(self):

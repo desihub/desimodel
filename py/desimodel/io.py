@@ -15,7 +15,7 @@ import yaml
 import gzip
 import numpy as np
 from astropy.io import fits
-from astropy.table import Table, Column
+from astropy.table import Table
 
 from desiutil.log import get_logger
 
@@ -30,56 +30,56 @@ class MissingEnvVar(Exception):
     pass
 
 
-def load_throughput(channel):
-    """Returns specter Throughput object for the given channel 'b', 'r', or 'z'.
+# def load_throughput(channel):
+#     """Returns specter Throughput object for the given channel 'b', 'r', or 'z'.
 
-    Parameters
-    ----------
-    channel : {'b', 'r', 'z'}
-        Spectrograph channel.
+#     Parameters
+#     ----------
+#     channel : {'b', 'r', 'z'}
+#         Spectrograph channel.
 
-    Returns
-    -------
-    Throughput
-        A specter throughput object.
-    """
-    import specter.throughput
+#     Returns
+#     -------
+#     Throughput
+#         A specter throughput object.
+#     """
+#     import specter.throughput
 
-    channel = channel.lower()
-    global _thru
-    if channel not in _thru:
-        thrufile = findfile("throughput/thru-{0}.fits".format(channel))
-        _thru[channel] = specter.throughput.load_throughput(thrufile)
-    return _thru[channel]
+#     channel = channel.lower()
+#     global _thru
+#     if channel not in _thru:
+#         thrufile = findfile("throughput/thru-{0}.fits".format(channel))
+#         _thru[channel] = specter.throughput.load_throughput(thrufile)
+#     return _thru[channel]
 
 
 #
 #
 #
-_psf = dict()
+# _psf = dict()
 
 
-def load_psf(channel):
-    """Returns specter PSF object for the given channel 'b', 'r', or 'z'.
+# def load_psf(channel):
+#     """Returns specter PSF object for the given channel 'b', 'r', or 'z'.
 
-    Parameters
-    ----------
-    channel : {'b', 'r', 'z'}
-        Spectrograph channel.
+#     Parameters
+#     ----------
+#     channel : {'b', 'r', 'z'}
+#         Spectrograph channel.
 
-    Returns
-    -------
-    PSF
-        A specter PSF object.
-    """
-    import specter.psf
+#     Returns
+#     -------
+#     PSF
+#         A specter PSF object.
+#     """
+#     import specter.psf
 
-    channel = channel.lower()
-    global _psf
-    if channel not in _psf:
-        psffile = findfile("specpsf/psf-{0}.fits".format(channel))
-        _psf[channel] = specter.psf.load_psf(psffile)
-    return _psf[channel]
+#     channel = channel.lower()
+#     global _psf
+#     if channel not in _psf:
+#         psffile = findfile("specpsf/psf-{0}.fits".format(channel))
+#         _psf[channel] = specter.psf.load_psf(psffile)
+#     return _psf[channel]
 
 
 #
