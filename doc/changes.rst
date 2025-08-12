@@ -7,9 +7,11 @@ desimodel Release Notes
 
 * Numpy 2 compatibility (PR `#182`_).
 * Allow desimodel data to be removed by pip (PR `#183`_).
+* Remove dependency on `specter`_; explicitly add dependency on configobj_.
 
 .. _`#183`: https://github.com/desihub/desimodel/pull/183
 .. _`#182`: https://github.com/desihub/desimodel/pull/182
+.. _configobj: https://configobj.readthedocs.io/en/latest/
 
 0.19.3 (2025-03-18)
 -------------------
