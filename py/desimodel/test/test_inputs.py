@@ -5,7 +5,7 @@
 import unittest
 import os
 from requests.auth import HTTPDigestAuth
-from ..inputs import docdb, fiberpos, gfa, throughput
+from ..inputs import ci, docdb, fiberpos, focalplane, focalplane_sync, focalplane_utils, gfa, throughput
 from .. import io
 
 desimodel_available = os.path.isdir(io.datadir())
