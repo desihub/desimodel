@@ -22,7 +22,7 @@ from desiutil.log import get_logger
 log = get_logger()
 
 
-_thru = dict()
+# _thru = dict()
 
 
 # ADM raise a custom exception when an environment variable is missing.
@@ -650,9 +650,10 @@ def load_focalplane(time=None, get_time_range=False):
 
 def reset_cache():
     """Reset I/O cache."""
-    global _thru, _psf, _params, _gfa, _fiberpos, _tiles, _platescale, _focalplane
-    _thru = dict()
-    _psf = dict()
+    global _params, _gfa, _fiberpos, _tiles, _platescale, _focalplane
+    # global _thru, _psf, _params, _gfa, _fiberpos, _tiles, _platescale, _focalplane
+    # _thru = dict()
+    # _psf = dict()
     _params = None
     _gfa = None
     _fiberpos = None
