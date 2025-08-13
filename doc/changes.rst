@@ -2,13 +2,19 @@
 desimodel Release Notes
 =======================
 
-0.19.4 (unreleased)
+0.20.0 (unreleased)
 -------------------
 
 * Numpy 2 compatibility (PR `#182`_).
 * Allow desimodel data to be removed by pip (PR `#183`_).
-* Remove dependency on `specter`_; explicitly add dependency on configobj_.
+* Package infrastructure updates (PR `#190`_):
 
+  - Add ``pyproject.toml``, update ``setup.cfg``, etc.
+  - Remove dependency on `specter`_
+  - Explicitly add dependency on configobj_
+  - Python code style clean-up
+
+.. _`#190`: https://github.com/desihub/desimodel/pull/190
 .. _`#183`: https://github.com/desihub/desimodel/pull/183
 .. _`#182`: https://github.com/desihub/desimodel/pull/182
 .. _configobj: https://configobj.readthedocs.io/en/latest/
