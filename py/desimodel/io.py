@@ -22,11 +22,9 @@ from desiutil.log import get_logger
 log = get_logger()
 
 
-# _thru = dict()
-
-
-# ADM raise a custom exception when an environment variable is missing.
 class MissingEnvVar(Exception):
+    """Exception raised when an environment variable is missing.
+    """
     pass
 
 
@@ -51,12 +49,6 @@ class MissingEnvVar(Exception):
 #         thrufile = findfile("throughput/thru-{0}.fits".format(channel))
 #         _thru[channel] = specter.throughput.load_throughput(thrufile)
 #     return _thru[channel]
-
-
-#
-#
-#
-# _psf = dict()
 
 
 # def load_psf(channel):
@@ -122,7 +114,6 @@ def load_desiparams():
 #
 #
 #
-# Added and still needs to be committed and pushed to desihub
 _gfa = None
 
 
@@ -238,7 +229,7 @@ def load_tiles(onlydesi=True, extra=False, tilesfile=None, cache=True,
     programs : :class:`list` or `str`, optional
         Pass a list of program names to restrict to only those programs,
         e.g. ["DARK", "BACKUP"].
-    surveyops : :class:`bool`
+    surveyops : :class:`bool`, optional
         If ``True`` then find the relevant path for the $DESI_SURVEYOPS
         directory rather than the $DESIMODEL directory.
 
@@ -489,6 +480,7 @@ def ensure_focalplane_loaded():
             }
         ))
 
+
 def get_focalplane_dates():
     """Returns the dates of new focalplane definitions.
 
@@ -508,7 +500,8 @@ def get_focalplane_dates():
     """
     ensure_focalplane_loaded()
     global _focalplane
-    return [dt for dt,fdt,v in _focalplane]
+    return [dt for dt, fdt, v in _focalplane]
+
 
 def load_focalplane(time=None, get_time_range=False):
     """Load the focalplane state that is valid for the given time.
@@ -518,6 +511,9 @@ def load_focalplane(time=None, get_time_range=False):
     time : :class:`~datetime.datetime`
         The time to query with explicit timezone. Default to current time
         (:meth:`~datetime.datetime.now`) with timezone UTC.
+    get_time_range : :class:`bool`, optional
+        Include the time range in return values.
+
 
     Returns
     -------
@@ -646,11 +642,9 @@ def load_focalplane(time=None, get_time_range=False):
     return rtn
 
 def reset_cache():
-    """Reset I/O cache."""
+    """Reset I/O cache.
+    """
     global _params, _gfa, _fiberpos, _tiles, _platescale, _focalplane
-    # global _thru, _psf, _params, _gfa, _fiberpos, _tiles, _platescale, _focalplane
-    # _thru = dict()
-    # _psf = dict()
     _params = None
     _gfa = None
     _fiberpos = None
@@ -727,8 +721,7 @@ def findfile(filename, surveyops=False):
     ----------
     filename : :class:`str`
         Name of the file, relative to the desimodel data directory.
-
-    surveyops : :class:`bool`
+    surveyops : :class:`bool`, optional
         If ``True`` then find the relevant path for the $DESI_SURVEYOPS
         directory rather than the $DESIMODEL directory.
 
@@ -751,7 +744,7 @@ def datadir(surveyops=False):
 
     Parameters
     ----------
-    surveyops : :class:`bool`
+    surveyops : :class:`bool`, optional
         If ``True`` then find the relevant path for the $DESI_SURVEYOPS
         directory rather than the $DESIMODEL directory.
 
