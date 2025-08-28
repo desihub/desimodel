@@ -7,11 +7,12 @@ desimodel Release Notes
 
 * Numpy 2 compatibility (PR `#182`_).
 * Allow desimodel data to be removed by pip (PR `#183`_).
-* Package infrastructure updates (PR `#191`_):
+* Package infrastructure updates (PR `#191`_, `#192`_):
 
   - Add ``pyproject.toml``, update ``setup.cfg``, etc.
   - Explicitly add dependency on configobj_
 
+.. _`#192`: https://github.com/desihub/desimodel/pull/192
 .. _`#191`: https://github.com/desihub/desimodel/pull/191
 .. _`#183`: https://github.com/desihub/desimodel/pull/183
 .. _`#182`: https://github.com/desihub/desimodel/pull/182
