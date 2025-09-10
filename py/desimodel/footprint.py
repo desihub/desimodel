@@ -496,8 +496,9 @@ def is_point_in_desi(tiles, ra, dec, radius=None, return_tile_index=False, worke
             must match the size of `ra`.
         radius (float, optional): Tile radius in degrees;
             if `None` use :func:`desimodel.focalplane.get_tile_radius_deg`.
-        return_tile_index (bool, optional): If ``True``, return the index of
-            the nearest tile in tiles array.
+        return_tile_index (bool, optional): If ``True``, also return indices of
+            the nearest overlapping tiles in tiles array. For points that
+            do not overlap a tile, the index should be ignored.
         workers (int, optional): Number of workers to pass to KDTree search. 
             Defaults to -1 i.e. all available threads.
 
@@ -525,6 +526,7 @@ def is_point_in_desi(tiles, ra, dec, radius=None, return_tile_index=False, worke
 
     #indesi = d < threshold
     indesi = np.isfinite(d)
+
     if return_tile_index:
         return indesi, i
     else:

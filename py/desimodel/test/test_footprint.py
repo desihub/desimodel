@@ -136,11 +136,27 @@ class TestFootprint(unittest.TestCase):
         ret = footprint.is_point_in_desi(tiles, (0.0,), (-2.0,), radius=1.605, return_tile_index=True)
         self.assertEqual(ret, ([True], [0]))
 
+        ret = footprint.is_point_in_desi(tiles, 1.1, -1.1, return_tile_index=True)
+        self.assertEqual(ret, (True, 1))
+
+        ret = footprint.is_point_in_desi(tiles, 1.9, 0.9, return_tile_index=False)
+        self.assertEqual(ret, True)
+
+        #- points not in DESI, index is meaningless
+        badindex = len(tiles)  # largest valid index is len(tiles)-1
         ret = footprint.is_point_in_desi(tiles, 0.0, -3.7, radius=1.605, return_tile_index=True)
-        self.assertEqual(ret, (False, 0))
+        self.assertEqual(ret, (False, badindex))
 
         ret = footprint.is_point_in_desi(tiles, -3.0, -2.0, radius=1.605, return_tile_index=True)
-        self.assertEqual(ret, (False, 0))
+        self.assertEqual(ret, (False, badindex))
+
+        ret = footprint.is_point_in_desi(tiles, -3.0, -2.0, radius=1.605, return_tile_index=False)
+        self.assertEqual(ret, False)
+
+        #- one point in DESI, one point not
+        ret = footprint.is_point_in_desi(tiles, [2.0, -3.0], [1.0, -2.0], radius=1.605, return_tile_index=True)
+        self.assertEqual(list(ret[0]), [True,False])
+        self.assertEqual(list(ret[1]), [2,4])
 
         ret = footprint.is_point_in_desi(tiles, tiles['RA'], tiles['DEC'], radius=1.605)
         self.assertEqual(len(ret), len(tiles))
