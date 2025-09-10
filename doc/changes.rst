@@ -7,13 +7,17 @@ desimodel Release Notes
 
 * Numpy 2 compatibility (PR `#182`_).
 * Allow desimodel data to be removed by pip (PR `#183`_).
+* Parallelize ``is_point_in_desi`` (PR `#187`_, `#193`_).
+  Note: changes behavior of indices for points that don't overlap tiles.
 * Package infrastructure updates (PR `#191`_, `#192`_):
 
   - Add ``pyproject.toml``, update ``setup.cfg``, etc.
   - Explicitly add dependency on configobj_
 
+.. _`#193`: https://github.com/desihub/desimodel/pull/193
 .. _`#192`: https://github.com/desihub/desimodel/pull/192
 .. _`#191`: https://github.com/desihub/desimodel/pull/191
+.. _`#187`: https://github.com/desihub/desimodel/pull/187
 .. _`#183`: https://github.com/desihub/desimodel/pull/183
 .. _`#182`: https://github.com/desihub/desimodel/pull/182
 .. _configobj: https://configobj.readthedocs.io/en/latest/
