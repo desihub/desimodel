@@ -5,7 +5,9 @@ desimodel Release Notes
 0.19.4 (unreleased)
 -------------------
 
-* No changes yet.
+* Update FP sync scripts to check for errors in the output logs (PR `#195`_).
+
+.. _`#195`: https://github.com/desihub/desimodel/pull/195
 
 0.19.3 (2025-03-18)
 -------------------
