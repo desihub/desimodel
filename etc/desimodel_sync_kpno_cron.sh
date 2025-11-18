@@ -28,7 +28,7 @@ sync_status="FAILED"
 echo "Running at ${logdate}" > "${logfile}"
 
 # Use the latest default desiconda version
-desiconda=/software/datasystems/desiconda/default
+desiconda=/software/datasystems/desiconda/kpno-20250320-2.2.1.dev
 
 # Get the latest stable version of desimodules
 desimodules=$(ls -d ${desiconda}/modulefiles/desimodules/2* | sort -V | tail -n 1 | xargs basename)
@@ -47,7 +47,6 @@ export DESIMODEL_CENTRAL_REPO=${DESI_ROOT}/survey/ops/desimodel/trunk
 module use ${DESI_PRODUCT_ROOT}/modulefiles
 module load desiconda
 module load desimodules/${desimodules}
-module swap -f desimodel/0.19.2
 
 echo "Using desimodel data svn trunk at ${svntrunk}" >> "${logfile}"
 export DESIMODEL="${svntrunk}"
