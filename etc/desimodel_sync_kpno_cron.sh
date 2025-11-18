@@ -22,6 +22,9 @@ logdate="$(date -u --iso-8601=seconds)"
 logname="sync_${logdate}"
 logfile="${logdir}/${logname}"
 
+# Default sync status until confirmed otherwise
+sync_status="FAILED"
+
 echo "Running at ${logdate}" > "${logfile}"
 
 # Use the latest default desiconda version
@@ -79,6 +82,7 @@ END
 )
     result=$(python3 -c "$PYTHON_CODE")
     if [ $? -eq 0 ]; then
+        sync_status="SUCCESSFUL"
         echo "SUCCESS" >> "${logfile}"
         # Now commit result
         mesg="Appending DB sync ${calfile} to current focalplane model"
@@ -98,7 +102,7 @@ slack_email=${DESI_SLACK_MAIL_DESIMODEL_SYNC}
 if [ "x${slack_email}" = "x" ]; then
     echo "Environment variable DESI_SLACK_MAIL_DESIMODEL_SYNC not set- skipping notifications" >> "${logfile}"
 else
-    cat ${logfile} | mailx -s "Focalplane sync: ${logdate}" ${slack_email}
+    cat ${logfile} | mailx -s "Focalplane sync ${sync_status}: ${logdate}" ${slack_email}
     echo "Sent log to slack" >> ${logfile}
 fi
 
