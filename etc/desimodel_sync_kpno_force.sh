@@ -22,10 +22,13 @@ logdate="$(date -u --iso-8601=seconds)"
 logname="sync_${logdate}"
 logfile="${logdir}/${logname}"
 
+# Default sync status until confirmed otherwise
+sync_status="FAILED"
+
 echo "Running at ${logdate}" > "${logfile}"
 
 # Use the latest default desiconda version
-desiconda=/software/datasystems/desiconda/default
+desiconda=/software/datasystems/desiconda/kpno-20250320-2.2.1.dev
 
 # Get the latest stable version of desimodules
 desimodules=$(ls -d ${desiconda}/modulefiles/desimodules/2* | sort -V | tail -n 1 | xargs basename)
@@ -44,7 +47,6 @@ export DESIMODEL_CENTRAL_REPO=${DESI_ROOT}/survey/ops/desimodel/trunk
 module use ${DESI_PRODUCT_ROOT}/modulefiles
 module load desiconda
 module load desimodules/${desimodules}
-module swap -f desimodel/0.19.2
 
 echo "Using desimodel data svn trunk at ${svntrunk}" >> "${logfile}"
 export DESIMODEL="${svntrunk}"
@@ -67,7 +69,7 @@ svn up "${svntrunk}/data" >> "${logfile}"
 # Run it, without committing result.
 echo "Forcing creation of new focalplane model!" >> "${logfile}"
 
-eval ${fpsync} --calib_file ${calpath} --commit --reset >> "${logfile}" 2>&1
+eval ${fpsync} --calib_file ${calpath} --reset >> "${logfile}" 2>&1
 if [ $? -ne 0 ]; then
     echo "Focalplane sync failed" >> "${logfile}"
 else
@@ -81,6 +83,7 @@ END
 )
     result=$(python3 -c "$PYTHON_CODE")
     if [ $? -eq 0 ]; then
+        sync_status="SUCCESSFUL"
         echo "SUCCESS" >> "${logfile}"
         # Now commit result
         mesg="Appending DB sync ${calfile} to current focalplane model"
@@ -100,7 +103,7 @@ slack_email=${DESI_SLACK_MAIL_DESIMODEL_SYNC}
 if [ "x${slack_email}" = "x" ]; then
     echo "Environment variable DESI_SLACK_MAIL_DESIMODEL_SYNC not set- skipping notifications" >> "${logfile}"
 else
-    cat ${logfile} | mailx -s "Focalplane sync: ${logdate}" ${slack_email}
+    cat ${logfile} | mailx -s "Focalplane sync ${sync_status}: ${logdate}" ${slack_email}
     echo "Sent log to slack" >> ${logfile}
 fi
 
