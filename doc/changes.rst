@@ -14,6 +14,9 @@ desimodel Release Notes
   - Add ``pyproject.toml``, update ``setup.cfg``, etc.
   - Explicitly add dependency on configobj_
 
+* Update focalplane sync scripts to catch errors in logs (PR `#195`_).
+
+.. _`#195`: https://github.com/desihub/desimodel/pull/195
 .. _`#193`: https://github.com/desihub/desimodel/pull/193
 .. _`#192`: https://github.com/desihub/desimodel/pull/192
 .. _`#191`: https://github.com/desihub/desimodel/pull/191
