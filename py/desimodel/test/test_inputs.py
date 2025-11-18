@@ -3,20 +3,14 @@
 """Test desimodel.inputs
 """
 import unittest
+from unittest.mock import patch
 import os
 from requests.auth import HTTPDigestAuth
-from ..inputs import docdb, fiberpos, gfa, throughput
+from ..inputs import ci, docdb, fiberpos, focalplane, focalplane_sync, focalplane_utils, gfa, throughput
 from .. import io
 
 desimodel_available = os.path.isdir(io.datadir())
 desimodel_message = "The desimodel data set was not detected."
-
-skipMock = False
-try:
-    from unittest.mock import patch, MagicMock
-except ImportError:
-    # Python 2
-    skipMock = True
 
 
 class TestInputs(unittest.TestCase):
@@ -29,7 +23,6 @@ class TestInputs(unittest.TestCase):
         self.assertEqual(docdb._xls_col2int('A'), 0)
         self.assertEqual(docdb._xls_col2int('AA'), 26)
 
-    @unittest.skipIf(skipMock, "Skipping test that requires unittest.mock.")
     def test_docdb__auth(self):
         with patch('netrc.netrc') as netrc:
             n = netrc.return_value

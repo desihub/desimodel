@@ -484,7 +484,7 @@ def _embed_sphere(ra, dec):
     return np.array((x, y, z)).T
 
 
-def is_point_in_desi(tiles, ra, dec, radius=None, return_tile_index=False):
+def is_point_in_desi(tiles, ra, dec, radius=None, return_tile_index=False, workers = -1):
     """If a point (`ra`, `dec`) is within `radius` distance from center of any
     tile, it is in DESI.
 
@@ -496,8 +496,11 @@ def is_point_in_desi(tiles, ra, dec, radius=None, return_tile_index=False):
             must match the size of `ra`.
         radius (float, optional): Tile radius in degrees;
             if `None` use :func:`desimodel.focalplane.get_tile_radius_deg`.
-        return_tile_index (bool, optional): If ``True``, return the index of
-            the nearest tile in tiles array.
+        return_tile_index (bool, optional): If ``True``, also return indices of
+            the nearest overlapping tiles in tiles array. For points that
+            do not overlap a tile, the index should be ignored.
+        workers (int, optional): Number of workers to pass to KDTree search. 
+            Defaults to -1 i.e. all available threads.
 
     Returns:
         Return ``True`` if points given by `ra`, `dec` lie in the set of `tiles`.
@@ -519,16 +522,18 @@ def is_point_in_desi(tiles, ra, dec, radius=None, return_tile_index=False):
     if not xyz.flags['C_CONTIGUOUS']:
         xyz = xyz.copy()
 
-    d, i = tree.query(xyz, k=1)
+    d, i = tree.query(xyz, k=1, distance_upper_bound = threshold, workers = workers)
 
-    indesi = d < threshold
+    #indesi = d < threshold
+    indesi = np.isfinite(d)
+
     if return_tile_index:
         return indesi, i
     else:
         return indesi
 
 
-def find_tiles_over_point(tiles, ra, dec, radius=None):
+def find_tiles_over_point(tiles, ra, dec, radius=None, workers = -1):
     """Return a list of indices of tiles that covers the points.
 
     This function is optimized to query a lot of points.
@@ -556,7 +561,7 @@ def find_tiles_over_point(tiles, ra, dec, radius=None):
     if not xyz.flags['C_CONTIGUOUS']:
         xyz = xyz.copy()
 
-    indices = tree.query_ball_point(xyz, threshold)
+    indices = tree.query_ball_point(xyz, threshold, workers = workers)
     return indices
 
 
@@ -576,7 +581,7 @@ def find_points_in_tiles(tiles, ra, dec, radius=None):
     return find_points_radec(tiles['RA'], tiles['DEC'], ra, dec, radius)
 
 
-def find_points_radec(telra, teldec, ra, dec, radius = None):
+def find_points_radec(telra, teldec, ra, dec, radius = None, workers = -1):
     """Return a list of indices of points that are within a radius of an arbitrary telra, teldec.
 
     This function is optimized to query a lot of points with a single telra and teldec.
@@ -612,7 +617,7 @@ def find_points_radec(telra, teldec, ra, dec, radius = None):
     if not xyz.flags['C_CONTIGUOUS']:
         xyz = xyz.copy()
 
-    indices = tree.query_ball_point(xyz, threshold)
+    indices = tree.query_ball_point(xyz, threshold, workers = workers)
     return indices
 
 
