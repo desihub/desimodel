@@ -68,7 +68,10 @@ svn up "${svntrunk}/data" >> "${logfile}"
 
 # Run it, without committing result.
 eval ${fpsync} --calib_file ${calpath} >> "${logfile}" 2>&1
-if [ $? -ne 0 ]; then
+
+# Check for clean execution and no errors in the output log.
+nerr=`grep -c ERROR ${logfile}`
+if [ $? -ne 0 ] || [ ${nerr} -ne 0 ]; then
     echo "Focalplane sync failed" >> "${logfile}"
 else
     echo "Focalplane sync completed" >> "${logfile}"
