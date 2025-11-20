@@ -22,10 +22,13 @@ logdate="$(date -u --iso-8601=seconds)"
 logname="sync_${logdate}"
 logfile="${logdir}/${logname}"
 
+# Default sync status until confirmed otherwise
+sync_status="FAILED"
+
 echo "Running at ${logdate}" > "${logfile}"
 
 # Use the latest default desiconda version
-desiconda=/software/datasystems/desiconda/default
+desiconda=/software/datasystems/desiconda/kpno-20250320-2.2.1.dev
 
 # Get the latest stable version of desimodules
 desimodules=$(ls -d ${desiconda}/modulefiles/desimodules/2* | sort -V | tail -n 1 | xargs basename)
@@ -34,7 +37,6 @@ echo "Using default desiconda:  ${desiconda}" >> "${logfile}"
 echo "Using latest stable version of desimodules:  ${desimodules}" >> "${logfile}"
 
 # Set up environment
-
 export DESI_PRODUCT_ROOT="${desiconda}"
 export DESI_ROOT=/data/datasystems
 export DESI_TARGET=${DESI_ROOT}/target
@@ -44,7 +46,25 @@ export DESIMODEL_CENTRAL_REPO=${DESI_ROOT}/survey/ops/desimodel/trunk
 module use ${DESI_PRODUCT_ROOT}/modulefiles
 module load desiconda
 module load desimodules/${desimodules}
-module swap -f desimodel/0.19.2
+
+# 2025-11-19: this hack is needed by cron to set up the paths. Investigate...
+module swap -f desiutil/3.5.0
+module swap -f desitree/0.7.0
+module swap -f specter/0.10.1
+module swap -f gpu_specter/0.2.1
+module swap -f desimodel/0.19.3
+module swap -f desitarget/2.9.0
+module swap -f specsim/v0.17
+module swap -f desispec/0.69.0
+module swap -f desisim/0.38.1
+module swap -f fiberassign/5.7.2
+module swap -f desisurvey/0.20.0
+module swap -f surveysim/0.12.6
+module swap -f redrock/0.20.4
+module swap -f redrock-templates/0.9.1
+module swap -f desimeter/0.7.1
+module swap -f simqso/v1.3.0
+module swap -f speclite/v0.20
 
 echo "Using desimodel data svn trunk at ${svntrunk}" >> "${logfile}"
 export DESIMODEL="${svntrunk}"
@@ -66,7 +86,12 @@ svn up "${svntrunk}/data" >> "${logfile}"
 
 # Run it, without committing result.
 eval ${fpsync} --calib_file ${calpath} >> "${logfile}" 2>&1
-if [ $? -ne 0 ]; then
+syncstatus=$?
+
+# Check for clean execution and no errors in the output log.
+nerr=`grep -c ERROR ${logfile}`
+
+if [ ${syncstatus} -ne 0 ] || [ ${nerr} -ne 0 ]; then
     echo "Focalplane sync failed" >> "${logfile}"
 else
     echo "Focalplane sync completed" >> "${logfile}"
@@ -79,6 +104,7 @@ END
 )
     result=$(python3 -c "$PYTHON_CODE")
     if [ $? -eq 0 ]; then
+        sync_status="SUCCESSFUL"
         echo "SUCCESS" >> "${logfile}"
         # Now commit result
         mesg="Appending DB sync ${calfile} to current focalplane model"
@@ -98,7 +124,7 @@ slack_email=${DESI_SLACK_MAIL_DESIMODEL_SYNC}
 if [ "x${slack_email}" = "x" ]; then
     echo "Environment variable DESI_SLACK_MAIL_DESIMODEL_SYNC not set- skipping notifications" >> "${logfile}"
 else
-    cat ${logfile} | mailx -s "Focalplane sync: ${logdate}" ${slack_email}
+    cat ${logfile} | mailx -s "Focalplane sync ${sync_status}: ${logdate}" ${slack_email}
     echo "Sent log to slack" >> ${logfile}
 fi
 
