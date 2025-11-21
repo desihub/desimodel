@@ -784,7 +784,7 @@ def _check_datadir():
     """Print warning message if desimodel data directory doesn't exist"""
     _datadir = datadir()
     if not os.path.isdir(_datadir):
-        log.warning(f'Missing {_datadir}; please run "install_desimodel_data" from the command line or "desimodel.install.main()" from a python prompt; see https://github.com/desihub/desimodel for details.')
+        log.warning(f'Missing {_datadir}; please run "install_desimodel_data" from the command line or "desimodel.install.install()" from a python prompt; see https://github.com/desihub/desimodel for details.')
         return False
     else:
         return True
