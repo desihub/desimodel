@@ -4,11 +4,13 @@
 """
 import os
 import sys
+from io import StringIO   # Python io, not desimodel.io
 import tempfile
 import datetime
 import numpy as np
 from astropy.table import Table
 import unittest
+import unittest.mock
 from .. import io
 #
 # Try to import specter.
@@ -403,3 +405,19 @@ class TestIO(unittest.TestCase):
             trim.trim_data(indir, self.trimdir)
             self.assertTrue(os.path.isdir(self.trimdir))
             self.assertGreater(len(list(os.walk(self.trimdir))), 1)
+
+    def test_check_datadir(self):
+        '''Test if io._check_datadir agrees with testing framework desimodel data detection'''
+        self.assertEqual(desimodel_available, io._check_datadir())
+
+    @unittest.mock.patch.object(io.log, 'warning')
+    @unittest.mock.patch('os.path.isdir')
+    def test_check_datadir_patch(self, mock_isdir, mock_warn):
+        '''Test io._check_datadir by patching os.path.isdir'''
+        mock_isdir.return_value = True
+        self.assertTrue(io._check_datadir())
+        mock_warn.assert_not_called()  # dir exists, no warning
+
+        mock_isdir.return_value = False
+        self.assertFalse(io._check_datadir())
+        mock_warn.assert_called()      # missing dir, warning called

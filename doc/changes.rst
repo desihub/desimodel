@@ -15,7 +15,9 @@ desimodel Release Notes
   - Explicitly add dependency on configobj_
 
 * Update focalplane sync scripts to catch errors in logs (PR `#195`_).
+* Log warning message if desimodel data isn't installed (PR `#197`_).
 
+.. _`#197`: https://github.com/desihub/desimodel/pull/197
 .. _`#195`: https://github.com/desihub/desimodel/pull/195
 .. _`#193`: https://github.com/desihub/desimodel/pull/193
 .. _`#192`: https://github.com/desihub/desimodel/pull/192
