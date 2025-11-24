@@ -2,7 +2,7 @@
 desimodel Release Notes
 =======================
 
-0.20.0 (unreleased)
+0.20.0 (2025-11-24)
 -------------------
 
 * Numpy 2 compatibility (PR `#182`_).
