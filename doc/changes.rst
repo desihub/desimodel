@@ -10,6 +10,8 @@ desimodel Release Notes
 0.20.0 (2025-11-24)
 -------------------
 
+*Note*: This tag corresponds to the first version of desimodel `available on PyPI`_.
+
 * Numpy 2 compatibility (PR `#182`_).
 * Allow desimodel data to be removed by pip (PR `#183`_).
 * Parallelize ``is_point_in_desi`` (PR `#187`_, `#193`_).
@@ -22,6 +24,7 @@ desimodel Release Notes
 * Update focalplane sync scripts to catch errors in logs (PR `#195`_).
 * Log warning message if desimodel data isn't installed (PR `#197`_).
 
+.. _`available on PyPI`: https://pypi.org/project/desimodel/0.20.0/
 .. _`#197`: https://github.com/desihub/desimodel/pull/197
 .. _`#195`: https://github.com/desihub/desimodel/pull/195
 .. _`#193`: https://github.com/desihub/desimodel/pull/193
