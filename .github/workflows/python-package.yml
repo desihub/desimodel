@@ -72,7 +72,7 @@ jobs:
                 python -m pip install desiutil==${DESIUTIL_VERSION}
             - name: Install desimodel data
               env:
-                DESIMODEL_DATA: branches/test-0.19
+                DESIMODEL_DATA: branches/test-0.20
               run: PYTHONPATH=$(pwd)/py:$PYTHONPATH PATH=$(pwd)/bin:$PATH install_desimodel_data --desimodel-version ${DESIMODEL_DATA}
             - name: Install surveyops snapshot
               env:
@@ -119,7 +119,7 @@ jobs:
                 python -m pip install git+https://github.com/desihub/specter.git@${SPECTER_VERSION}
             - name: Install desimodel data
               env:
-                DESIMODEL_DATA: branches/test-0.19
+                DESIMODEL_DATA: branches/test-0.20
               run: PYTHONPATH=$(pwd)/py:$PYTHONPATH $(pwd)/bin/install_desimodel_data --desimodel-version ${DESIMODEL_DATA}
             - name: Install surveyops snapshot
               env:
