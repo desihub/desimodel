@@ -106,7 +106,7 @@ slack_email=${DESI_SLACK_MAIL_DESIMODEL_SYNC}
 if [ "x${slack_email}" = "x" ]; then
     echo "Environment variable DESI_SLACK_MAIL_DESIMODEL_SYNC not set- skipping notifications" >> "${logfile}"
 else
-    cat ${logfile} | mailx -s "Focalplane sync ${sync_status}: ${logdate}" ${slack_email}
+    cat ${logfile} | mailx -r noreply-desi@noirlab.edu -s "Focalplane sync ${sync_status}: ${logdate}" ${slack_email}
     echo "Sent log to slack" >> ${logfile}
 fi
 
