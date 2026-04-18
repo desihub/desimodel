@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -l
 
 # IMPORTANT:  If you update this script, remember to copy it to
 # ~datasystems/desimodel_sync/ at KPNO.  This copy is needed so that
@@ -37,7 +37,6 @@ echo "Using default desiconda:  ${desiconda}" >> "${logfile}"
 echo "Using latest stable version of desimodules:  ${desimodules}" >> "${logfile}"
 
 # Set up environment
-
 export DESI_PRODUCT_ROOT="${desiconda}"
 export DESI_ROOT=/data/datasystems
 export DESI_TARGET=${DESI_ROOT}/target
@@ -47,6 +46,25 @@ export DESIMODEL_CENTRAL_REPO=${DESI_ROOT}/survey/ops/desimodel/trunk
 module use ${DESI_PRODUCT_ROOT}/modulefiles
 module load desiconda
 module load desimodules/${desimodules}
+
+# 2025-11-19: this hack is needed by cron to set up the paths. Investigate...
+module swap -f desiutil/3.5.0
+module swap -f desitree/0.7.0
+module swap -f specter/0.10.1
+module swap -f gpu_specter/0.2.1
+module swap -f desimodel/0.19.3
+module swap -f desitarget/2.9.0
+module swap -f specsim/v0.17
+module swap -f desispec/0.69.0
+module swap -f desisim/0.38.1
+module swap -f fiberassign/5.7.2
+module swap -f desisurvey/0.20.0
+module swap -f surveysim/0.12.6
+module swap -f redrock/0.20.4
+module swap -f redrock-templates/0.9.1
+module swap -f desimeter/0.7.1
+module swap -f simqso/v1.3.0
+module swap -f speclite/v0.20
 
 echo "Using desimodel data svn trunk at ${svntrunk}" >> "${logfile}"
 export DESIMODEL="${svntrunk}"
@@ -68,12 +86,13 @@ svn up "${svntrunk}/data" >> "${logfile}"
 
 # Run it, without committing result.
 echo "Forcing creation of new focalplane model!" >> "${logfile}"
-
 eval ${fpsync} --calib_file ${calpath} --reset >> "${logfile}" 2>&1
+syncstatus=$?
 
 # Check for clean execution and no errors in the output log.
 nerr=`grep -c ERROR ${logfile}`
-if [ $? -ne 0 ] || [ ${nerr} -ne 0 ]; then
+
+if [ ${syncstatus} -ne 0 ] || [ ${nerr} -ne 0 ]; then
     echo "Focalplane sync failed" >> "${logfile}"
 else
     echo "Focalplane sync completed" >> "${logfile}"
