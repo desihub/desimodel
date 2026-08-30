@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -l
 
 # IMPORTANT:  If you update this script, remember to copy it to
 # ~datasystems/desimodel_sync/ at KPNO.  This copy is needed so that
@@ -37,7 +37,6 @@ echo "Using default desiconda:  ${desiconda}" >> "${logfile}"
 echo "Using latest stable version of desimodules:  ${desimodules}" >> "${logfile}"
 
 # Set up environment
-
 export DESI_PRODUCT_ROOT="${desiconda}"
 export DESI_ROOT=/data/datasystems
 export DESI_TARGET=${DESI_ROOT}/target
@@ -68,12 +67,13 @@ svn up "${svntrunk}/data" >> "${logfile}"
 
 # Run it, without committing result.
 echo "Forcing creation of new focalplane model!" >> "${logfile}"
-
 eval ${fpsync} --calib_file ${calpath} --reset >> "${logfile}" 2>&1
+syncstatus=$?
 
 # Check for clean execution and no errors in the output log.
 nerr=`grep -c ERROR ${logfile}`
-if [ $? -ne 0 ] || [ ${nerr} -ne 0 ]; then
+
+if [ ${syncstatus} -ne 0 ] || [ ${nerr} -ne 0 ]; then
     echo "Focalplane sync failed" >> "${logfile}"
 else
     echo "Focalplane sync completed" >> "${logfile}"

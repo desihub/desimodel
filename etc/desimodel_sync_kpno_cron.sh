@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -l
 
 # IMPORTANT:  If you update this script, remember to copy it to
 # ~datasystems/desimodel_sync/ at KPNO.  This copy is needed so that
