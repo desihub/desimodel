@@ -23,7 +23,7 @@ jobs:
                       scipy-version: '<2.0'
                       matplotlib-version: '<3.11'
                       astropy-version: '<9.0'
-                      healpy-version: '<1.19'
+                      healpy-version: '<1.20'
                     - os: ubuntu-latest
                       python-version: '3.13'
                       numpy-version: '<3.0'
