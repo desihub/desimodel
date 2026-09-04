@@ -54,8 +54,9 @@ doc/_build/
 # PyBuilder
 target/
 
-# data directory may be installed, but it is not part of git.
-data
+# data directory may be installed via svn checkout, but it is not part of git.
+/data/
+py/desimodel/data/
 
 # Temporary files produced by Jupyter Notebooks
 doc/nb/*.png

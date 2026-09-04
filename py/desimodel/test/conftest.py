@@ -16,7 +16,7 @@ at import time, e.g. in test_io.py.
 """
 import os
 
-_bundled_surveyops = os.path.join(os.path.dirname(__file__), 'fixtures', 'surveyops')
+_bundled_surveyops = os.path.join(os.path.dirname(__file__), 'data', 'surveyops')
 
 
 def _has_real_surveyops():
