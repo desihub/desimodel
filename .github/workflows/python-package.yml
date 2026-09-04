@@ -69,14 +69,8 @@ jobs:
               env:
                 DESIMODEL_DATA: branches/test-0.20
               run: PYTHONPATH=$(pwd)/py:$PYTHONPATH PATH=$(pwd)/bin:$PATH install_desimodel_data --desimodel-version ${DESIMODEL_DATA}
-            - name: Install surveyops snapshot
-              env:
-                SURVEYOPS_VERSION: '2.0'
-              run: |
-                wget -nv https://data.desi.lbl.gov/public/epo/example_files/surveyops_${SURVEYOPS_VERSION}_ops.tar.gz
-                tar xzf surveyops_${SURVEYOPS_VERSION}_ops.tar.gz
             - name: Run the test
-              run: DESI_SURVEYOPS=$(pwd) pytest
+              run: pytest
 
     coverage:
         name: Test coverage
@@ -118,14 +112,8 @@ jobs:
               env:
                 DESIMODEL_DATA: branches/test-0.20
               run: PYTHONPATH=$(pwd)/py:$PYTHONPATH $(pwd)/bin/install_desimodel_data --desimodel-version ${DESIMODEL_DATA}
-            - name: Install surveyops snapshot
-              env:
-                SURVEYOPS_VERSION: '2.0'
-              run: |
-                wget -nv https://data.desi.lbl.gov/public/epo/example_files/surveyops_${SURVEYOPS_VERSION}_ops.tar.gz
-                tar xzf surveyops_${SURVEYOPS_VERSION}_ops.tar.gz
             - name: Run the test with coverage
-              run: DESI_SURVEYOPS=$(pwd) pytest --cov
+              run: pytest --cov
             - name: Coveralls
               env:
                 COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
