@@ -164,8 +164,8 @@ def trim_throughput(indir, outdir):
         with fits.open(os.path.join(indir, filename)) as fx:
             hdus = fits.HDUList()
             hdus.append(fx[0])
-            hdus.append(fits.BinTableHDU(fx[1].data[::20], header=fx[1].header))
-            hdus.append(fits.BinTableHDU(fx[2].data[::20], header=fx[2].header))
+            hdus.append(fits.BinTableHDU(fx[1].data[::20].copy(), header=fx[1].header))
+            hdus.append(fits.BinTableHDU(fx[2].data[::20].copy(), header=fx[2].header))
             hdus.writeto(os.path.join(outdir, filename))
 
     # galsim-fiber-acceptance.fits is about 230 KB, and it's a fairly
@@ -255,6 +255,6 @@ def trim_quickpsf(indir, outdir, filename):
     hdus.append(fx[0])
     for i in [1,2,3]:
         d = fx[i].data
-        hdus.append(fits.BinTableHDU(d[::10], header=fx[i].header))
+        hdus.append(fits.BinTableHDU(d[::10].copy(), header=fx[i].header))
     hdus.writeto(outfile, overwrite=True)
     fx.close()
