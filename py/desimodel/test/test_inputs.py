@@ -5,6 +5,7 @@
 import unittest
 from unittest.mock import patch
 import os
+import tempfile
 from requests.auth import HTTPDigestAuth
 from ..inputs import ci, docdb, fiberpos, focalplane, focalplane_sync, focalplane_utils, gfa, throughput
 from .. import io
@@ -41,6 +42,7 @@ class TestInputs(unittest.TestCase):
 
     @unittest.skipUnless(desimodel_available, desimodel_message)
     def test_build_gfa_table(self):
-        gfa.build_gfa_table(testdir='.')
-        self.assertTrue(os.path.exists('gfa.ecsv'), "Test Failed to create a valid file!")
-        os.remove('gfa.ecsv')
+        with tempfile.TemporaryDirectory() as testdir:
+            gfa.build_gfa_table(testdir=testdir)
+            outfile = os.path.join(testdir, 'gfa.ecsv')
+            self.assertTrue(os.path.exists(outfile), "Test Failed to create a valid file!")
