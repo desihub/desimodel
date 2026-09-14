@@ -5,7 +5,13 @@ desimodel Release Notes
 0.20.1 (unreleased)
 -------------------
 
-* No changes yet.
+* Send FP sync message to slack from noreply-desi@noirlab.edu (PR `#200`_).
+* fix trim_data to support astropy 8 bintable with data subset (PR `#202`_).
+* Use tempfile.TemporaryDirectory in test_build_gfa_table (PR `#203`_).
+
+.. _`#200`: https://github.com/desihub/desimodel/pull/200
+.. _`#202`: https://github.com/desihub/desimodel/pull/202
+.. _`#203`: https://github.com/desihub/desimodel/pull/203
 
 0.20.0 (2025-11-24)
 -------------------
