@@ -2,7 +2,12 @@
 desimodel Release Notes
 =======================
 
-0.20.1 (unreleased)
+0.20.2 (unreleased)
+-------------------
+
+* No changes yet.
+
+0.20.1 (2026-09-17)
 -------------------
 
 * Send FP sync message to slack from noreply-desi@noirlab.edu (PR `#200`_).
@@ -20,6 +25,8 @@ desimodel Release Notes
 
 * Numpy 2 compatibility (PR `#182`_).
 * Allow desimodel data to be removed by pip (PR `#183`_).
+* Ensure that tests of install pass on tags (PR `#184`_).
+* BACKUP program now has 2 passes (PR `#189`_).
 * Parallelize ``is_point_in_desi`` (PR `#187`_, `#193`_).
   Note: changes behavior of indices for points that don't overlap tiles.
 * Package infrastructure updates (PR `#191`_, `#192`_):
@@ -29,6 +36,7 @@ desimodel Release Notes
 
 * Update focalplane sync scripts to catch errors in logs (PR `#195`_).
 * Log warning message if desimodel data isn't installed (PR `#197`_).
+* Ensure that tests of install pass on tags (PR `#184`_).
 
 .. _`available on PyPI`: https://pypi.org/project/desimodel/0.20.0/
 .. _`#197`: https://github.com/desihub/desimodel/pull/197
@@ -36,7 +44,9 @@ desimodel Release Notes
 .. _`#193`: https://github.com/desihub/desimodel/pull/193
 .. _`#192`: https://github.com/desihub/desimodel/pull/192
 .. _`#191`: https://github.com/desihub/desimodel/pull/191
+.. _`#189`: https://github.com/desihub/desimodel/pull/189
 .. _`#187`: https://github.com/desihub/desimodel/pull/187
+.. _`#184`: https://github.com/desihub/desimodel/pull/184
 .. _`#183`: https://github.com/desihub/desimodel/pull/183
 .. _`#182`: https://github.com/desihub/desimodel/pull/182
 .. _configobj: https://configobj.readthedocs.io/en/latest/
